@@ -29,6 +29,8 @@ import dev.batipy.rungo.data.network.dto.ServiceDto
 import dev.batipy.rungo.data.orders.OrdersRepository
 import dev.batipy.rungo.data.profile.ProfileRepository
 import dev.batipy.rungo.ui.cart.CartScreen
+import dev.batipy.rungo.ui.orders.OrderDetailScreen
+import dev.batipy.rungo.ui.orders.OrderDetailViewModel
 import dev.batipy.rungo.ui.orders.OrdersScreen
 import dev.batipy.rungo.ui.orders.OrdersViewModel
 import dev.batipy.rungo.ui.profile.ProfileScreen
@@ -60,6 +62,15 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
+    // Set from either the active-order banner on Услуги or a tap on an order
+    // in Заказы; overrides whatever tab content would otherwise show.
+    var selectedOrderId by remember { mutableStateOf<Int?>(null) }
+
+    // Hoisted (rather than created inside the `when` branch below) so the bottom
+    // bar's onClick can trigger a refresh even when tapping a tab you're already on.
+    val ordersViewModel: OrdersViewModel = viewModel(
+        factory = OrdersViewModel.Factory(ordersRepository)
+    )
 
     Scaffold(
         modifier = modifier,
@@ -67,8 +78,15 @@ fun HomeScreen(
             NavigationBar {
                 homeTabs.forEachIndexed { index, tab ->
                     NavigationBarItem(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
+                        selected = selectedTab == index && selectedOrderId == null,
+                        onClick = {
+                            selectedTab = index
+                            selectedOrderId = null
+                            when (index) {
+                                0 -> servicesViewModel.refresh()
+                                2 -> ordersViewModel.refresh()
+                            }
+                        },
                         icon = { Icon(tab.icon, contentDescription = tab.label) },
                         label = { Text(tab.label) }
                     )
@@ -76,9 +94,39 @@ fun HomeScreen(
             }
         }
     ) { innerPadding ->
+        val orderId = selectedOrderId
+        if (orderId != null) {
+            val orderDetailViewModel: OrderDetailViewModel = viewModel(
+                key = "order-detail-$orderId",
+                factory = OrderDetailViewModel.Factory(orderId, ordersRepository, profileRepository, catalogRepository)
+            )
+            val orderDetailState by orderDetailViewModel.uiState.collectAsState()
+            val orderDetailMessage by orderDetailViewModel.message.collectAsState()
+            val orderDetailRefreshing by orderDetailViewModel.isRefreshing.collectAsState()
+            OrderDetailScreen(
+                uiState = orderDetailState,
+                message = orderDetailMessage,
+                isRefreshing = orderDetailRefreshing,
+                onRefresh = orderDetailViewModel::refresh,
+                onConsumeMessage = orderDetailViewModel::consumeMessage,
+                onBack = { selectedOrderId = null },
+                onCancelOrder = orderDetailViewModel::cancelOrder,
+                onRequestConfirmDelivery = orderDetailViewModel::requestConfirmDelivery,
+                onCancelConfirmDelivery = orderDetailViewModel::cancelConfirmDelivery,
+                onConfirmDelivery = orderDetailViewModel::confirmDelivery,
+                onSelectRating = orderDetailViewModel::selectReviewRating,
+                onReviewTextChange = orderDetailViewModel::updateReviewText,
+                onSubmitReview = orderDetailViewModel::submitReview,
+                modifier = Modifier.padding(innerPadding)
+            )
+        } else {
         when (selectedTab) {
             0 -> {
                 var selectedService by remember { mutableStateOf<ServiceDto?>(null) }
+                // Bumped every time a service is opened so re-opening the same
+                // service after an order was created gets a fresh ViewModel
+                // instead of one whose orderCreated flag is still true.
+                var orderFormToken by remember { mutableIntStateOf(0) }
                 val service = selectedService
 
                 if (service == null) {
@@ -88,13 +136,16 @@ fun HomeScreen(
                         uiState = uiState,
                         isRefreshing = isRefreshing,
                         onRefresh = servicesViewModel::refresh,
-                        onServiceClick = { selectedService = it },
-                        onActiveOrderClick = { selectedTab = 2 },
+                        onServiceClick = {
+                            selectedService = it
+                            orderFormToken++
+                        },
+                        onActiveOrderClick = { order -> selectedOrderId = order.id },
                         modifier = Modifier.padding(innerPadding)
                     )
                 } else {
                     val createOrderViewModel: CreateOrderViewModel = viewModel(
-                        key = service.id.toString(),
+                        key = "${service.id}-$orderFormToken",
                         factory = CreateOrderViewModel.Factory(
                             catalogRepository = catalogRepository,
                             profileRepository = profileRepository,
@@ -115,12 +166,15 @@ fun HomeScreen(
                         uiState = orderUiState,
                         onBack = { selectedService = null },
                         onCitySelect = createOrderViewModel::selectCity,
+                        onPickupLocationSelect = createOrderViewModel::selectPickupLocation,
+                        onPickupManualEntrySelect = createOrderViewModel::selectPickupManualEntry,
+                        onPickupManualAddressChange = createOrderViewModel::updatePickupManualAddress,
                         onLocationSelect = createOrderViewModel::selectLocation,
                         onManualEntrySelect = createOrderViewModel::selectManualEntry,
                         onManualAddressChange = createOrderViewModel::updateManualAddress,
                         onCommentChange = createOrderViewModel::updateComment,
                         onCurrencySelect = createOrderViewModel::selectCurrency,
-                        onSubmit = { createOrderViewModel.submit(service.id) },
+                        onSubmit = { createOrderViewModel.submit(service.id, service.kind) },
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -141,15 +195,13 @@ fun HomeScreen(
             }
 
             2 -> {
-                val ordersViewModel: OrdersViewModel = viewModel(
-                    factory = OrdersViewModel.Factory(ordersRepository)
-                )
                 val uiState by ordersViewModel.uiState.collectAsState()
                 val isRefreshing by ordersViewModel.isRefreshing.collectAsState()
                 OrdersScreen(
                     uiState = uiState,
                     isRefreshing = isRefreshing,
                     onRefresh = ordersViewModel::refresh,
+                    onOrderClick = { order -> selectedOrderId = order.id },
                     modifier = Modifier.padding(innerPadding)
                 )
             }
@@ -180,6 +232,7 @@ fun HomeScreen(
                     modifier = Modifier.padding(innerPadding)
                 )
             }
+        }
         }
     }
 }

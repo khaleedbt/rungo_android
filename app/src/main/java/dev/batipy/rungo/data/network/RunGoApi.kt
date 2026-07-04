@@ -1,9 +1,12 @@
 package dev.batipy.rungo.data.network
 
+import dev.batipy.rungo.data.network.dto.ConfirmDeliveryRequest
 import dev.batipy.rungo.data.network.dto.LoginRequest
 import dev.batipy.rungo.data.network.dto.OrderCreateRequest
 import dev.batipy.rungo.data.network.dto.OrderCreateResponseDto
+import dev.batipy.rungo.data.network.dto.OrderDetailDto
 import dev.batipy.rungo.data.network.dto.PaginatedCitiesDto
+import dev.batipy.rungo.data.network.dto.ReviewCreateRequest
 import dev.batipy.rungo.data.network.dto.PaginatedLocationsDto
 import dev.batipy.rungo.data.network.dto.PaginatedMerchantsDto
 import dev.batipy.rungo.data.network.dto.PaginatedOrdersDto
@@ -14,6 +17,7 @@ import dev.batipy.rungo.data.network.dto.TokenRefreshResponse
 import dev.batipy.rungo.data.network.dto.TokenResponse
 import dev.batipy.rungo.data.network.dto.UpdateLangRequest
 import dev.batipy.rungo.data.network.dto.UserDto
+import kotlinx.serialization.json.JsonObject
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -41,8 +45,25 @@ interface RunGoApi {
     @POST("api/v1/orders/")
     suspend fun createOrder(@Body request: OrderCreateRequest): OrderCreateResponseDto
 
+    @GET("api/v1/orders/{id}/")
+    suspend fun getOrderDetail(@Path("id") id: Int): OrderDetailDto
+
+    @POST("api/v1/orders/{id}/cancel/")
+    suspend fun cancelOrder(@Path("id") id: Int): Response<Void>
+
+    @POST("api/v1/orders/{id}/confirm-delivery/")
+    suspend fun confirmDelivery(@Path("id") id: Int, @Body request: ConfirmDeliveryRequest): Response<Void>
+
+    @POST("api/v1/orders/{id}/review/")
+    suspend fun submitReview(@Path("id") id: Int, @Body request: ReviewCreateRequest): Response<Void>
+
     @GET("api/v1/cities/")
     suspend fun getCities(): PaginatedCitiesDto
+
+    // Response shape isn't documented in the OpenAPI schema (no serializer),
+    // so we decode it as a raw JSON object and probe for known keys.
+    @GET("api/v1/exchange-rate/")
+    suspend fun getExchangeRate(): JsonObject
 
     @GET("api/v1/auth/me/")
     suspend fun getMe(): UserDto

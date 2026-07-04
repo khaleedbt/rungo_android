@@ -1,5 +1,6 @@
 package dev.batipy.rungo.ui.orders
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -64,6 +65,7 @@ fun OrdersScreen(
     uiState: OrdersUiState,
     isRefreshing: Boolean = false,
     onRefresh: () -> Unit = {},
+    onOrderClick: (OrderDto) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     PullToRefreshBox(
@@ -103,7 +105,7 @@ fun OrdersScreen(
                             )
                         }
                         items(uiState.orders) { order ->
-                            OrderCard(order)
+                            OrderCard(order, onClick = { onOrderClick(order) })
                         }
                     }
                 }
@@ -113,11 +115,13 @@ fun OrdersScreen(
 }
 
 @Composable
-private fun OrderCard(order: OrderDto) {
+private fun OrderCard(order: OrderDto, onClick: () -> Unit) {
     val style = statusStyle(order.status)
 
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         color = RunGoField,
         shape = RoundedCornerShape(16.dp)
     ) {

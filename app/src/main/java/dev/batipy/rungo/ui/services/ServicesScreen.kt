@@ -66,7 +66,7 @@ fun ServicesScreen(
     isRefreshing: Boolean = false,
     onRefresh: () -> Unit = {},
     onServiceClick: (ServiceDto) -> Unit = {},
-    onActiveOrderClick: () -> Unit = {},
+    onActiveOrderClick: (OrderDto) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     PullToRefreshBox(
@@ -102,7 +102,7 @@ fun ServicesScreen(
                     }
                     if (uiState.activeOrder != null) {
                         item {
-                            ActiveOrderCard(uiState.activeOrder, onClick = onActiveOrderClick)
+                            ActiveOrderCard(uiState.activeOrder, onClick = { onActiveOrderClick(uiState.activeOrder) })
                         }
                     }
                     items(uiState.services) { service ->

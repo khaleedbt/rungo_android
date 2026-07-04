@@ -52,6 +52,7 @@ import dev.batipy.rungo.ui.theme.RunGoField
 import dev.batipy.rungo.ui.theme.RunGoPlaceholder
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
+import java.util.Locale
 
 private val ErrorColor = Color(0xFFFF6B6B)
 
@@ -69,12 +70,29 @@ private fun kindLabel(kind: String) = when (kind) {
     else -> kind
 }
 
+/**
+ * Converts the USD base fare into the selected currency using rates fetched
+ * from /api/v1/exchange-rate/. Falls back to a 1:1 rate (i.e. shows the USD
+ * amount with the target symbol) if that rate wasn't found in the response.
+ */
+private fun formatServicePrice(baseFareUsd: String, currency: String, rates: Map<String, Double>): String {
+    val base = baseFareUsd.toDoubleOrNull() ?: 0.0
+    return when (currency) {
+        "try" -> "₺" + String.format(Locale.US, "%.2f", base * (rates["try"] ?: 1.0))
+        "syp" -> "S£" + String.format(Locale.US, "%.0f", base * (rates["syp"] ?: 1.0))
+        else -> "\$" + String.format(Locale.US, "%.2f", base)
+    }
+}
+
 @Composable
 fun ServiceOrderScreen(
     service: ServiceDto,
     uiState: CreateOrderUiState,
     onBack: () -> Unit,
     onCitySelect: (Int) -> Unit,
+    onPickupLocationSelect: (Int) -> Unit,
+    onPickupManualEntrySelect: () -> Unit,
+    onPickupManualAddressChange: (String) -> Unit,
     onLocationSelect: (Int) -> Unit,
     onManualEntrySelect: () -> Unit,
     onManualAddressChange: (String) -> Unit,
@@ -83,6 +101,7 @@ fun ServiceOrderScreen(
     onSubmit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isDelivery = service.kind == "delivery"
     Column(modifier = modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -143,16 +162,46 @@ fun ServiceOrderScreen(
                             )
                         }
                     }
-                    item {
-                        SectionCard(title = "ВАШ АДРЕС") {
-                            AddressPicker(
-                                locations = uiState.locations,
-                                selectedLocationId = uiState.selectedLocationId,
-                                manualAddress = uiState.manualAddress,
-                                onLocationSelect = onLocationSelect,
-                                onManualEntrySelect = onManualEntrySelect,
-                                onManualAddressChange = onManualAddressChange
-                            )
+                    if (isDelivery) {
+                        item {
+                            SectionCard(title = "АДРЕС ПОЛУЧЕНИЯ") {
+                                AddressPicker(
+                                    locations = uiState.locations,
+                                    selectedLocationId = uiState.selectedPickupLocationId,
+                                    manualAddress = uiState.manualPickupAddress,
+                                    placeholder = "Откуда забрать",
+                                    onLocationSelect = onPickupLocationSelect,
+                                    onManualEntrySelect = onPickupManualEntrySelect,
+                                    onManualAddressChange = onPickupManualAddressChange
+                                )
+                            }
+                        }
+                        item {
+                            SectionCard(title = "АДРЕС ДОСТАВКИ") {
+                                AddressPicker(
+                                    locations = uiState.locations,
+                                    selectedLocationId = uiState.selectedLocationId,
+                                    manualAddress = uiState.manualAddress,
+                                    placeholder = "Куда доставить",
+                                    onLocationSelect = onLocationSelect,
+                                    onManualEntrySelect = onManualEntrySelect,
+                                    onManualAddressChange = onManualAddressChange
+                                )
+                            }
+                        }
+                    } else {
+                        item {
+                            SectionCard(title = "ВАШ АДРЕС") {
+                                AddressPicker(
+                                    locations = uiState.locations,
+                                    selectedLocationId = uiState.selectedLocationId,
+                                    manualAddress = uiState.manualAddress,
+                                    placeholder = "Ваш адрес",
+                                    onLocationSelect = onLocationSelect,
+                                    onManualEntrySelect = onManualEntrySelect,
+                                    onManualAddressChange = onManualAddressChange
+                                )
+                            }
                         }
                     }
                     item {
@@ -215,7 +264,11 @@ fun ServiceOrderScreen(
                                         fontWeight = FontWeight.SemiBold
                                     )
                                     Text(
-                                        text = "\$${service.baseFareUsd}",
+                                        text = formatServicePrice(
+                                            baseFareUsd = service.baseFareUsd,
+                                            currency = uiState.currency,
+                                            rates = uiState.exchangeRates
+                                        ),
                                         color = RunGoAccent,
                                         fontWeight = FontWeight.Bold,
                                         style = MaterialTheme.typography.titleMedium
@@ -321,6 +374,7 @@ private fun AddressPicker(
     locations: List<LocationDto>,
     selectedLocationId: Int?,
     manualAddress: String,
+    placeholder: String,
     onLocationSelect: (Int) -> Unit,
     onManualEntrySelect: () -> Unit,
     onManualAddressChange: (String) -> Unit
@@ -349,7 +403,7 @@ private fun AddressPicker(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp),
-                placeholder = { Text("Ваш адрес", color = RunGoPlaceholder) },
+                placeholder = { Text(placeholder, color = RunGoPlaceholder) },
                 colors = fieldColors()
             )
         }

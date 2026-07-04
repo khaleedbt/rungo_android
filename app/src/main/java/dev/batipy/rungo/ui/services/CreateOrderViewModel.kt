@@ -20,7 +20,13 @@ sealed interface CreateOrderUiState {
     data class Ready(
         val cities: List<CityDto>,
         val locations: List<LocationDto>,
+        val exchangeRates: Map<String, Double> = emptyMap(),
         val selectedCityId: Int? = null,
+        // Only used for "delivery" (A→B) services — the pickup side of the trip.
+        val selectedPickupLocationId: Int? = null,
+        val manualPickupAddress: String = "",
+        // For "visit" services this is the client's own address; for "delivery"
+        // services it's the drop-off address.
         val selectedLocationId: Int? = null,
         val manualAddress: String = "",
         val comment: String = "",
@@ -52,6 +58,9 @@ class CreateOrderViewModel(
             val cities = catalogRepository.getCities().getOrNull()
             val locations = profileRepository.getLocations().getOrNull()
             val user = profileRepository.getMe().getOrNull()
+            // Best-effort: exchange rates aren't critical, so a failed fetch
+            // just leaves non-USD prices unconverted rather than blocking the form.
+            val exchangeRates = catalogRepository.getExchangeRates().getOrDefault(emptyMap())
 
             if (cities == null || locations == null) {
                 _uiState.value = CreateOrderUiState.LoadError("Не удалось загрузить данные для заказа")
@@ -62,12 +71,23 @@ class CreateOrderViewModel(
             _uiState.value = CreateOrderUiState.Ready(
                 cities = cities,
                 locations = locations,
+                exchangeRates = exchangeRates,
                 selectedCityId = defaultCityId
             )
         }
     }
 
     fun selectCity(cityId: Int) = updateReady { it.copy(selectedCityId = cityId) }
+
+    fun selectPickupLocation(locationId: Int) = updateReady {
+        it.copy(selectedPickupLocationId = locationId, manualPickupAddress = "")
+    }
+
+    fun selectPickupManualEntry() = updateReady {
+        it.copy(selectedPickupLocationId = null)
+    }
+
+    fun updatePickupManualAddress(text: String) = updateReady { it.copy(manualPickupAddress = text) }
 
     fun selectLocation(locationId: Int) = updateReady {
         it.copy(selectedLocationId = locationId, manualAddress = "")
@@ -83,15 +103,25 @@ class CreateOrderViewModel(
 
     fun selectCurrency(currency: String) = updateReady { it.copy(currency = currency) }
 
-    fun submit(serviceId: Int) {
+    fun submit(serviceId: Int, serviceKind: String) {
         val state = _uiState.value as? CreateOrderUiState.Ready ?: return
         val cityId = state.selectedCityId
-        val selectedLocation = state.locations.find { it.id == state.selectedLocationId }
-        val address = selectedLocation?.label?.ifBlank { "${selectedLocation.latitude}, ${selectedLocation.longitude}" }
+
+        val dropoffLocation = state.locations.find { it.id == state.selectedLocationId }
+        val dropoffAddress = dropoffLocation?.label?.ifBlank { "${dropoffLocation.latitude}, ${dropoffLocation.longitude}" }
             ?: state.manualAddress
 
-        if (cityId == null || address.isBlank()) {
-            _uiState.value = state.copy(error = "Укажите город и адрес")
+        val isDelivery = serviceKind == "delivery"
+        val pickupLocation = state.locations.find { it.id == state.selectedPickupLocationId }
+        val pickupAddress = if (isDelivery) {
+            pickupLocation?.label?.ifBlank { "${pickupLocation.latitude}, ${pickupLocation.longitude}" }
+                ?: state.manualPickupAddress
+        } else {
+            ""
+        }
+
+        if (cityId == null || dropoffAddress.isBlank() || (isDelivery && pickupAddress.isBlank())) {
+            _uiState.value = state.copy(error = "Укажите город и адрес(а)")
             return
         }
 
@@ -100,9 +130,12 @@ class CreateOrderViewModel(
             val request = OrderCreateRequest(
                 service = serviceId,
                 city = cityId,
-                deliveryAddress = address,
-                deliveryLatitude = selectedLocation?.latitude,
-                deliveryLongitude = selectedLocation?.longitude,
+                pickupAddress = pickupAddress,
+                pickupLatitude = if (isDelivery) pickupLocation?.latitude else null,
+                pickupLongitude = if (isDelivery) pickupLocation?.longitude else null,
+                deliveryAddress = dropoffAddress,
+                deliveryLatitude = dropoffLocation?.latitude,
+                deliveryLongitude = dropoffLocation?.longitude,
                 comment = state.comment,
                 currency = state.currency
             )
