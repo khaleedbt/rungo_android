@@ -40,6 +40,34 @@ data class PaginatedMerchantsDto(
 )
 
 @Serializable
+data class ProductDto(
+    val id: Int,
+    val name: String,
+    val description: String = "",
+    val image: String? = null,
+    @SerialName("price_usd") val priceUsd: String,
+    val merchant: Int = 0,
+    @SerialName("merchant_name") val merchantName: String = "",
+    @SerialName("merchant_delivery_fee_usd") val merchantDeliveryFeeUsd: String = "0"
+)
+
+@Serializable
+data class CategoryDto(
+    val id: Int? = null,
+    val name: String = "",
+    val products: List<ProductDto> = emptyList()
+)
+
+@Serializable
+data class MerchantDetailDto(
+    val id: Int,
+    val name: String,
+    val description: String = "",
+    val logo: String? = null,
+    val categories: List<CategoryDto> = emptyList()
+)
+
+@Serializable
 data class CityDto(
     val id: Int,
     val name: String

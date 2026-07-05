@@ -92,10 +92,18 @@
     <!-- Shop -->
     <string name="shop_title">Shop</string>
     <string name="shop_load_error">Failed to load shops</string>
+    <string name="shop_goods_total">Items</string>
+    <string name="shop_delivery_free">Free</string>
+    <string name="shop_go_to_cart">Go to cart</string>
+    <string name="shop_no_products">No products available</string>
+    <string name="merchant_load_error">Failed to load shop</string>
 
     <!-- Cart -->
     <string name="cart_empty_message">Cart is empty. Add items from the shop.</string>
     <string name="cart_go_to_shop">Go to shop</string>
+    <string name="cart_title">Cart</string>
+    <string name="cart_total_label">Total</string>
+    <string name="cart_submit_button">Place order</string>
 
     <!-- Orders list -->
     <string name="orders_title">My orders</string>
@@ -140,4 +148,5 @@
     <string name="order_confirm_error">Failed to confirm receipt</string>
     <string name="review_rating_required">Please pick a rating</string>
     <string name="review_submit_error">Failed to submit review</string>
+    <string name="notification_channel_orders">Orders</string>
 </resources>

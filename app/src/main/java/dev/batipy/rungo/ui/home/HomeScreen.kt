@@ -7,6 +7,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -28,12 +30,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.batipy.rungo.R
+import dev.batipy.rungo.data.cart.CartRepository
 import dev.batipy.rungo.data.catalog.CatalogRepository
 import dev.batipy.rungo.data.location.LocationProvider
 import dev.batipy.rungo.data.network.dto.ServiceDto
 import dev.batipy.rungo.data.orders.OrdersRepository
 import dev.batipy.rungo.data.profile.ProfileRepository
 import dev.batipy.rungo.ui.cart.CartScreen
+import dev.batipy.rungo.ui.cart.CartViewModel
 import dev.batipy.rungo.ui.orders.OrderDetailScreen
 import dev.batipy.rungo.ui.orders.OrderDetailViewModel
 import dev.batipy.rungo.ui.orders.OrdersScreen
@@ -44,6 +48,8 @@ import dev.batipy.rungo.ui.services.CreateOrderViewModel
 import dev.batipy.rungo.ui.services.ServiceOrderScreen
 import dev.batipy.rungo.ui.services.ServicesScreen
 import dev.batipy.rungo.ui.services.ServicesViewModel
+import dev.batipy.rungo.ui.shop.MerchantDetailScreen
+import dev.batipy.rungo.ui.shop.MerchantDetailViewModel
 import dev.batipy.rungo.ui.shop.ShopScreen
 import dev.batipy.rungo.ui.shop.ShopViewModel
 
@@ -65,20 +71,33 @@ fun HomeScreen(
     ordersRepository: OrdersRepository,
     profileRepository: ProfileRepository,
     locationProvider: LocationProvider,
+    cartRepository: CartRepository,
+    initialOrderId: Int? = null,
+    onInitialOrderConsumed: () -> Unit = {},
     onLogoutClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current.applicationContext
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
-    // Set from either the active-order banner on Услуги or a tap on an order
-    // in Заказы; overrides whatever tab content would otherwise show.
+    // Set from either the active-order banner on Услуги, a tap on an order in
+    // Заказы, or a tapped push notification (initialOrderId) — overrides
+    // whatever tab content would otherwise show.
     var selectedOrderId by rememberSaveable { mutableStateOf<Int?>(null) }
+
+    LaunchedEffect(initialOrderId) {
+        if (initialOrderId != null) {
+            selectedOrderId = initialOrderId
+            onInitialOrderConsumed()
+        }
+    }
 
     // Hoisted (rather than created inside the `when` branch below) so the bottom
     // bar's onClick can trigger a refresh even when tapping a tab you're already on.
     val ordersViewModel: OrdersViewModel = viewModel(
         factory = OrdersViewModel.Factory(ordersRepository, context)
     )
+    val cartItems by cartRepository.items.collectAsState()
+    val cartCount = cartItems.sumOf { it.quantity }
 
     Scaffold(
         modifier = modifier,
@@ -102,7 +121,15 @@ fun HomeScreen(
                                 }
                             }
                         },
-                        icon = { Icon(tab.icon, contentDescription = tab.label) },
+                        icon = {
+                            if (index == 3 && cartCount > 0) {
+                                BadgedBox(badge = { Badge { Text("$cartCount") } }) {
+                                    Icon(tab.icon, contentDescription = tab.label)
+                                }
+                            } else {
+                                Icon(tab.icon, contentDescription = tab.label)
+                            }
+                        },
                         label = { Text(tab.label) }
                     )
                 }
@@ -142,9 +169,30 @@ fun HomeScreen(
                 // service after an order was created gets a fresh ViewModel
                 // instead of one whose orderCreated flag is still true.
                 var orderFormToken by remember { mutableIntStateOf(0) }
+                var selectedMerchantId by remember { mutableStateOf<Int?>(null) }
                 val service = selectedService
+                val merchantId = selectedMerchantId
 
-                if (service == null) {
+                if (merchantId != null) {
+                    val merchantDetailViewModel: MerchantDetailViewModel = viewModel(
+                        key = "merchant-$merchantId",
+                        factory = MerchantDetailViewModel.Factory(merchantId, catalogRepository, cartRepository, context)
+                    )
+                    val merchantUiState by merchantDetailViewModel.uiState.collectAsState()
+                    val merchantCartItems by merchantDetailViewModel.cartItems.collectAsState()
+                    MerchantDetailScreen(
+                        uiState = merchantUiState,
+                        cartItems = merchantCartItems,
+                        onBack = { selectedMerchantId = null },
+                        onAddToCart = merchantDetailViewModel::addToCart,
+                        onUpdateQuantity = merchantDetailViewModel::updateQuantity,
+                        onGoToCart = {
+                            selectedMerchantId = null
+                            selectedTab = 3
+                        },
+                        modifier = Modifier.padding(innerPadding)
+                    )
+                } else if (service == null) {
                     val uiState by servicesViewModel.uiState.collectAsState()
                     val isRefreshing by servicesViewModel.isRefreshing.collectAsState()
                     ServicesScreen(
@@ -156,6 +204,7 @@ fun HomeScreen(
                             orderFormToken++
                         },
                         onActiveOrderClick = { order -> selectedOrderId = order.id },
+                        onMerchantClick = { merchant -> selectedMerchantId = merchant.id },
                         modifier = Modifier.padding(innerPadding)
                     )
                 } else {
@@ -197,17 +246,42 @@ fun HomeScreen(
             }
 
             1 -> {
-                val shopViewModel: ShopViewModel = viewModel(
-                    factory = ShopViewModel.Factory(catalogRepository, context)
-                )
-                val uiState by shopViewModel.uiState.collectAsState()
-                val isRefreshing by shopViewModel.isRefreshing.collectAsState()
-                ShopScreen(
-                    uiState = uiState,
-                    isRefreshing = isRefreshing,
-                    onRefresh = shopViewModel::refresh,
-                    modifier = Modifier.padding(innerPadding)
-                )
+                var selectedMerchantId by remember { mutableStateOf<Int?>(null) }
+                val merchantId = selectedMerchantId
+
+                if (merchantId == null) {
+                    val shopViewModel: ShopViewModel = viewModel(
+                        factory = ShopViewModel.Factory(catalogRepository, profileRepository, context)
+                    )
+                    val uiState by shopViewModel.uiState.collectAsState()
+                    val isRefreshing by shopViewModel.isRefreshing.collectAsState()
+                    ShopScreen(
+                        uiState = uiState,
+                        isRefreshing = isRefreshing,
+                        onRefresh = shopViewModel::refresh,
+                        onMerchantClick = { merchant -> selectedMerchantId = merchant.id },
+                        modifier = Modifier.padding(innerPadding)
+                    )
+                } else {
+                    val merchantDetailViewModel: MerchantDetailViewModel = viewModel(
+                        key = "merchant-$merchantId",
+                        factory = MerchantDetailViewModel.Factory(merchantId, catalogRepository, cartRepository, context)
+                    )
+                    val uiState by merchantDetailViewModel.uiState.collectAsState()
+                    val merchantCartItems by merchantDetailViewModel.cartItems.collectAsState()
+                    MerchantDetailScreen(
+                        uiState = uiState,
+                        cartItems = merchantCartItems,
+                        onBack = { selectedMerchantId = null },
+                        onAddToCart = merchantDetailViewModel::addToCart,
+                        onUpdateQuantity = merchantDetailViewModel::updateQuantity,
+                        onGoToCart = {
+                            selectedMerchantId = null
+                            selectedTab = 3
+                        },
+                        modifier = Modifier.padding(innerPadding)
+                    )
+                }
             }
 
             2 -> {
@@ -222,10 +296,37 @@ fun HomeScreen(
                 )
             }
 
-            3 -> CartScreen(
-                onGoToShopClick = { selectedTab = 1 },
-                modifier = Modifier.padding(innerPadding)
-            )
+            3 -> {
+                val cartViewModel: CartViewModel = viewModel(
+                    factory = CartViewModel.Factory(cartRepository, catalogRepository, ordersRepository, profileRepository, context)
+                )
+                val uiState by cartViewModel.uiState.collectAsState()
+                val orderCreated by cartViewModel.orderCreated.collectAsState()
+
+                LaunchedEffect(orderCreated) {
+                    val createdId = orderCreated
+                    if (createdId != null) {
+                        selectedOrderId = createdId
+                        cartViewModel.consumeOrderCreated()
+                    }
+                }
+
+                CartScreen(
+                    uiState = uiState,
+                    cartItems = cartItems,
+                    onGoToShopClick = { selectedTab = 1 },
+                    onUpdateQuantity = cartViewModel::updateItemQuantity,
+                    onRemoveItem = cartViewModel::removeItem,
+                    onCitySelect = cartViewModel::selectCity,
+                    onLocationSelect = cartViewModel::selectLocation,
+                    onManualEntrySelect = cartViewModel::selectManualEntry,
+                    onManualAddressChange = cartViewModel::updateManualAddress,
+                    onCommentChange = cartViewModel::updateComment,
+                    onCurrencySelect = cartViewModel::selectCurrency,
+                    onSubmit = cartViewModel::submit,
+                    modifier = Modifier.padding(innerPadding)
+                )
+            }
 
             4 -> {
                 val profileViewModel: ProfileViewModel = viewModel(

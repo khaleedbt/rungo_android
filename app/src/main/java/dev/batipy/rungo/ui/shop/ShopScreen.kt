@@ -1,5 +1,6 @@
 package dev.batipy.rungo.ui.shop
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +40,7 @@ fun ShopScreen(
     uiState: ShopUiState,
     isRefreshing: Boolean = false,
     onRefresh: () -> Unit = {},
+    onMerchantClick: (MerchantDto) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     PullToRefreshBox(
@@ -73,7 +75,7 @@ fun ShopScreen(
                         )
                     }
                     items(uiState.merchants) { merchant ->
-                        ShopMerchantCard(merchant)
+                        ShopMerchantCard(merchant, onClick = { onMerchantClick(merchant) })
                     }
                 }
             }
@@ -82,9 +84,11 @@ fun ShopScreen(
 }
 
 @Composable
-private fun ShopMerchantCard(merchant: MerchantDto) {
+private fun ShopMerchantCard(merchant: MerchantDto, onClick: () -> Unit) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         color = RunGoField,
         shape = RoundedCornerShape(20.dp)
     ) {

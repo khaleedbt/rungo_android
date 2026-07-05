@@ -26,6 +26,12 @@ data class PaginatedOrdersDto(
 )
 
 @Serializable
+data class OrderItemRequest(
+    val product: Int,
+    val quantity: Int
+)
+
+@Serializable
 data class OrderCreateRequest(
     val service: Int? = null,
     val city: Int,
@@ -36,7 +42,8 @@ data class OrderCreateRequest(
     @SerialName("delivery_latitude") val deliveryLatitude: String? = null,
     @SerialName("delivery_longitude") val deliveryLongitude: String? = null,
     val comment: String = "",
-    val currency: String = "usd"
+    val currency: String = "usd",
+    val items: List<OrderItemRequest>? = null
 )
 
 @Serializable

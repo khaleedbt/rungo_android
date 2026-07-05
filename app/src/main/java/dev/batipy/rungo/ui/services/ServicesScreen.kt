@@ -71,6 +71,7 @@ fun ServicesScreen(
     onRefresh: () -> Unit = {},
     onServiceClick: (ServiceDto) -> Unit = {},
     onActiveOrderClick: (OrderDto) -> Unit = {},
+    onMerchantClick: (MerchantDto) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     PullToRefreshBox(
@@ -123,7 +124,7 @@ fun ServicesScreen(
                         }
                     }
                     items(uiState.merchants) { merchant ->
-                        MerchantCard(merchant)
+                        MerchantCard(merchant, onClick = { onMerchantClick(merchant) })
                     }
                 }
             }
@@ -224,14 +225,14 @@ private fun ServiceCard(service: ServiceDto, onClick: () -> Unit) {
 }
 
 @Composable
-private fun MerchantCard(merchant: MerchantDto) {
+private fun MerchantCard(merchant: MerchantDto, onClick: () -> Unit) {
     CatalogCard(
         imageUrl = merchant.logo,
         title = merchant.name,
         description = merchant.description,
         badge = null,
         price = stringResource(R.string.services_delivery_price, merchant.deliveryFeeUsd),
-        onClick = {}
+        onClick = onClick
     )
 }
 

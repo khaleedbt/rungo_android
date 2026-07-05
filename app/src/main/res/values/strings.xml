@@ -92,10 +92,18 @@
     <!-- Shop -->
     <string name="shop_title">Магазин</string>
     <string name="shop_load_error">Не удалось загрузить магазины</string>
+    <string name="shop_goods_total">Товары</string>
+    <string name="shop_delivery_free">Бесплатно</string>
+    <string name="shop_go_to_cart">Перейти в корзину</string>
+    <string name="shop_no_products">Нет доступных товаров</string>
+    <string name="merchant_load_error">Не удалось загрузить магазин</string>
 
     <!-- Cart -->
     <string name="cart_empty_message">Корзина пуста. Добавьте товары из магазина.</string>
     <string name="cart_go_to_shop">В магазин</string>
+    <string name="cart_title">Корзина</string>
+    <string name="cart_total_label">Итого</string>
+    <string name="cart_submit_button">Подтвердить заказ</string>
 
     <!-- Orders list -->
     <string name="orders_title">Мои заказы</string>
@@ -140,4 +148,5 @@
     <string name="order_confirm_error">Не удалось подтвердить получение</string>
     <string name="review_rating_required">Поставьте оценку</string>
     <string name="review_submit_error">Не удалось отправить отзыв</string>
+    <string name="notification_channel_orders">Заказы</string>
 </resources>

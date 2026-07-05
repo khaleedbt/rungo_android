@@ -3,6 +3,7 @@ package dev.batipy.rungo.data.catalog
 import android.util.Log
 import dev.batipy.rungo.data.network.RunGoApi
 import dev.batipy.rungo.data.network.dto.CityDto
+import dev.batipy.rungo.data.network.dto.MerchantDetailDto
 import dev.batipy.rungo.data.network.dto.MerchantDto
 import dev.batipy.rungo.data.network.dto.ServiceDto
 import kotlinx.serialization.json.JsonObject
@@ -15,9 +16,13 @@ class CatalogRepository(private val api: RunGoApi) {
         runCatching { api.getServices().results }
             .onFailure { Log.e(TAG, "getServices failed", it) }
 
-    suspend fun getMerchants(): Result<List<MerchantDto>> =
-        runCatching { api.getMerchants().results }
+    suspend fun getMerchants(cityId: Int? = null): Result<List<MerchantDto>> =
+        runCatching { api.getMerchants(cityId).results }
             .onFailure { Log.e(TAG, "getMerchants failed", it) }
+
+    suspend fun getMerchant(id: Int): Result<MerchantDetailDto> =
+        runCatching { api.getMerchant(id) }
+            .onFailure { Log.e(TAG, "getMerchant failed", it) }
 
     suspend fun getCities(): Result<List<CityDto>> =
         runCatching { api.getCities().results }

@@ -1,10 +1,12 @@
 package dev.batipy.rungo.data.network
 
 import dev.batipy.rungo.data.network.dto.ConfirmDeliveryRequest
+import dev.batipy.rungo.data.network.dto.DeviceTokenRequest
 import dev.batipy.rungo.data.network.dto.EmptyRequestBody
 import dev.batipy.rungo.data.network.dto.LocationCreateRequest
 import dev.batipy.rungo.data.network.dto.LocationDto
 import dev.batipy.rungo.data.network.dto.LoginRequest
+import dev.batipy.rungo.data.network.dto.MerchantDetailDto
 import dev.batipy.rungo.data.network.dto.OrderCreateRequest
 import dev.batipy.rungo.data.network.dto.OrderCreateResponseDto
 import dev.batipy.rungo.data.network.dto.OrderDetailDto
@@ -25,9 +27,11 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.HTTP
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface RunGoApi {
     @POST("api/v1/auth/login/")
@@ -40,7 +44,10 @@ interface RunGoApi {
     suspend fun getServices(): PaginatedServicesDto
 
     @GET("api/v1/merchants/")
-    suspend fun getMerchants(): PaginatedMerchantsDto
+    suspend fun getMerchants(@Query("city") cityId: Int? = null): PaginatedMerchantsDto
+
+    @GET("api/v1/merchants/{id}/")
+    suspend fun getMerchant(@Path("id") id: Int): MerchantDetailDto
 
     @GET("api/v1/orders/")
     suspend fun getOrders(): PaginatedOrdersDto
@@ -85,4 +92,10 @@ interface RunGoApi {
 
     @POST("api/v1/support/")
     suspend fun sendSupport(@Body request: SupportRequest): Response<Void>
+
+    @POST("api/v1/device-token/")
+    suspend fun registerDeviceToken(@Body request: DeviceTokenRequest): Response<Void>
+
+    @HTTP(method = "DELETE", path = "api/v1/device-token/", hasBody = true)
+    suspend fun deleteDeviceToken(@Body request: DeviceTokenRequest): Response<Void>
 }
