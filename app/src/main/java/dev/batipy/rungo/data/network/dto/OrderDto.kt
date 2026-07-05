@@ -10,6 +10,7 @@ data class OrderDto(
     val status: String,
     @SerialName("created_at") val createdAt: String,
     @SerialName("cod_total") val codTotal: String,
+    val currency: String = "usd",
     @SerialName("service_name") val serviceName: String? = null,
     @SerialName("delivery_address") val deliveryAddress: String? = null
 )

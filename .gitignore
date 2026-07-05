@@ -13,3 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Keystores should live outside the repo, but ignore just in case one ends up here
+*.jks
+*.keystore

@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.batipy.rungo.data.network.dto.OrderDto
+import dev.batipy.rungo.ui.common.formatOrderAmount
 import dev.batipy.rungo.ui.theme.RunGoAccent
 import dev.batipy.rungo.ui.theme.RunGoField
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
@@ -175,7 +176,7 @@ private fun OrderCard(order: OrderDto, onClick: () -> Unit) {
                     )
                 }
                 Text(
-                    text = "\$${order.codTotal}",
+                    text = formatOrderAmount(order.codTotal, order.currency),
                     color = RunGoAccent,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleMedium

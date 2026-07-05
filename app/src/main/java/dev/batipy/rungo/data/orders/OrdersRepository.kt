@@ -3,12 +3,26 @@ package dev.batipy.rungo.data.orders
 import android.util.Log
 import dev.batipy.rungo.data.network.RunGoApi
 import dev.batipy.rungo.data.network.dto.ConfirmDeliveryRequest
+import dev.batipy.rungo.data.network.dto.EmptyRequestBody
 import dev.batipy.rungo.data.network.dto.OrderCreateRequest
 import dev.batipy.rungo.data.network.dto.OrderDetailDto
 import dev.batipy.rungo.data.network.dto.OrderDto
 import dev.batipy.rungo.data.network.dto.ReviewCreateRequest
+import retrofit2.HttpException
+import retrofit2.Response
 
 private const val TAG = "OrdersRepository"
+
+/**
+ * Retrofit only auto-throws on a non-2xx response when the return type is the
+ * body itself — for `Response<T>` return types (used here to dodge empty-body
+ * parsing issues) a failed HTTP call completes normally with isSuccessful =
+ * false. Without this check, cancel/confirm/review calls would silently
+ * report success even when the server rejected them.
+ */
+private fun Response<*>.throwIfUnsuccessful() {
+    if (!isSuccessful) throw HttpException(this)
+}
 
 class OrdersRepository(private val api: RunGoApi) {
     suspend fun getRecentOrders(limit: Int = 20): Result<List<OrderDto>> =
@@ -24,17 +38,14 @@ class OrdersRepository(private val api: RunGoApi) {
             .onFailure { Log.e(TAG, "getOrderDetail failed", it) }
 
     suspend fun cancelOrder(id: Int): Result<Unit> =
-        runCatching { api.cancelOrder(id) }
+        runCatching { api.cancelOrder(id, EmptyRequestBody()).throwIfUnsuccessful() }
             .onFailure { Log.e(TAG, "cancelOrder failed", it) }
-            .map {}
 
     suspend fun confirmDelivery(id: Int, paymentMethod: String): Result<Unit> =
-        runCatching { api.confirmDelivery(id, ConfirmDeliveryRequest(paymentMethod)) }
+        runCatching { api.confirmDelivery(id, ConfirmDeliveryRequest(paymentMethod)).throwIfUnsuccessful() }
             .onFailure { Log.e(TAG, "confirmDelivery failed", it) }
-            .map {}
 
     suspend fun submitReview(id: Int, rating: Int, text: String): Result<Unit> =
-        runCatching { api.submitReview(id, ReviewCreateRequest(rating, text)) }
+        runCatching { api.submitReview(id, ReviewCreateRequest(rating, text)).throwIfUnsuccessful() }
             .onFailure { Log.e(TAG, "submitReview failed", it) }
-            .map {}
 }

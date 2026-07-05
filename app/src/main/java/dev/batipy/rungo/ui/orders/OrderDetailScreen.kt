@@ -58,6 +58,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.batipy.rungo.data.network.dto.OrderDetailDto
 import dev.batipy.rungo.data.network.dto.ReviewDto
+import dev.batipy.rungo.ui.common.formatOrderAmount
 import dev.batipy.rungo.ui.theme.RunGoAccent
 import dev.batipy.rungo.ui.theme.RunGoBackground
 import dev.batipy.rungo.ui.theme.RunGoField
@@ -82,7 +83,9 @@ private val deliverySteps = listOf(
     "delivered" to "Доставлен"
 )
 
-private val cancellableStatuses = setOf("new", "confirmed", "in_progress")
+// Server only allows cancelling while status is "new" (rejects with 400 once
+// a courier is assigned/confirmed): "Отменить можно только заказ в статусе «новый»."
+private val cancellableStatuses = setOf("new")
 
 private data class StatusPillStyle(val label: String, val container: Color, val content: Color)
 
@@ -103,12 +106,6 @@ private fun paymentMethodLabel(method: String?): String = when (method) {
     else -> "Оплата наличными курьеру при получении"
 }
 
-private fun currencySymbol(currency: String): String = when (currency) {
-    "try" -> "₺"
-    "syp" -> "S£"
-    else -> "$"
-}
-
 /**
  * The stored balance is in USD, so a non-USD order total needs converting
  * before comparison. If the rate for that currency wasn't available (failed
@@ -120,7 +117,11 @@ private fun hasSufficientBalance(
     userBalance: String?,
     exchangeRates: Map<String, Double>
 ): Boolean {
-    val total = (order.codTotal ?: order.serviceFee)?.toDoubleOrNull() ?: return false
+    val rawTotal = (order.codTotal ?: order.serviceFee)?.toDoubleOrNull() ?: return false
+    // The backend's stored SYP total is 100x inflated (same quirk as its
+    // exchange-rate endpoint), so correct it before converting — exchangeRates
+    // here already has the /100 correction applied (see CatalogRepository).
+    val total = if (order.currency == "syp") rawTotal / 100 else rawTotal
     val balance = userBalance?.toDoubleOrNull() ?: return false
     val totalInUsd = when (order.currency) {
         "usd" -> total
@@ -251,7 +252,7 @@ fun OrderDetailScreen(
                                 ) {
                                     Text(text = "Стоимость услуги", color = RunGoTextSecondary)
                                     Text(
-                                        text = "${currencySymbol(order.currency)}${order.serviceFee ?: order.codTotal ?: "0.00"}",
+                                        text = formatOrderAmount(order.serviceFee ?: order.codTotal, order.currency),
                                         color = RunGoTextPrimary,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -264,7 +265,7 @@ fun OrderDetailScreen(
                                 ) {
                                     Text(text = "К оплате курьеру", color = RunGoTextSecondary, fontWeight = FontWeight.SemiBold)
                                     Text(
-                                        text = "${currencySymbol(order.currency)}${order.codTotal ?: "0.00"}",
+                                        text = formatOrderAmount(order.codTotal, order.currency),
                                         color = RunGoAccent,
                                         fontWeight = FontWeight.Bold,
                                         style = MaterialTheme.typography.titleMedium

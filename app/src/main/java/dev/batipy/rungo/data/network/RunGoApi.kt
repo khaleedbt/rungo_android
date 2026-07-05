@@ -1,6 +1,7 @@
 package dev.batipy.rungo.data.network
 
 import dev.batipy.rungo.data.network.dto.ConfirmDeliveryRequest
+import dev.batipy.rungo.data.network.dto.EmptyRequestBody
 import dev.batipy.rungo.data.network.dto.LoginRequest
 import dev.batipy.rungo.data.network.dto.OrderCreateRequest
 import dev.batipy.rungo.data.network.dto.OrderCreateResponseDto
@@ -49,7 +50,7 @@ interface RunGoApi {
     suspend fun getOrderDetail(@Path("id") id: Int): OrderDetailDto
 
     @POST("api/v1/orders/{id}/cancel/")
-    suspend fun cancelOrder(@Path("id") id: Int): Response<Void>
+    suspend fun cancelOrder(@Path("id") id: Int, @Body request: EmptyRequestBody): Response<Void>
 
     @POST("api/v1/orders/{id}/confirm-delivery/")
     suspend fun confirmDelivery(@Path("id") id: Int, @Body request: ConfirmDeliveryRequest): Response<Void>
@@ -78,7 +79,7 @@ interface RunGoApi {
     suspend fun deleteLocation(@Path("id") id: Int): Response<Void>
 
     @POST("api/v1/auth/request-location/")
-    suspend fun requestLocation(): Response<Void>
+    suspend fun requestLocation(@Body request: EmptyRequestBody): Response<Void>
 
     @POST("api/v1/support/")
     suspend fun sendSupport(@Body request: SupportRequest): Response<Void>
