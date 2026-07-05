@@ -1,8 +1,10 @@
 package dev.batipy.rungo.ui.services
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import dev.batipy.rungo.R
 import dev.batipy.rungo.data.catalog.CatalogRepository
 import dev.batipy.rungo.data.network.dto.ACTIVE_ORDER_STATUSES
 import dev.batipy.rungo.data.network.dto.MerchantDto
@@ -26,7 +28,8 @@ sealed interface ServicesUiState {
 
 class ServicesViewModel(
     private val catalogRepository: CatalogRepository,
-    private val ordersRepository: OrdersRepository
+    private val ordersRepository: OrdersRepository,
+    private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ServicesUiState>(ServicesUiState.Loading)
@@ -63,17 +66,18 @@ class ServicesViewModel(
         return if (services != null && merchants != null) {
             ServicesUiState.Success(services, merchants, activeOrder)
         } else {
-            ServicesUiState.Error("Не удалось загрузить услуги")
+            ServicesUiState.Error(context.getString(R.string.services_load_error))
         }
     }
 
     class Factory(
         private val catalogRepository: CatalogRepository,
-        private val ordersRepository: OrdersRepository
+        private val ordersRepository: OrdersRepository,
+        private val context: Context
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return ServicesViewModel(catalogRepository, ordersRepository) as T
+            return ServicesViewModel(catalogRepository, ordersRepository, context) as T
         }
     }
 }

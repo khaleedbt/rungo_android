@@ -27,8 +27,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.OrderDto
 import dev.batipy.rungo.ui.common.formatOrderAmount
 import dev.batipy.rungo.ui.theme.RunGoAccent
@@ -44,13 +46,14 @@ private val OrderDateFormatter = DateTimeFormatter.ofPattern("d MMMM, HH:mm", Lo
 
 private data class StatusStyle(val label: String, val container: Color, val content: Color)
 
+@Composable
 private fun statusStyle(status: String): StatusStyle = when (status) {
-    "new" -> StatusStyle("Новый", Color(0xFF3A4657), Color(0xFFD7E3F5))
-    "confirmed" -> StatusStyle("Подтверждён", Color(0xFF2E4A73), Color(0xFFBFD9FF))
-    "in_progress" -> StatusStyle("В процессе", Color(0xFF6B5420), Color(0xFFFFE1A6))
-    "in_delivery" -> StatusStyle("В доставке", Color(0xFF6B5420), Color(0xFFFFE1A6))
-    "delivered" -> StatusStyle("Доставлен", Color(0xFFCFF7D9), Color(0xFF1B7A3A))
-    "cancelled" -> StatusStyle("Отменён", Color(0xFF6B2A2A), Color(0xFFFFC2C2))
+    "new" -> StatusStyle(stringResource(R.string.orders_list_status_new), Color(0xFF3A4657), Color(0xFFD7E3F5))
+    "confirmed" -> StatusStyle(stringResource(R.string.orders_list_status_confirmed), Color(0xFF2E4A73), Color(0xFFBFD9FF))
+    "in_progress" -> StatusStyle(stringResource(R.string.orders_list_status_in_progress), Color(0xFF6B5420), Color(0xFFFFE1A6))
+    "in_delivery" -> StatusStyle(stringResource(R.string.orders_list_status_in_delivery), Color(0xFF6B5420), Color(0xFFFFE1A6))
+    "delivered" -> StatusStyle(stringResource(R.string.orders_list_status_delivered), Color(0xFFCFF7D9), Color(0xFF1B7A3A))
+    "cancelled" -> StatusStyle(stringResource(R.string.orders_list_status_cancelled), Color(0xFF6B2A2A), Color(0xFFFFC2C2))
     else -> StatusStyle(status, RunGoField, RunGoTextSecondary)
 }
 
@@ -90,7 +93,7 @@ fun OrdersScreen(
             is OrdersUiState.Success -> {
                 if (uiState.orders.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = "У вас пока нет заказов", color = RunGoTextSecondary)
+                        Text(text = stringResource(R.string.orders_empty), color = RunGoTextSecondary)
                     }
                 } else {
                     LazyColumn(
@@ -100,7 +103,7 @@ fun OrdersScreen(
                     ) {
                         item {
                             Text(
-                                text = "Мои заказы",
+                                text = stringResource(R.string.orders_title),
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold
                             )
@@ -133,7 +136,7 @@ private fun OrderCard(order: OrderDto, onClick: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Заказ #${order.id}",
+                    text = stringResource(R.string.order_number, order.id),
                     fontWeight = FontWeight.Bold,
                     color = RunGoTextPrimary,
                     style = MaterialTheme.typography.titleMedium

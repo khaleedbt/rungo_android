@@ -1,8 +1,10 @@
 package dev.batipy.rungo.ui.orders
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import dev.batipy.rungo.R
 import dev.batipy.rungo.data.catalog.CatalogRepository
 import dev.batipy.rungo.data.network.dto.OrderDetailDto
 import dev.batipy.rungo.data.orders.OrdersRepository
@@ -32,7 +34,8 @@ class OrderDetailViewModel(
     private val orderId: Int,
     private val ordersRepository: OrdersRepository,
     private val profileRepository: ProfileRepository,
-    private val catalogRepository: CatalogRepository
+    private val catalogRepository: CatalogRepository,
+    private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<OrderDetailUiState>(OrderDetailUiState.Loading)
@@ -65,7 +68,7 @@ class OrderDetailViewModel(
 
     private suspend fun fetch(): OrderDetailUiState {
         val order = ordersRepository.getOrderDetail(orderId).getOrNull()
-            ?: return OrderDetailUiState.Error("Не удалось загрузить заказ")
+            ?: return OrderDetailUiState.Error(context.getString(R.string.order_load_error))
         val balance = profileRepository.getMe().getOrNull()?.balance
         // Best-effort: balance is stored in USD, so non-USD orders need this to
         // check whether the balance covers the total; a failed fetch just means
@@ -82,7 +85,7 @@ class OrderDetailViewModel(
                 .onSuccess { load() }
                 .onFailure {
                     _uiState.value = current.copy(cancelling = false)
-                    _message.value = "Не удалось отменить заказ"
+                    _message.value = context.getString(R.string.order_cancel_error)
                 }
         }
     }
@@ -105,7 +108,7 @@ class OrderDetailViewModel(
                 .onSuccess { load() }
                 .onFailure {
                     _uiState.value = current.copy(confirming = false, showingPaymentPicker = false)
-                    _message.value = "Не удалось подтвердить получение"
+                    _message.value = context.getString(R.string.order_confirm_error)
                 }
         }
     }
@@ -123,7 +126,7 @@ class OrderDetailViewModel(
     fun submitReview() {
         val current = _uiState.value as? OrderDetailUiState.Success ?: return
         if (current.reviewRating <= 0) {
-            _message.value = "Поставьте оценку"
+            _message.value = context.getString(R.string.review_rating_required)
             return
         }
         _uiState.value = current.copy(submittingReview = true)
@@ -132,7 +135,7 @@ class OrderDetailViewModel(
                 .onSuccess { load() }
                 .onFailure {
                     _uiState.value = current.copy(submittingReview = false)
-                    _message.value = "Не удалось отправить отзыв"
+                    _message.value = context.getString(R.string.review_submit_error)
                 }
         }
     }
@@ -145,11 +148,12 @@ class OrderDetailViewModel(
         private val orderId: Int,
         private val ordersRepository: OrdersRepository,
         private val profileRepository: ProfileRepository,
-        private val catalogRepository: CatalogRepository
+        private val catalogRepository: CatalogRepository,
+        private val context: Context
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return OrderDetailViewModel(orderId, ordersRepository, profileRepository, catalogRepository) as T
+            return OrderDetailViewModel(orderId, ordersRepository, profileRepository, catalogRepository, context) as T
         }
     }
 }

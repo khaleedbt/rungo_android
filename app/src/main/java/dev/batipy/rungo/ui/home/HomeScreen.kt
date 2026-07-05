@@ -19,12 +19,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import dev.batipy.rungo.R
 import dev.batipy.rungo.data.catalog.CatalogRepository
+import dev.batipy.rungo.data.location.LocationProvider
 import dev.batipy.rungo.data.network.dto.ServiceDto
 import dev.batipy.rungo.data.orders.OrdersRepository
 import dev.batipy.rungo.data.profile.ProfileRepository
@@ -44,12 +49,13 @@ import dev.batipy.rungo.ui.shop.ShopViewModel
 
 private data class HomeTab(val label: String, val icon: ImageVector)
 
-private val homeTabs = listOf(
-    HomeTab("Услуги", Icons.Filled.Menu),
-    HomeTab("Магазин", Icons.Filled.ShoppingCart),
-    HomeTab("Заказы", Icons.AutoMirrored.Filled.Assignment),
-    HomeTab("Корзина", Icons.Filled.ShoppingBag),
-    HomeTab("Профиль", Icons.Filled.Person)
+@Composable
+private fun homeTabs(): List<HomeTab> = listOf(
+    HomeTab(stringResource(R.string.nav_services), Icons.Filled.Menu),
+    HomeTab(stringResource(R.string.nav_shop), Icons.Filled.ShoppingCart),
+    HomeTab(stringResource(R.string.nav_orders), Icons.AutoMirrored.Filled.Assignment),
+    HomeTab(stringResource(R.string.nav_cart), Icons.Filled.ShoppingBag),
+    HomeTab(stringResource(R.string.nav_profile), Icons.Filled.Person)
 )
 
 @Composable
@@ -58,33 +64,42 @@ fun HomeScreen(
     catalogRepository: CatalogRepository,
     ordersRepository: OrdersRepository,
     profileRepository: ProfileRepository,
+    locationProvider: LocationProvider,
     onLogoutClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) }
+    val context = LocalContext.current.applicationContext
+    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     // Set from either the active-order banner on Услуги or a tap on an order
     // in Заказы; overrides whatever tab content would otherwise show.
-    var selectedOrderId by remember { mutableStateOf<Int?>(null) }
+    var selectedOrderId by rememberSaveable { mutableStateOf<Int?>(null) }
 
     // Hoisted (rather than created inside the `when` branch below) so the bottom
     // bar's onClick can trigger a refresh even when tapping a tab you're already on.
     val ordersViewModel: OrdersViewModel = viewModel(
-        factory = OrdersViewModel.Factory(ordersRepository)
+        factory = OrdersViewModel.Factory(ordersRepository, context)
     )
 
     Scaffold(
         modifier = modifier,
         bottomBar = {
             NavigationBar {
-                homeTabs.forEachIndexed { index, tab ->
+                homeTabs().forEachIndexed { index, tab ->
                     NavigationBarItem(
                         selected = selectedTab == index && selectedOrderId == null,
                         onClick = {
+                            // Only refresh when actually navigating to this tab (a
+                            // different tab, or coming back from order detail) —
+                            // re-tapping the tab you're already on shouldn't re-hit
+                            // the network every time.
+                            val isNavigatingHere = selectedTab != index || selectedOrderId != null
                             selectedTab = index
                             selectedOrderId = null
-                            when (index) {
-                                0 -> servicesViewModel.refresh()
-                                2 -> ordersViewModel.refresh()
+                            if (isNavigatingHere) {
+                                when (index) {
+                                    0 -> servicesViewModel.refresh()
+                                    2 -> ordersViewModel.refresh()
+                                }
                             }
                         },
                         icon = { Icon(tab.icon, contentDescription = tab.label) },
@@ -98,7 +113,7 @@ fun HomeScreen(
         if (orderId != null) {
             val orderDetailViewModel: OrderDetailViewModel = viewModel(
                 key = "order-detail-$orderId",
-                factory = OrderDetailViewModel.Factory(orderId, ordersRepository, profileRepository, catalogRepository)
+                factory = OrderDetailViewModel.Factory(orderId, ordersRepository, profileRepository, catalogRepository, context)
             )
             val orderDetailState by orderDetailViewModel.uiState.collectAsState()
             val orderDetailMessage by orderDetailViewModel.message.collectAsState()
@@ -149,7 +164,8 @@ fun HomeScreen(
                         factory = CreateOrderViewModel.Factory(
                             catalogRepository = catalogRepository,
                             profileRepository = profileRepository,
-                            ordersRepository = ordersRepository
+                            ordersRepository = ordersRepository,
+                            context = context
                         )
                     )
                     val orderUiState by createOrderViewModel.uiState.collectAsState()
@@ -182,7 +198,7 @@ fun HomeScreen(
 
             1 -> {
                 val shopViewModel: ShopViewModel = viewModel(
-                    factory = ShopViewModel.Factory(catalogRepository)
+                    factory = ShopViewModel.Factory(catalogRepository, context)
                 )
                 val uiState by shopViewModel.uiState.collectAsState()
                 val isRefreshing by shopViewModel.isRefreshing.collectAsState()
@@ -213,11 +229,12 @@ fun HomeScreen(
 
             4 -> {
                 val profileViewModel: ProfileViewModel = viewModel(
-                    factory = ProfileViewModel.Factory(profileRepository)
+                    factory = ProfileViewModel.Factory(profileRepository, locationProvider, context)
                 )
                 val uiState by profileViewModel.uiState.collectAsState()
                 val message by profileViewModel.message.collectAsState()
                 val isRefreshing by profileViewModel.isRefreshing.collectAsState()
+                val isAddingLocation by profileViewModel.addingLocation.collectAsState()
                 ProfileScreen(
                     uiState = uiState,
                     message = message,
@@ -225,7 +242,9 @@ fun HomeScreen(
                     onRefresh = profileViewModel::refresh,
                     onConsumeMessage = profileViewModel::consumeMessage,
                     onDeleteLocation = profileViewModel::deleteLocation,
-                    onRequestLocation = profileViewModel::requestLocationViaBot,
+                    onRequestLocation = profileViewModel::addCurrentLocation,
+                    isAddingLocation = isAddingLocation,
+                    onLocationPermissionDenied = profileViewModel::locationPermissionDenied,
                     onLanguageSelect = profileViewModel::setLanguage,
                     onSendSupportMessage = profileViewModel::sendSupportMessage,
                     onLogoutClick = onLogoutClick,

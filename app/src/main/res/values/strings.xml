@@ -1,3 +1,143 @@
 <resources>
     <string name="app_name">RunGo</string>
+
+    <!-- Common -->
+    <string name="common_back">Назад</string>
+    <string name="common_cancel">Отмена</string>
+    <string name="order_number">Заказ #%1$d</string>
+    <string name="label_city">Город</string>
+    <string name="label_address">Адрес</string>
+    <string name="label_courier">Курьер</string>
+    <string name="label_service">Услуга</string>
+    <string name="label_login">Логин</string>
+    <string name="label_name">Имя</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_services">Услуги</string>
+    <string name="nav_shop">Магазин</string>
+    <string name="nav_orders">Заказы</string>
+    <string name="nav_cart">Корзина</string>
+    <string name="nav_profile">Профиль</string>
+
+    <!-- Login -->
+    <string name="login_subtitle">Служба доставки</string>
+    <string name="login_username_placeholder">Логин</string>
+    <string name="login_password_placeholder">Пароль</string>
+    <string name="login_button">Войти</string>
+    <string name="login_error_empty">Введите логин и пароль</string>
+    <string name="login_error_invalid">Неверный логин или пароль</string>
+    <string name="login_error_server">Ошибка сервера (%1$d)</string>
+    <string name="login_error_no_connection">Нет соединения с сервером</string>
+
+    <!-- Services -->
+    <string name="service_kind_visit">Выезд к клиенту</string>
+    <string name="service_kind_delivery">Доставка А→Б</string>
+    <string name="services_title">Услуги</string>
+    <string name="services_partners_header">ПАРТНЁРЫ</string>
+    <string name="services_active_order_badge">АКТИВНЫЙ ЗАКАЗ</string>
+    <string name="services_status_new">Новый</string>
+    <string name="services_status_confirmed">Подтверждён</string>
+    <string name="services_status_in_progress">Собирается</string>
+    <string name="services_status_in_delivery">Доставляется</string>
+    <string name="services_price_from">от $%1$s</string>
+    <string name="services_delivery_price">Доставка $%1$s</string>
+    <string name="services_load_error">Не удалось загрузить услуги</string>
+
+    <!-- Create order form -->
+    <string name="order_form_load_error">Не удалось загрузить данные для заказа</string>
+    <string name="order_form_address_required">Укажите город и адрес(а)</string>
+    <string name="order_form_create_error">Не удалось создать заказ</string>
+    <string name="section_city">ГОРОД</string>
+    <string name="section_pickup_address">АДРЕС ПОЛУЧЕНИЯ</string>
+    <string name="section_delivery_address">АДРЕС ДОСТАВКИ</string>
+    <string name="section_your_address">ВАШ АДРЕС</string>
+    <string name="section_comment">КОММЕНТАРИЙ</string>
+    <string name="section_currency">ВАЛЮТА</string>
+    <string name="comment_placeholder">Что нужно сделать?</string>
+    <string name="pickup_placeholder">Откуда забрать</string>
+    <string name="delivery_placeholder">Куда доставить</string>
+    <string name="your_address_placeholder">Ваш адрес</string>
+    <string name="city_dropdown_placeholder">Выберите город</string>
+    <string name="location_label">Локация</string>
+    <string name="manual_entry_chip">✏️ Вручную</string>
+    <string name="service_fee_label">Стоимость услуги</string>
+    <string name="cod_note">Оплата наличными курьеру при получении</string>
+    <string name="create_order_button">Создать заказ</string>
+
+    <!-- Profile -->
+    <string name="profile_title">Профиль</string>
+    <string name="role_client">Клиент</string>
+    <string name="role_operator">Оператор</string>
+    <string name="role_courier">Курьер</string>
+    <string name="role_admin">Администратор</string>
+    <string name="role_partner">Партнёр</string>
+    <string name="profile_logout">Выйти</string>
+    <string name="profile_balance_label">Баланс</string>
+    <string name="profile_location_title">Моя геолокация</string>
+    <string name="profile_location_default_label">Локация %1$d</string>
+    <string name="profile_location_request_button">📍 Добавить текущую геолокацию</string>
+    <string name="profile_location_delete_desc">Удалить</string>
+    <string name="profile_language_label">Язык</string>
+    <string name="profile_support_title">Написать оператору</string>
+    <string name="profile_support_placeholder">Сообщение</string>
+    <string name="profile_support_send">Отправить</string>
+    <string name="profile_load_error">Не удалось загрузить профиль</string>
+    <string name="profile_delete_location_error">Не удалось удалить локацию</string>
+    <string name="profile_location_permission_denied">Нужен доступ к геолокации, чтобы добавить точку</string>
+    <string name="profile_location_request_error">Не удалось отправить запрос</string>
+    <string name="profile_language_change_error">Не удалось сменить язык</string>
+    <string name="profile_support_sent">Сообщение отправлено оператору</string>
+    <string name="profile_support_error">Не удалось отправить сообщение</string>
+
+    <!-- Shop -->
+    <string name="shop_title">Магазин</string>
+    <string name="shop_load_error">Не удалось загрузить магазины</string>
+
+    <!-- Cart -->
+    <string name="cart_empty_message">Корзина пуста. Добавьте товары из магазина.</string>
+    <string name="cart_go_to_shop">В магазин</string>
+
+    <!-- Orders list -->
+    <string name="orders_title">Мои заказы</string>
+    <string name="orders_empty">У вас пока нет заказов</string>
+    <string name="orders_load_error">Не удалось загрузить заказы</string>
+    <string name="orders_list_status_new">Новый</string>
+    <string name="orders_list_status_confirmed">Подтверждён</string>
+    <string name="orders_list_status_in_progress">В процессе</string>
+    <string name="orders_list_status_in_delivery">В доставке</string>
+    <string name="orders_list_status_delivered">Доставлен</string>
+    <string name="orders_list_status_cancelled">Отменён</string>
+
+    <!-- Order detail -->
+    <string name="order_detail_title">Заказ</string>
+    <string name="order_load_error">Не удалось загрузить заказ</string>
+    <string name="order_status_new">Новый</string>
+    <string name="order_status_confirmed">Подтверждён</string>
+    <string name="order_status_in_progress">В пути</string>
+    <string name="order_status_in_delivery">Доставляется</string>
+    <string name="order_status_delivered">Доставлен</string>
+    <string name="order_status_cancelled">Отменён</string>
+    <string name="payment_method_cash">Оплата наличными курьеру при получении</string>
+    <string name="payment_method_shamcash">Оплата через ShamCash</string>
+    <string name="payment_method_balance">Оплата с баланса</string>
+    <string name="section_delivery_status">СТАТУС ДОСТАВКИ</string>
+    <string name="section_payment">ОПЛАТА</string>
+    <string name="payment_cod_total_label">К оплате курьеру</string>
+    <string name="section_review_given">ВАШ ОТЗЫВ</string>
+    <string name="section_review_form">ОСТАВИТЬ ОТЗЫВ</string>
+    <string name="order_received_button">✅ Получил заказ</string>
+    <string name="order_cancel_button">Отменить заказ</string>
+    <string name="rating_star_desc">Оценка %1$d</string>
+    <string name="review_comment_placeholder">Комментарий (необязательно)</string>
+    <string name="review_submit_button">Отправить отзыв</string>
+    <string name="choose_payment_method_title">Выберите способ оплаты</string>
+    <string name="payment_cash_button">💵 Наличными</string>
+    <string name="payment_shamcash_button">📱 ShamCash</string>
+    <string name="payment_balance_button">💰 С баланса</string>
+    <string name="payment_balance_button_with_amount">💰 С баланса (%1$s)</string>
+    <string name="payment_insufficient_balance">Недостаточно средств на балансе</string>
+    <string name="order_cancel_error">Не удалось отменить заказ</string>
+    <string name="order_confirm_error">Не удалось подтвердить получение</string>
+    <string name="review_rating_required">Поставьте оценку</string>
+    <string name="review_submit_error">Не удалось отправить отзыв</string>
 </resources>

@@ -53,9 +53,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.OrderDetailDto
 import dev.batipy.rungo.data.network.dto.ReviewDto
 import dev.batipy.rungo.ui.common.formatOrderAmount
@@ -75,13 +77,7 @@ private val SuccessColor = Color(0xFF4CAF6D)
 private val BalanceColor = Color(0xFF5B3E8C)
 private val DetailDateFormatter = DateTimeFormatter.ofPattern("d MMMM 'в' HH:mm", Locale("ru"))
 
-private val deliverySteps = listOf(
-    "new" to "Новый",
-    "confirmed" to "Подтверждён",
-    "in_progress" to "В пути",
-    "in_delivery" to "Доставляется",
-    "delivered" to "Доставлен"
-)
+private val deliverySteps = listOf("new", "confirmed", "in_progress", "in_delivery", "delivered")
 
 // Server only allows cancelling while status is "new" (rejects with 400 once
 // a courier is assigned/confirmed): "Отменить можно только заказ в статусе «новый»."
@@ -89,21 +85,32 @@ private val cancellableStatuses = setOf("new")
 
 private data class StatusPillStyle(val label: String, val container: Color, val content: Color)
 
+@Composable
+private fun stepLabel(status: String): String = when (status) {
+    "new" -> stringResource(R.string.order_status_new)
+    "confirmed" -> stringResource(R.string.order_status_confirmed)
+    "in_progress" -> stringResource(R.string.order_status_in_progress)
+    "in_delivery" -> stringResource(R.string.order_status_in_delivery)
+    "delivered" -> stringResource(R.string.order_status_delivered)
+    else -> status
+}
+
+@Composable
 private fun statusPillStyle(status: String): StatusPillStyle = when (status) {
-    "new" -> StatusPillStyle("Новый", Color(0xFF3A4657), Color(0xFFD7E3F5))
-    "confirmed" -> StatusPillStyle("Подтверждён", Color(0xFF2E4A73), Color(0xFFBFD9FF))
-    "in_progress" -> StatusPillStyle("В пути", Color(0xFF6B5420), Color(0xFFFFE1A6))
-    "in_delivery" -> StatusPillStyle("Доставляется", Color(0xFF6B5420), Color(0xFFFFE1A6))
-    "delivered" -> StatusPillStyle("Доставлен", Color(0xFFCFF7D9), Color(0xFF1B7A3A))
-    "cancelled" -> StatusPillStyle("Отменён", Color(0xFF6B2A2A), Color(0xFFFFC2C2))
+    "new" -> StatusPillStyle(stringResource(R.string.order_status_new), Color(0xFF3A4657), Color(0xFFD7E3F5))
+    "confirmed" -> StatusPillStyle(stringResource(R.string.order_status_confirmed), Color(0xFF2E4A73), Color(0xFFBFD9FF))
+    "in_progress" -> StatusPillStyle(stringResource(R.string.order_status_in_progress), Color(0xFF6B5420), Color(0xFFFFE1A6))
+    "in_delivery" -> StatusPillStyle(stringResource(R.string.order_status_in_delivery), Color(0xFF6B5420), Color(0xFFFFE1A6))
+    "delivered" -> StatusPillStyle(stringResource(R.string.order_status_delivered), Color(0xFFCFF7D9), Color(0xFF1B7A3A))
+    "cancelled" -> StatusPillStyle(stringResource(R.string.order_status_cancelled), Color(0xFF6B2A2A), Color(0xFFFFC2C2))
     else -> StatusPillStyle(status, RunGoField, RunGoTextSecondary)
 }
 
+@Composable
 private fun paymentMethodLabel(method: String?): String = when (method) {
-    "cash" -> "Оплата наличными курьеру при получении"
-    "shamcash" -> "Оплата через ShamCash"
-    "balance" -> "Оплата с баланса"
-    else -> "Оплата наличными курьеру при получении"
+    "shamcash" -> stringResource(R.string.payment_method_shamcash)
+    "balance" -> stringResource(R.string.payment_method_balance)
+    else -> stringResource(R.string.payment_method_cash)
 }
 
 /**
@@ -171,17 +178,17 @@ fun OrderDetailScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         when (uiState) {
             is OrderDetailUiState.Loading -> {
-                HeaderBar(title = "Заказ", subtitle = null, statusStyle = null, onBack = onBack)
+                HeaderBar(title = stringResource(R.string.order_detail_title), subtitle = null, statusStyle = null, onBack = onBack)
             }
 
             is OrderDetailUiState.Error -> {
-                HeaderBar(title = "Заказ", subtitle = null, statusStyle = null, onBack = onBack)
+                HeaderBar(title = stringResource(R.string.order_detail_title), subtitle = null, statusStyle = null, onBack = onBack)
             }
 
             is OrderDetailUiState.Success -> {
                 val order = uiState.order
                 HeaderBar(
-                    title = "Заказ #${order.id}",
+                    title = stringResource(R.string.order_number, order.id),
                     subtitle = formatDetailDate(order.createdAt),
                     statusStyle = statusPillStyle(order.status),
                     onBack = onBack
@@ -216,7 +223,7 @@ fun OrderDetailScreen(
                 ) {
                     if (order.status != "cancelled") {
                         item {
-                            SectionCard(title = "СТАТУС ДОСТАВКИ") {
+                            SectionCard(title = stringResource(R.string.section_delivery_status)) {
                                 DeliveryStepper(currentStatus = order.status)
                             }
                         }
@@ -225,32 +232,32 @@ fun OrderDetailScreen(
                         SectionCard(title = null) {
                             Column {
                                 if (order.serviceName != null) {
-                                    InfoRow("Услуга", order.serviceName)
+                                    InfoRow(stringResource(R.string.label_service), order.serviceName)
                                     Spacer(modifier = Modifier.height(12.dp))
                                 }
                                 if (order.cityName != null) {
-                                    InfoRow("Город", order.cityName)
+                                    InfoRow(stringResource(R.string.label_city), order.cityName)
                                     Spacer(modifier = Modifier.height(12.dp))
                                 }
                                 if (order.deliveryAddress != null) {
-                                    InfoRow("Адрес", order.deliveryAddress)
+                                    InfoRow(stringResource(R.string.label_address), order.deliveryAddress)
                                 }
                                 val courierName = order.courierDisplayName
                                 if (courierName != null) {
                                     Spacer(modifier = Modifier.height(12.dp))
-                                    InfoRow("Курьер", courierName)
+                                    InfoRow(stringResource(R.string.label_courier), courierName)
                                 }
                             }
                         }
                     }
                     item {
-                        SectionCard(title = "ОПЛАТА") {
+                        SectionCard(title = stringResource(R.string.section_payment)) {
                             Column {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Text(text = "Стоимость услуги", color = RunGoTextSecondary)
+                                    Text(text = stringResource(R.string.service_fee_label), color = RunGoTextSecondary)
                                     Text(
                                         text = formatOrderAmount(order.serviceFee ?: order.codTotal, order.currency),
                                         color = RunGoTextPrimary,
@@ -263,7 +270,7 @@ fun OrderDetailScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(text = "К оплате курьеру", color = RunGoTextSecondary, fontWeight = FontWeight.SemiBold)
+                                    Text(text = stringResource(R.string.payment_cod_total_label), color = RunGoTextSecondary, fontWeight = FontWeight.SemiBold)
                                     Text(
                                         text = formatOrderAmount(order.codTotal, order.currency),
                                         color = RunGoAccent,
@@ -284,11 +291,11 @@ fun OrderDetailScreen(
                         item {
                             val review = order.review
                             if (review != null) {
-                                SectionCard(title = "ВАШ ОТЗЫВ") {
+                                SectionCard(title = stringResource(R.string.section_review_given)) {
                                     ReviewSummary(review)
                                 }
                             } else {
-                                SectionCard(title = "ОСТАВИТЬ ОТЗЫВ") {
+                                SectionCard(title = stringResource(R.string.section_review_form)) {
                                     ReviewForm(
                                         rating = uiState.reviewRating,
                                         text = uiState.reviewText,
@@ -328,7 +335,7 @@ fun OrderDetailScreen(
                                     shape = MaterialTheme.shapes.large,
                                     colors = ButtonDefaults.buttonColors(containerColor = SuccessColor)
                                 ) {
-                                    Text("✅ Получил заказ", fontWeight = FontWeight.SemiBold, color = Color.White)
+                                    Text(stringResource(R.string.order_received_button), fontWeight = FontWeight.SemiBold, color = Color.White)
                                 }
                             }
                         }
@@ -347,7 +354,7 @@ fun OrderDetailScreen(
                                 if (uiState.cancelling) {
                                     CircularProgressIndicator(modifier = Modifier.size(20.dp), color = ErrorColor, strokeWidth = 2.dp)
                                 } else {
-                                    Text("Отменить заказ", fontWeight = FontWeight.SemiBold)
+                                    Text(stringResource(R.string.order_cancel_button), fontWeight = FontWeight.SemiBold)
                                 }
                             }
                         }
@@ -386,7 +393,7 @@ private fun HeaderBar(
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                contentDescription = "Назад",
+                contentDescription = stringResource(R.string.common_back),
                 tint = RunGoTextPrimary
             )
         }
@@ -456,7 +463,7 @@ private fun InfoRow(label: String, value: String) {
 
 @Composable
 private fun DeliveryStepper(currentStatus: String) {
-    val currentIndex = deliverySteps.indexOfFirst { it.first == currentStatus }.coerceAtLeast(0)
+    val currentIndex = deliverySteps.indexOfFirst { it == currentStatus }.coerceAtLeast(0)
 
     val activeStepPulse = rememberInfiniteTransition(label = "activeStepPulse")
     val pulseAlpha by activeStepPulse.animateFloat(
@@ -482,7 +489,8 @@ private fun DeliveryStepper(currentStatus: String) {
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Top
     ) {
-        deliverySteps.forEachIndexed { index, (_, label) ->
+        deliverySteps.forEachIndexed { index, status ->
+            val label = stepLabel(status)
             val completed = index < currentIndex
             val active = index == currentIndex
             val circleColor by animateColorAsState(
@@ -569,7 +577,7 @@ private fun ReviewForm(
             for (star in 1..5) {
                 Icon(
                     imageVector = Icons.Filled.Star,
-                    contentDescription = "Оценка $star",
+                    contentDescription = stringResource(R.string.rating_star_desc, star),
                     tint = if (star <= rating) Color(0xFFFFC107) else RunGoTextSecondary.copy(alpha = 0.4f),
                     modifier = Modifier
                         .size(32.dp)
@@ -582,7 +590,7 @@ private fun ReviewForm(
             value = text,
             onValueChange = onTextChange,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Комментарий (необязательно)", color = RunGoPlaceholder) },
+            placeholder = { Text(stringResource(R.string.review_comment_placeholder), color = RunGoPlaceholder) },
             minLines = 2,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = RunGoBackground,
@@ -604,7 +612,7 @@ private fun ReviewForm(
             if (submitting) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
             } else {
-                Text("Отправить отзыв", fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.review_submit_button), fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -620,7 +628,7 @@ private fun PaymentMethodPicker(
 ) {
     Column {
         Text(
-            text = "Выберите способ оплаты",
+            text = stringResource(R.string.choose_payment_method_title),
             color = RunGoTextSecondary,
             style = MaterialTheme.typography.labelLarge,
             textAlign = TextAlign.Center,
@@ -628,28 +636,32 @@ private fun PaymentMethodPicker(
         )
         Spacer(modifier = Modifier.height(16.dp))
         PaymentMethodButton(
-            label = "💵 Наличными",
+            label = stringResource(R.string.payment_cash_button),
             color = SuccessColor,
             enabled = !confirming,
             onClick = { onSelect("cash") }
         )
         Spacer(modifier = Modifier.height(10.dp))
         PaymentMethodButton(
-            label = "📱 ShamCash",
+            label = stringResource(R.string.payment_shamcash_button),
             color = RunGoAccent,
             enabled = !confirming,
             onClick = { onSelect("shamcash") }
         )
         Spacer(modifier = Modifier.height(10.dp))
         PaymentMethodButton(
-            label = if (userBalance != null) "💰 С баланса ($userBalance)" else "💰 С баланса",
+            label = if (userBalance != null) {
+                stringResource(R.string.payment_balance_button_with_amount, userBalance)
+            } else {
+                stringResource(R.string.payment_balance_button)
+            },
             color = BalanceColor,
             enabled = !confirming && balanceSufficient,
             onClick = { onSelect("balance") }
         )
         if (!balanceSufficient) {
             Text(
-                text = "Недостаточно средств на балансе",
+                text = stringResource(R.string.payment_insufficient_balance),
                 color = RunGoTextSecondary,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 4.dp)
@@ -665,7 +677,7 @@ private fun PaymentMethodPicker(
             shape = MaterialTheme.shapes.large,
             colors = ButtonDefaults.outlinedButtonColors(contentColor = RunGoTextSecondary)
         ) {
-            Text("Отмена")
+            Text(stringResource(R.string.common_cancel))
         }
         if (confirming) {
             Spacer(modifier = Modifier.height(12.dp))

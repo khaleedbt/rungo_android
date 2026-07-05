@@ -2,13 +2,14 @@ package dev.batipy.rungo.data.profile
 
 import android.util.Log
 import dev.batipy.rungo.data.network.RunGoApi
-import dev.batipy.rungo.data.network.dto.EmptyRequestBody
+import dev.batipy.rungo.data.network.dto.LocationCreateRequest
 import dev.batipy.rungo.data.network.dto.LocationDto
 import dev.batipy.rungo.data.network.dto.SupportRequest
 import dev.batipy.rungo.data.network.dto.UpdateLangRequest
 import dev.batipy.rungo.data.network.dto.UserDto
 import retrofit2.HttpException
 import retrofit2.Response
+import java.util.Locale
 
 private const val TAG = "ProfileRepository"
 
@@ -33,9 +34,15 @@ class ProfileRepository(private val api: RunGoApi) {
         runCatching { api.deleteLocation(id).throwIfUnsuccessful() }
             .onFailure { Log.e(TAG, "deleteLocation failed", it) }
 
-    suspend fun requestLocationViaBot(): Result<Unit> =
-        runCatching { api.requestLocation(EmptyRequestBody()).throwIfUnsuccessful() }
-            .onFailure { Log.e(TAG, "requestLocation failed", it) }
+    suspend fun createLocation(latitude: Double, longitude: Double): Result<LocationDto> =
+        runCatching {
+            api.createLocation(
+                LocationCreateRequest(
+                    latitude = String.format(Locale.US, "%.6f", latitude),
+                    longitude = String.format(Locale.US, "%.6f", longitude)
+                )
+            )
+        }.onFailure { Log.e(TAG, "createLocation failed", it) }
 
     suspend fun updateLanguage(lang: String): Result<UserDto> =
         runCatching { api.updateMe(UpdateLangRequest(lang)) }

@@ -1,5 +1,7 @@
 package dev.batipy.rungo.data.auth
 
+import android.content.Context
+import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.RunGoApi
 import dev.batipy.rungo.data.network.dto.LoginRequest
 import retrofit2.HttpException
@@ -12,7 +14,8 @@ sealed interface LoginResult {
 
 class AuthRepository(
     private val api: RunGoApi,
-    private val tokenStore: TokenStore
+    private val tokenStore: TokenStore,
+    private val context: Context
 ) {
     suspend fun login(username: String, password: String): LoginResult {
         return try {
@@ -21,13 +24,13 @@ class AuthRepository(
             LoginResult.Success
         } catch (e: HttpException) {
             val message = if (e.code() == 401) {
-                "Неверный логин или пароль"
+                context.getString(R.string.login_error_invalid)
             } else {
-                "Ошибка сервера (${e.code()})"
+                context.getString(R.string.login_error_server, e.code())
             }
             LoginResult.Error(message)
         } catch (e: IOException) {
-            LoginResult.Error("Нет соединения с сервером")
+            LoginResult.Error(context.getString(R.string.login_error_no_connection))
         }
     }
 

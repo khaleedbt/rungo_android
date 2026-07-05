@@ -1,8 +1,10 @@
 package dev.batipy.rungo.ui.login
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import dev.batipy.rungo.R
 import dev.batipy.rungo.data.auth.AuthRepository
 import dev.batipy.rungo.data.auth.LoginResult
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,14 +19,17 @@ sealed interface LoginUiState {
     data class Error(val message: String) : LoginUiState
 }
 
-class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
+class LoginViewModel(
+    private val authRepository: AuthRepository,
+    private val context: Context
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     fun login(username: String, password: String) {
         if (username.isBlank() || password.isBlank()) {
-            _uiState.value = LoginUiState.Error("Введите логин и пароль")
+            _uiState.value = LoginUiState.Error(context.getString(R.string.login_error_empty))
             return
         }
         _uiState.value = LoginUiState.Loading
@@ -36,10 +41,13 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
         }
     }
 
-    class Factory(private val authRepository: AuthRepository) : ViewModelProvider.Factory {
+    class Factory(
+        private val authRepository: AuthRepository,
+        private val context: Context
+    ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return LoginViewModel(authRepository) as T
+            return LoginViewModel(authRepository, context) as T
         }
     }
 }

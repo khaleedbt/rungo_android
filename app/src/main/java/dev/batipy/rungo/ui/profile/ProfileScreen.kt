@@ -1,8 +1,12 @@
 package dev.batipy.rungo.ui.profile
 
+import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -54,8 +58,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.LocationDto
 import dev.batipy.rungo.data.network.dto.UserDto
 import dev.batipy.rungo.ui.theme.RunGoAccent
@@ -65,12 +72,13 @@ import dev.batipy.rungo.ui.theme.RunGoTextSecondary
 
 private val ErrorColor = Color(0xFFFF6B6B)
 
+@Composable
 private fun roleLabel(role: String) = when (role) {
-    "client" -> "Клиент"
-    "operator" -> "Оператор"
-    "courier" -> "Курьер"
-    "admin" -> "Администратор"
-    "partner" -> "Партнёр"
+    "client" -> stringResource(R.string.role_client)
+    "operator" -> stringResource(R.string.role_operator)
+    "courier" -> stringResource(R.string.role_courier)
+    "admin" -> stringResource(R.string.role_admin)
+    "partner" -> stringResource(R.string.role_partner)
     else -> role
 }
 
@@ -92,6 +100,8 @@ fun ProfileScreen(
     onConsumeMessage: () -> Unit,
     onDeleteLocation: (Int) -> Unit,
     onRequestLocation: () -> Unit,
+    isAddingLocation: Boolean = false,
+    onLocationPermissionDenied: () -> Unit = {},
     onLanguageSelect: (String) -> Unit,
     onSendSupportMessage: (String) -> Unit,
     onLogoutClick: () -> Unit,
@@ -121,7 +131,17 @@ fun ProfileScreen(
 
             is ProfileUiState.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = uiState.message, color = RunGoTextSecondary)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = uiState.message, color = RunGoTextSecondary)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedButton(
+                            onClick = onLogoutClick,
+                            border = BorderStroke(1.dp, ErrorColor),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorColor)
+                        ) {
+                            Text(stringResource(R.string.profile_logout))
+                        }
+                    }
                 }
             }
 
@@ -133,7 +153,7 @@ fun ProfileScreen(
                 ) {
                     item {
                         Text(
-                            text = "Профиль",
+                            text = stringResource(R.string.profile_title),
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
@@ -144,7 +164,9 @@ fun ProfileScreen(
                         LocationsCard(
                             locations = uiState.locations,
                             onDeleteLocation = onDeleteLocation,
-                            onRequestLocation = onRequestLocation
+                            onRequestLocation = onRequestLocation,
+                            isAddingLocation = isAddingLocation,
+                            onPermissionDenied = onLocationPermissionDenied
                         )
                     }
                     item {
@@ -161,7 +183,7 @@ fun ProfileScreen(
                             border = BorderStroke(1.dp, ErrorColor),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorColor)
                         ) {
-                            Text("Выйти")
+                            Text(stringResource(R.string.profile_logout))
                         }
                     }
                 }
@@ -221,11 +243,11 @@ private fun UserCard(user: UserDto) {
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            ProfileFieldRow("Логин", user.username)
+            ProfileFieldRow(stringResource(R.string.label_login), user.username)
             HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-            ProfileFieldRow("Имя", user.fullName)
+            ProfileFieldRow(stringResource(R.string.label_name), user.fullName)
             HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-            ProfileFieldRow("Город", user.cityName)
+            ProfileFieldRow(stringResource(R.string.label_city), user.cityName)
         }
     }
 }
@@ -249,7 +271,7 @@ private fun BalanceCard(balance: String) {
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = "Баланс", color = RunGoTextSecondary)
+            Text(text = stringResource(R.string.profile_balance_label), color = RunGoTextSecondary)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(top = 8.dp)
@@ -275,9 +297,14 @@ private fun BalanceCard(balance: String) {
 private fun LocationsCard(
     locations: List<LocationDto>,
     onDeleteLocation: (Int) -> Unit,
-    onRequestLocation: () -> Unit
+    onRequestLocation: () -> Unit,
+    isAddingLocation: Boolean = false,
+    onPermissionDenied: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted -> if (granted) onRequestLocation() else onPermissionDenied() }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -285,7 +312,7 @@ private fun LocationsCard(
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = "Моя геолокация", color = RunGoTextSecondary)
+            Text(text = stringResource(R.string.profile_location_title), color = RunGoTextSecondary)
             Spacer(modifier = Modifier.height(12.dp))
             locations.forEachIndexed { index, location ->
                 LocationRow(
@@ -307,12 +334,26 @@ private fun LocationsCard(
             }
             Spacer(modifier = Modifier.height(12.dp))
             Button(
-                onClick = onRequestLocation,
+                onClick = {
+                    val hasPermission = ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED
+                    if (hasPermission) {
+                        onRequestLocation()
+                    } else {
+                        permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                    }
+                },
+                enabled = !isAddingLocation,
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text("📍 Отправить геолокацию через бот", fontWeight = FontWeight.SemiBold)
+                if (isAddingLocation) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                } else {
+                    Text(stringResource(R.string.profile_location_request_button), fontWeight = FontWeight.SemiBold)
+                }
             }
         }
     }
@@ -342,7 +383,7 @@ private fun LocationRow(
                     .clickable(onClick = onOpenMap)
             ) {
                 Text(
-                    text = location.label.ifBlank { "Локация ${index + 1}" },
+                    text = location.label.ifBlank { stringResource(R.string.profile_location_default_label, index + 1) },
                     color = RunGoAccent,
                     fontWeight = FontWeight.Bold
                 )
@@ -355,7 +396,7 @@ private fun LocationRow(
             IconButton(onClick = onDelete) {
                 Icon(
                     imageVector = Icons.Filled.Close,
-                    contentDescription = "Удалить",
+                    contentDescription = stringResource(R.string.profile_location_delete_desc),
                     tint = ErrorColor
                 )
             }
@@ -374,7 +415,7 @@ private fun LanguageCard(
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = "Язык", color = RunGoTextSecondary)
+            Text(text = stringResource(R.string.profile_language_label), color = RunGoTextSecondary)
             Spacer(modifier = Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 languageOptions.forEach { option ->
@@ -430,7 +471,7 @@ private fun SupportRow(onSendSupportMessage: (String) -> Unit) {
                         tint = RunGoTextSecondary
                     )
                     Text(
-                        text = "Написать оператору",
+                        text = stringResource(R.string.profile_support_title),
                         color = RunGoTextPrimary,
                         modifier = Modifier.padding(start = 12.dp)
                     )
@@ -447,7 +488,7 @@ private fun SupportRow(onSendSupportMessage: (String) -> Unit) {
                     value = text,
                     onValueChange = { text = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Сообщение") },
+                    placeholder = { Text(stringResource(R.string.profile_support_placeholder)) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = RunGoField,
                         unfocusedContainerColor = RunGoField
@@ -463,7 +504,7 @@ private fun SupportRow(onSendSupportMessage: (String) -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Text("Отправить")
+                    Text(stringResource(R.string.profile_support_send))
                 }
             }
         }

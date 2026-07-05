@@ -29,9 +29,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.batipy.rungo.R
 import dev.batipy.rungo.ui.theme.RunGoField
 import dev.batipy.rungo.ui.theme.RunGoPlaceholder
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
@@ -67,7 +69,7 @@ fun LoginScreen(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Служба доставки",
+                text = stringResource(R.string.login_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
                 color = RunGoTextSecondary
             )
@@ -76,7 +78,7 @@ fun LoginScreen(
                 value = username,
                 onValueChange = { username = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Логин", color = RunGoPlaceholder) },
+                placeholder = { Text(stringResource(R.string.login_username_placeholder), color = RunGoPlaceholder) },
                 singleLine = true,
                 enabled = !isLoading,
                 shape = MaterialTheme.shapes.large,
@@ -87,7 +89,7 @@ fun LoginScreen(
                 value = password,
                 onValueChange = { password = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Пароль", color = RunGoPlaceholder) },
+                placeholder = { Text(stringResource(R.string.login_password_placeholder), color = RunGoPlaceholder) },
                 singleLine = true,
                 enabled = !isLoading,
                 visualTransformation = PasswordVisualTransformation(),
@@ -122,7 +124,7 @@ fun LoginScreen(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text(text = "Войти", fontWeight = FontWeight.SemiBold)
+                    Text(text = stringResource(R.string.login_button), fontWeight = FontWeight.SemiBold)
                 }
             }
         }

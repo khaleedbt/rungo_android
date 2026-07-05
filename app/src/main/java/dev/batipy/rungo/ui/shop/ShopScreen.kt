@@ -23,9 +23,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.MerchantDto
 import dev.batipy.rungo.ui.theme.RunGoField
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
@@ -65,7 +67,7 @@ fun ShopScreen(
                 ) {
                     item {
                         Text(
-                            text = "Магазин",
+                            text = stringResource(R.string.shop_title),
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )

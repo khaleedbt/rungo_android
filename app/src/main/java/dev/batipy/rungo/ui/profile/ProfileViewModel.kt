@@ -1,8 +1,13 @@
 package dev.batipy.rungo.ui.profile
 
+import android.content.Context
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import dev.batipy.rungo.R
+import dev.batipy.rungo.data.location.LocationProvider
 import dev.batipy.rungo.data.network.dto.LocationDto
 import dev.batipy.rungo.data.network.dto.UserDto
 import dev.batipy.rungo.data.profile.ProfileRepository
@@ -17,13 +22,20 @@ sealed interface ProfileUiState {
     data class Error(val message: String) : ProfileUiState
 }
 
-class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() {
+class ProfileViewModel(
+    private val repository: ProfileRepository,
+    private val locationProvider: LocationProvider,
+    private val context: Context
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    private val _addingLocation = MutableStateFlow(false)
+    val addingLocation: StateFlow<Boolean> = _addingLocation.asStateFlow()
 
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()
@@ -53,7 +65,7 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
         return if (user != null && locations != null) {
             ProfileUiState.Success(user, locations)
         } else {
-            ProfileUiState.Error("Не удалось загрузить профиль")
+            ProfileUiState.Error(context.getString(R.string.profile_load_error))
         }
     }
 
@@ -64,24 +76,41 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
                 .onSuccess {
                     _uiState.value = current.copy(locations = current.locations.filterNot { it.id == id })
                 }
-                .onFailure { _message.value = "Не удалось удалить локацию" }
+                .onFailure { _message.value = context.getString(R.string.profile_delete_location_error) }
         }
     }
 
-    fun requestLocationViaBot() {
+    fun addCurrentLocation() {
+        val current = _uiState.value as? ProfileUiState.Success ?: return
+        _addingLocation.value = true
         viewModelScope.launch {
-            repository.requestLocationViaBot()
-                .onSuccess { _message.value = "Запрос отправлен в Telegram-бот" }
-                .onFailure { _message.value = "Не удалось отправить запрос" }
+            val coords = locationProvider.getCurrentLocation()
+            if (coords == null) {
+                _addingLocation.value = false
+                _message.value = context.getString(R.string.profile_location_request_error)
+                return@launch
+            }
+            val (latitude, longitude) = coords
+            repository.createLocation(latitude, longitude)
+                .onSuccess { newLocation ->
+                    _uiState.value = current.copy(locations = current.locations + newLocation)
+                }
+                .onFailure { _message.value = context.getString(R.string.profile_location_request_error) }
+            _addingLocation.value = false
         }
+    }
+
+    fun locationPermissionDenied() {
+        _message.value = context.getString(R.string.profile_location_permission_denied)
     }
 
     fun setLanguage(lang: String) {
         val current = _uiState.value as? ProfileUiState.Success ?: return
+        AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lang))
         viewModelScope.launch {
             repository.updateLanguage(lang)
                 .onSuccess { updatedUser -> _uiState.value = current.copy(user = updatedUser) }
-                .onFailure { _message.value = "Не удалось сменить язык" }
+                .onFailure { _message.value = context.getString(R.string.profile_language_change_error) }
         }
     }
 
@@ -89,8 +118,8 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
         if (text.isBlank()) return
         viewModelScope.launch {
             repository.sendSupportMessage(text)
-                .onSuccess { _message.value = "Сообщение отправлено оператору" }
-                .onFailure { _message.value = "Не удалось отправить сообщение" }
+                .onSuccess { _message.value = context.getString(R.string.profile_support_sent) }
+                .onFailure { _message.value = context.getString(R.string.profile_support_error) }
         }
     }
 
@@ -98,10 +127,14 @@ class ProfileViewModel(private val repository: ProfileRepository) : ViewModel() 
         _message.value = null
     }
 
-    class Factory(private val repository: ProfileRepository) : ViewModelProvider.Factory {
+    class Factory(
+        private val repository: ProfileRepository,
+        private val locationProvider: LocationProvider,
+        private val context: Context
+    ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return ProfileViewModel(repository) as T
+            return ProfileViewModel(repository, locationProvider, context) as T
         }
     }
 }

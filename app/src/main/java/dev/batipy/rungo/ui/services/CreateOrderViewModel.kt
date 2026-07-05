@@ -1,8 +1,10 @@
 package dev.batipy.rungo.ui.services
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import dev.batipy.rungo.R
 import dev.batipy.rungo.data.catalog.CatalogRepository
 import dev.batipy.rungo.data.network.dto.CityDto
 import dev.batipy.rungo.data.network.dto.LocationDto
@@ -39,7 +41,8 @@ sealed interface CreateOrderUiState {
 class CreateOrderViewModel(
     private val catalogRepository: CatalogRepository,
     private val profileRepository: ProfileRepository,
-    private val ordersRepository: OrdersRepository
+    private val ordersRepository: OrdersRepository,
+    private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CreateOrderUiState>(CreateOrderUiState.Loading)
@@ -63,7 +66,7 @@ class CreateOrderViewModel(
             val exchangeRates = catalogRepository.getExchangeRates().getOrDefault(emptyMap())
 
             if (cities == null || locations == null) {
-                _uiState.value = CreateOrderUiState.LoadError("Не удалось загрузить данные для заказа")
+                _uiState.value = CreateOrderUiState.LoadError(context.getString(R.string.order_form_load_error))
                 return@launch
             }
 
@@ -121,7 +124,7 @@ class CreateOrderViewModel(
         }
 
         if (cityId == null || dropoffAddress.isBlank() || (isDelivery && pickupAddress.isBlank())) {
-            _uiState.value = state.copy(error = "Укажите город и адрес(а)")
+            _uiState.value = state.copy(error = context.getString(R.string.order_form_address_required))
             return
         }
 
@@ -142,7 +145,7 @@ class CreateOrderViewModel(
             ordersRepository.createOrder(request)
                 .onSuccess { _orderCreated.value = true }
                 .onFailure {
-                    _uiState.value = state.copy(submitting = false, error = "Не удалось создать заказ")
+                    _uiState.value = state.copy(submitting = false, error = context.getString(R.string.order_form_create_error))
                 }
         }
     }
@@ -155,11 +158,12 @@ class CreateOrderViewModel(
     class Factory(
         private val catalogRepository: CatalogRepository,
         private val profileRepository: ProfileRepository,
-        private val ordersRepository: OrdersRepository
+        private val ordersRepository: OrdersRepository,
+        private val context: Context
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return CreateOrderViewModel(catalogRepository, profileRepository, ordersRepository) as T
+            return CreateOrderViewModel(catalogRepository, profileRepository, ordersRepository, context) as T
         }
     }
 }

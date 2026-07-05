@@ -1,8 +1,10 @@
 package dev.batipy.rungo.ui.orders
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.OrderDto
 import dev.batipy.rungo.data.orders.OrdersRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +18,10 @@ sealed interface OrdersUiState {
     data class Error(val message: String) : OrdersUiState
 }
 
-class OrdersViewModel(private val ordersRepository: OrdersRepository) : ViewModel() {
+class OrdersViewModel(
+    private val ordersRepository: OrdersRepository,
+    private val context: Context
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<OrdersUiState>(OrdersUiState.Loading)
     val uiState: StateFlow<OrdersUiState> = _uiState.asStateFlow()
@@ -45,13 +50,16 @@ class OrdersViewModel(private val ordersRepository: OrdersRepository) : ViewMode
 
     private suspend fun fetch(): OrdersUiState = ordersRepository.getRecentOrders(limit = 20).fold(
         onSuccess = { OrdersUiState.Success(it) },
-        onFailure = { OrdersUiState.Error("Не удалось загрузить заказы") }
+        onFailure = { OrdersUiState.Error(context.getString(R.string.orders_load_error)) }
     )
 
-    class Factory(private val ordersRepository: OrdersRepository) : ViewModelProvider.Factory {
+    class Factory(
+        private val ordersRepository: OrdersRepository,
+        private val context: Context
+    ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return OrdersViewModel(ordersRepository) as T
+            return OrdersViewModel(ordersRepository, context) as T
         }
     }
 }

@@ -2,6 +2,8 @@ package dev.batipy.rungo.data.network
 
 import dev.batipy.rungo.data.network.dto.ConfirmDeliveryRequest
 import dev.batipy.rungo.data.network.dto.EmptyRequestBody
+import dev.batipy.rungo.data.network.dto.LocationCreateRequest
+import dev.batipy.rungo.data.network.dto.LocationDto
 import dev.batipy.rungo.data.network.dto.LoginRequest
 import dev.batipy.rungo.data.network.dto.OrderCreateRequest
 import dev.batipy.rungo.data.network.dto.OrderCreateResponseDto
@@ -78,8 +80,8 @@ interface RunGoApi {
     @DELETE("api/v1/locations/{id}/")
     suspend fun deleteLocation(@Path("id") id: Int): Response<Void>
 
-    @POST("api/v1/auth/request-location/")
-    suspend fun requestLocation(@Body request: EmptyRequestBody): Response<Void>
+    @POST("api/v1/locations/")
+    suspend fun createLocation(@Body request: LocationCreateRequest): LocationDto
 
     @POST("api/v1/support/")
     suspend fun sendSupport(@Body request: SupportRequest): Response<Void>

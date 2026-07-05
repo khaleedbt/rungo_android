@@ -1,0 +1,143 @@
+<resources>
+    <string name="app_name">RunGo</string>
+
+    <!-- Common -->
+    <string name="common_back">رجوع</string>
+    <string name="common_cancel">إلغاء</string>
+    <string name="order_number">طلب #%1$d</string>
+    <string name="label_city">المدينة</string>
+    <string name="label_address">العنوان</string>
+    <string name="label_courier">المندوب</string>
+    <string name="label_service">الخدمة</string>
+    <string name="label_login">اسم المستخدم</string>
+    <string name="label_name">الاسم</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_services">الخدمات</string>
+    <string name="nav_shop">المتجر</string>
+    <string name="nav_orders">الطلبات</string>
+    <string name="nav_cart">السلة</string>
+    <string name="nav_profile">حسابي</string>
+
+    <!-- Login -->
+    <string name="login_subtitle">خدمة التوصيل</string>
+    <string name="login_username_placeholder">اسم المستخدم</string>
+    <string name="login_password_placeholder">كلمة المرور</string>
+    <string name="login_button">تسجيل الدخول</string>
+    <string name="login_error_empty">أدخل اسم المستخدم وكلمة المرور</string>
+    <string name="login_error_invalid">اسم المستخدم أو كلمة المرور غير صحيحة</string>
+    <string name="login_error_server">خطأ في الخادم (%1$d)</string>
+    <string name="login_error_no_connection">لا يوجد اتصال بالخادم</string>
+
+    <!-- Services -->
+    <string name="service_kind_visit">زيارة العميل</string>
+    <string name="service_kind_delivery">توصيل أ→ب</string>
+    <string name="services_title">الخدمات</string>
+    <string name="services_partners_header">الشركاء</string>
+    <string name="services_active_order_badge">الطلب الجاري</string>
+    <string name="services_status_new">جديد</string>
+    <string name="services_status_confirmed">مؤكد</string>
+    <string name="services_status_in_progress">قيد التجهيز</string>
+    <string name="services_status_in_delivery">يُسلَّم الآن</string>
+    <string name="services_price_from">من $%1$s</string>
+    <string name="services_delivery_price">التوصيل $%1$s</string>
+    <string name="services_load_error">تعذّر تحميل الخدمات</string>
+
+    <!-- Create order form -->
+    <string name="order_form_load_error">تعذّر تحميل بيانات الطلب</string>
+    <string name="order_form_address_required">حدد المدينة والعنوان (العناوين)</string>
+    <string name="order_form_create_error">تعذّر إنشاء الطلب</string>
+    <string name="section_city">المدينة</string>
+    <string name="section_pickup_address">عنوان الاستلام</string>
+    <string name="section_delivery_address">عنوان التوصيل</string>
+    <string name="section_your_address">عنوانك</string>
+    <string name="section_comment">ملاحظة</string>
+    <string name="section_currency">العملة</string>
+    <string name="comment_placeholder">ماذا تريد؟</string>
+    <string name="pickup_placeholder">من أين نستلم</string>
+    <string name="delivery_placeholder">إلى أين نوصّل</string>
+    <string name="your_address_placeholder">عنوانك</string>
+    <string name="city_dropdown_placeholder">اختر المدينة</string>
+    <string name="location_label">الموقع</string>
+    <string name="manual_entry_chip">✏️ يدوياً</string>
+    <string name="service_fee_label">رسوم الخدمة</string>
+    <string name="cod_note">الدفع نقداً للمندوب عند الاستلام</string>
+    <string name="create_order_button">إنشاء الطلب</string>
+
+    <!-- Profile -->
+    <string name="profile_title">الملف الشخصي</string>
+    <string name="role_client">عميل</string>
+    <string name="role_operator">مشغّل</string>
+    <string name="role_courier">مندوب</string>
+    <string name="role_admin">مدير</string>
+    <string name="role_partner">شريك</string>
+    <string name="profile_logout">تسجيل الخروج</string>
+    <string name="profile_balance_label">الرصيد</string>
+    <string name="profile_location_title">موقعي</string>
+    <string name="profile_location_default_label">الموقع %1$d</string>
+    <string name="profile_location_request_button">📍 إضافة الموقع الحالي</string>
+    <string name="profile_location_delete_desc">حذف</string>
+    <string name="profile_language_label">اللغة</string>
+    <string name="profile_support_title">التواصل مع الدعم</string>
+    <string name="profile_support_placeholder">رسالة</string>
+    <string name="profile_support_send">إرسال</string>
+    <string name="profile_load_error">تعذّر تحميل الملف الشخصي</string>
+    <string name="profile_delete_location_error">تعذّر حذف الموقع</string>
+    <string name="profile_location_permission_denied">يلزم إذن الموقع لإضافة نقطة</string>
+    <string name="profile_location_request_error">تعذّر إرسال الطلب</string>
+    <string name="profile_language_change_error">تعذّر تغيير اللغة</string>
+    <string name="profile_support_sent">تم إرسال الرسالة إلى المشغّل</string>
+    <string name="profile_support_error">تعذّر إرسال الرسالة</string>
+
+    <!-- Shop -->
+    <string name="shop_title">المتجر</string>
+    <string name="shop_load_error">تعذّر تحميل المتاجر</string>
+
+    <!-- Cart -->
+    <string name="cart_empty_message">السلة فارغة. أضف منتجات من المتجر.</string>
+    <string name="cart_go_to_shop">الذهاب إلى المتجر</string>
+
+    <!-- Orders list -->
+    <string name="orders_title">طلباتي</string>
+    <string name="orders_empty">لا توجد طلبات بعد</string>
+    <string name="orders_load_error">تعذّر تحميل الطلبات</string>
+    <string name="orders_list_status_new">جديد</string>
+    <string name="orders_list_status_confirmed">مؤكد</string>
+    <string name="orders_list_status_in_progress">قيد التنفيذ</string>
+    <string name="orders_list_status_in_delivery">في التوصيل</string>
+    <string name="orders_list_status_delivered">تم التسليم</string>
+    <string name="orders_list_status_cancelled">ملغي</string>
+
+    <!-- Order detail -->
+    <string name="order_detail_title">الطلب</string>
+    <string name="order_load_error">تعذّر تحميل الطلب</string>
+    <string name="order_status_new">جديد</string>
+    <string name="order_status_confirmed">مؤكد</string>
+    <string name="order_status_in_progress">في الطريق</string>
+    <string name="order_status_in_delivery">يُسلَّم الآن</string>
+    <string name="order_status_delivered">تم التسليم</string>
+    <string name="order_status_cancelled">ملغي</string>
+    <string name="payment_method_cash">الدفع نقداً للمندوب عند الاستلام</string>
+    <string name="payment_method_shamcash">الدفع عبر ShamCash</string>
+    <string name="payment_method_balance">الدفع من الرصيد</string>
+    <string name="section_delivery_status">حالة التوصيل</string>
+    <string name="section_payment">الدفع</string>
+    <string name="payment_cod_total_label">المبلغ المستحق للمندوب</string>
+    <string name="section_review_given">تقييمك</string>
+    <string name="section_review_form">أضف تقييماً</string>
+    <string name="order_received_button">✅ استلمت الطلب</string>
+    <string name="order_cancel_button">إلغاء الطلب</string>
+    <string name="rating_star_desc">تقييم %1$d</string>
+    <string name="review_comment_placeholder">تعليق (اختياري)</string>
+    <string name="review_submit_button">إرسال التقييم</string>
+    <string name="choose_payment_method_title">اختر طريقة الدفع</string>
+    <string name="payment_cash_button">💵 نقداً</string>
+    <string name="payment_shamcash_button">📱 ShamCash</string>
+    <string name="payment_balance_button">💰 من الرصيد</string>
+    <string name="payment_balance_button_with_amount">💰 من الرصيد (%1$s)</string>
+    <string name="payment_insufficient_balance">رصيد غير كافٍ</string>
+    <string name="order_cancel_error">تعذّر إلغاء الطلب</string>
+    <string name="order_confirm_error">تعذّر تأكيد الاستلام</string>
+    <string name="review_rating_required">اختر تقييماً</string>
+    <string name="review_submit_error">تعذّر إرسال التقييم</string>
+</resources>

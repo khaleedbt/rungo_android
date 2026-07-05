@@ -1,8 +1,10 @@
 package dev.batipy.rungo.ui.shop
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import dev.batipy.rungo.R
 import dev.batipy.rungo.data.catalog.CatalogRepository
 import dev.batipy.rungo.data.network.dto.MerchantDto
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +18,10 @@ sealed interface ShopUiState {
     data class Error(val message: String) : ShopUiState
 }
 
-class ShopViewModel(private val catalogRepository: CatalogRepository) : ViewModel() {
+class ShopViewModel(
+    private val catalogRepository: CatalogRepository,
+    private val context: Context
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ShopUiState>(ShopUiState.Loading)
     val uiState: StateFlow<ShopUiState> = _uiState.asStateFlow()
@@ -45,13 +50,16 @@ class ShopViewModel(private val catalogRepository: CatalogRepository) : ViewMode
 
     private suspend fun fetch(): ShopUiState = catalogRepository.getMerchants().fold(
         onSuccess = { ShopUiState.Success(it) },
-        onFailure = { ShopUiState.Error("Не удалось загрузить магазины") }
+        onFailure = { ShopUiState.Error(context.getString(R.string.shop_load_error)) }
     )
 
-    class Factory(private val catalogRepository: CatalogRepository) : ViewModelProvider.Factory {
+    class Factory(
+        private val catalogRepository: CatalogRepository,
+        private val context: Context
+    ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return ShopViewModel(catalogRepository) as T
+            return ShopViewModel(catalogRepository, context) as T
         }
     }
 }

@@ -26,6 +26,13 @@ data class LocationDto(
 )
 
 @Serializable
+data class LocationCreateRequest(
+    val label: String = "",
+    val latitude: String,
+    val longitude: String
+)
+
+@Serializable
 data class PaginatedLocationsDto(
     val count: Int,
     val next: String? = null,

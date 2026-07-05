@@ -29,10 +29,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.MerchantDto
 import dev.batipy.rungo.data.network.dto.OrderDto
 import dev.batipy.rungo.data.network.dto.ServiceDto
@@ -45,17 +47,19 @@ import dev.batipy.rungo.ui.theme.RunGoTextSecondary
 private val ActiveOrderPillBackground = Color(0xFFFCE4C4)
 private val ActiveOrderPillText = Color(0xFFB56A17)
 
+@Composable
 private fun kindLabel(kind: String) = when (kind) {
-    "visit" -> "Выезд к клиенту"
-    "delivery" -> "Доставка А→Б"
+    "visit" -> stringResource(R.string.service_kind_visit)
+    "delivery" -> stringResource(R.string.service_kind_delivery)
     else -> kind
 }
 
+@Composable
 private fun activeOrderStatusLabel(status: String) = when (status) {
-    "new" -> "Новый"
-    "confirmed" -> "Подтверждён"
-    "in_progress" -> "Собирается"
-    "in_delivery" -> "Доставляется"
+    "new" -> stringResource(R.string.services_status_new)
+    "confirmed" -> stringResource(R.string.services_status_confirmed)
+    "in_progress" -> stringResource(R.string.services_status_in_progress)
+    "in_delivery" -> stringResource(R.string.services_status_in_delivery)
     else -> status
 }
 
@@ -95,7 +99,7 @@ fun ServicesScreen(
                 ) {
                     item {
                         Text(
-                            text = "Услуги",
+                            text = stringResource(R.string.services_title),
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
@@ -111,7 +115,7 @@ fun ServicesScreen(
                     if (uiState.merchants.isNotEmpty()) {
                         item {
                             Text(
-                                text = "ПАРТНЁРЫ",
+                                text = stringResource(R.string.services_partners_header),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = RunGoTextSecondary,
                                 modifier = Modifier.padding(top = 8.dp)
@@ -148,7 +152,7 @@ private fun ActiveOrderCard(order: OrderDto, onClick: () -> Unit) {
                 .padding(16.dp)
         ) {
             Text(
-                text = "АКТИВНЫЙ ЗАКАЗ",
+                text = stringResource(R.string.services_active_order_badge),
                 color = RunGoAccent,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold
@@ -161,7 +165,7 @@ private fun ActiveOrderCard(order: OrderDto, onClick: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Заказ #${order.id}",
+                    text = stringResource(R.string.order_number, order.id),
                     color = RunGoTextPrimary,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleMedium
@@ -214,7 +218,7 @@ private fun ServiceCard(service: ServiceDto, onClick: () -> Unit) {
         title = service.name,
         description = service.description,
         badge = kindLabel(service.kind),
-        price = "от \$${service.baseFareUsd}",
+        price = stringResource(R.string.services_price_from, service.baseFareUsd),
         onClick = onClick
     )
 }
@@ -226,7 +230,7 @@ private fun MerchantCard(merchant: MerchantDto) {
         title = merchant.name,
         description = merchant.description,
         badge = null,
-        price = "Доставка \$${merchant.deliveryFeeUsd}",
+        price = stringResource(R.string.services_delivery_price, merchant.deliveryFeeUsd),
         onClick = {}
     )
 }

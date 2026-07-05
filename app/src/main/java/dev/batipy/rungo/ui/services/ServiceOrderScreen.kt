@@ -40,9 +40,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.CityDto
 import dev.batipy.rungo.data.network.dto.LocationDto
 import dev.batipy.rungo.data.network.dto.ServiceDto
@@ -64,9 +66,10 @@ private val currencyOptions = listOf(
     CurrencyOption("syp", "SYP S£")
 )
 
+@Composable
 private fun kindLabel(kind: String) = when (kind) {
-    "visit" -> "Выезд к клиенту"
-    "delivery" -> "Доставка А→Б"
+    "visit" -> stringResource(R.string.service_kind_visit)
+    "delivery" -> stringResource(R.string.service_kind_delivery)
     else -> kind
 }
 
@@ -115,7 +118,7 @@ fun ServiceOrderScreen(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                    contentDescription = "Назад",
+                    contentDescription = stringResource(R.string.common_back),
                     tint = RunGoTextPrimary
                 )
             }
@@ -154,7 +157,7 @@ fun ServiceOrderScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     item {
-                        SectionCard(title = "ГОРОД") {
+                        SectionCard(title = stringResource(R.string.section_city)) {
                             CityDropdown(
                                 cities = uiState.cities,
                                 selectedCityId = uiState.selectedCityId,
@@ -164,12 +167,12 @@ fun ServiceOrderScreen(
                     }
                     if (isDelivery) {
                         item {
-                            SectionCard(title = "АДРЕС ПОЛУЧЕНИЯ") {
+                            SectionCard(title = stringResource(R.string.section_pickup_address)) {
                                 AddressPicker(
                                     locations = uiState.locations,
                                     selectedLocationId = uiState.selectedPickupLocationId,
                                     manualAddress = uiState.manualPickupAddress,
-                                    placeholder = "Откуда забрать",
+                                    placeholder = stringResource(R.string.pickup_placeholder),
                                     onLocationSelect = onPickupLocationSelect,
                                     onManualEntrySelect = onPickupManualEntrySelect,
                                     onManualAddressChange = onPickupManualAddressChange
@@ -177,12 +180,12 @@ fun ServiceOrderScreen(
                             }
                         }
                         item {
-                            SectionCard(title = "АДРЕС ДОСТАВКИ") {
+                            SectionCard(title = stringResource(R.string.section_delivery_address)) {
                                 AddressPicker(
                                     locations = uiState.locations,
                                     selectedLocationId = uiState.selectedLocationId,
                                     manualAddress = uiState.manualAddress,
-                                    placeholder = "Куда доставить",
+                                    placeholder = stringResource(R.string.delivery_placeholder),
                                     onLocationSelect = onLocationSelect,
                                     onManualEntrySelect = onManualEntrySelect,
                                     onManualAddressChange = onManualAddressChange
@@ -191,12 +194,12 @@ fun ServiceOrderScreen(
                         }
                     } else {
                         item {
-                            SectionCard(title = "ВАШ АДРЕС") {
+                            SectionCard(title = stringResource(R.string.section_your_address)) {
                                 AddressPicker(
                                     locations = uiState.locations,
                                     selectedLocationId = uiState.selectedLocationId,
                                     manualAddress = uiState.manualAddress,
-                                    placeholder = "Ваш адрес",
+                                    placeholder = stringResource(R.string.your_address_placeholder),
                                     onLocationSelect = onLocationSelect,
                                     onManualEntrySelect = onManualEntrySelect,
                                     onManualAddressChange = onManualAddressChange
@@ -205,19 +208,19 @@ fun ServiceOrderScreen(
                         }
                     }
                     item {
-                        SectionCard(title = "КОММЕНТАРИЙ") {
+                        SectionCard(title = stringResource(R.string.section_comment)) {
                             OutlinedTextField(
                                 value = uiState.comment,
                                 onValueChange = onCommentChange,
                                 modifier = Modifier.fillMaxWidth(),
-                                placeholder = { Text("Что нужно сделать?", color = RunGoPlaceholder) },
+                                placeholder = { Text(stringResource(R.string.comment_placeholder), color = RunGoPlaceholder) },
                                 minLines = 2,
                                 colors = fieldColors()
                             )
                         }
                     }
                     item {
-                        SectionCard(title = "ВАЛЮТА") {
+                        SectionCard(title = stringResource(R.string.section_currency)) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 currencyOptions.forEach { option ->
                                     val selected = option.code == uiState.currency
@@ -259,7 +262,7 @@ fun ServiceOrderScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        text = "Стоимость услуги",
+                                        text = stringResource(R.string.service_fee_label),
                                         color = RunGoAccent,
                                         fontWeight = FontWeight.SemiBold
                                     )
@@ -275,7 +278,7 @@ fun ServiceOrderScreen(
                                     )
                                 }
                                 Text(
-                                    text = "Оплата наличными курьеру при получении",
+                                    text = stringResource(R.string.cod_note),
                                     color = RunGoAccent.copy(alpha = 0.7f),
                                     style = MaterialTheme.typography.bodySmall
                                 )
@@ -299,7 +302,7 @@ fun ServiceOrderScreen(
                                     strokeWidth = 2.dp
                                 )
                             } else {
-                                Text("Создать заказ", fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(R.string.create_order_button), fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
@@ -336,7 +339,7 @@ private fun CityDropdown(
     onCitySelect: (Int) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val selectedName = cities.find { it.id == selectedCityId }?.name ?: "Выберите город"
+    val selectedName = cities.find { it.id == selectedCityId }?.name ?: stringResource(R.string.city_dropdown_placeholder)
 
     Box {
         Surface(
@@ -383,14 +386,14 @@ private fun AddressPicker(
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(locations) { location ->
                 AddressChip(
-                    label = "📍 " + location.label.ifBlank { "Локация" },
+                    label = "📍 " + location.label.ifBlank { stringResource(R.string.location_label) },
                     selected = location.id == selectedLocationId,
                     onClick = { onLocationSelect(location.id) }
                 )
             }
             item {
                 AddressChip(
-                    label = "✏️ Вручную",
+                    label = stringResource(R.string.manual_entry_chip),
                     selected = selectedLocationId == null,
                     onClick = onManualEntrySelect
                 )
