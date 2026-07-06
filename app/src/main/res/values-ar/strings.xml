@@ -11,6 +11,7 @@
     <string name="label_service">الخدمة</string>
     <string name="label_login">اسم المستخدم</string>
     <string name="label_name">الاسم</string>
+    <string name="label_phone">الهاتف</string>
 
     <!-- Bottom navigation -->
     <string name="nav_services">الخدمات</string>
@@ -28,6 +29,19 @@
     <string name="login_error_invalid">اسم المستخدم أو كلمة المرور غير صحيحة</string>
     <string name="login_error_server">خطأ في الخادم (%1$d)</string>
     <string name="login_error_no_connection">لا يوجد اتصال بالخادم</string>
+    <string name="login_register_link">إنشاء حساب</string>
+
+    <!-- Register -->
+    <string name="register_title">إنشاء حساب</string>
+    <string name="register_fullname_placeholder">الاسم</string>
+    <string name="register_phone_placeholder">الهاتف</string>
+    <string name="register_password2_placeholder">تأكيد كلمة المرور</string>
+    <string name="register_submit_button">تسجيل</string>
+    <string name="register_registering">جارٍ التسجيل…</string>
+    <string name="register_login_link">لديك حساب بالفعل؟ تسجيل الدخول</string>
+    <string name="register_error_generic">تعذّر إنشاء الحساب</string>
+    <string name="register_password_mismatch">كلمتا المرور غير متطابقتين</string>
+    <string name="register_password_min_length">8 أحرف على الأقل</string>
 
     <!-- Services -->
     <string name="service_kind_visit">زيارة العميل</string>
@@ -45,7 +59,8 @@
 
     <!-- Create order form -->
     <string name="order_form_load_error">تعذّر تحميل بيانات الطلب</string>
-    <string name="order_form_address_required">حدد المدينة والعنوان (العناوين)</string>
+    <string name="order_form_address_required">حدد العنوان (العناوين)</string>
+    <string name="order_form_city_required">حدد مدينتك في الملف الشخصي</string>
     <string name="order_form_create_error">تعذّر إنشاء الطلب</string>
     <string name="section_city">المدينة</string>
     <string name="section_pickup_address">عنوان الاستلام</string>
@@ -88,6 +103,11 @@
     <string name="profile_language_change_error">تعذّر تغيير اللغة</string>
     <string name="profile_support_sent">تم إرسال الرسالة إلى المشغّل</string>
     <string name="profile_support_error">تعذّر إرسال الرسالة</string>
+    <string name="profile_edit_title">تعديل الملف الشخصي</string>
+    <string name="profile_edit_email_placeholder">البريد الإلكتروني</string>
+    <string name="profile_edit_save_button">حفظ</string>
+    <string name="profile_update_success">تم تحديث الملف الشخصي</string>
+    <string name="profile_update_error">تعذّر تحديث الملف الشخصي</string>
 
     <!-- Shop -->
     <string name="shop_title">المتجر</string>

@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,6 +39,8 @@ import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.MerchantDto
 import dev.batipy.rungo.data.network.dto.OrderDto
 import dev.batipy.rungo.data.network.dto.ServiceDto
+import dev.batipy.rungo.ui.common.localizedDescription
+import dev.batipy.rungo.ui.common.localizedName
 import dev.batipy.rungo.ui.theme.RunGoAccent
 import dev.batipy.rungo.ui.theme.RunGoBackground
 import dev.batipy.rungo.ui.theme.RunGoField
@@ -216,8 +219,8 @@ private fun ActiveOrderCard(order: OrderDto, onClick: () -> Unit) {
 private fun ServiceCard(service: ServiceDto, onClick: () -> Unit) {
     CatalogCard(
         imageUrl = service.image,
-        title = service.name,
-        description = service.description,
+        title = service.localizedName,
+        description = service.localizedDescription,
         badge = kindLabel(service.kind),
         price = stringResource(R.string.services_price_from, service.baseFareUsd),
         onClick = onClick
@@ -229,7 +232,7 @@ private fun MerchantCard(merchant: MerchantDto, onClick: () -> Unit) {
     CatalogCard(
         imageUrl = merchant.logo,
         title = merchant.name,
-        description = merchant.description,
+        description = merchant.localizedDescription,
         badge = null,
         price = stringResource(R.string.services_delivery_price, merchant.deliveryFeeUsd),
         onClick = onClick
@@ -260,6 +263,7 @@ private fun CatalogCard(
                 AsyncImage(
                     model = imageUrl,
                     contentDescription = title,
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(56.dp)
                         .clip(RoundedCornerShape(12.dp))

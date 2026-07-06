@@ -28,6 +28,8 @@ import dev.batipy.rungo.ui.home.HomeScreen
 import dev.batipy.rungo.ui.login.LoginScreen
 import dev.batipy.rungo.ui.login.LoginUiState
 import dev.batipy.rungo.ui.login.LoginViewModel
+import dev.batipy.rungo.ui.register.RegisterScreen
+import dev.batipy.rungo.ui.register.RegisterViewModel
 import dev.batipy.rungo.ui.services.ServicesViewModel
 import dev.batipy.rungo.ui.theme.RunGoTheme
 import kotlinx.coroutines.launch
@@ -49,6 +51,7 @@ class MainActivity : AppCompatActivity() {
                     Surface(modifier = Modifier.fillMaxSize()) {
                         val context = LocalContext.current.applicationContext
                         var checkingSession by remember { mutableStateOf(true) }
+                        var showRegister by remember { mutableStateOf(false) }
                         val tokens by app.tokenStore.tokens.collectAsState()
                         val loggedIn = tokens != null
 
@@ -83,6 +86,7 @@ class MainActivity : AppCompatActivity() {
                                     factory = ServicesViewModel.Factory(
                                         app.catalogRepository,
                                         app.ordersRepository,
+                                        app.profileRepository,
                                         context
                                     )
                                 )
@@ -96,11 +100,41 @@ class MainActivity : AppCompatActivity() {
                                     initialOrderId = pendingOrderId,
                                     onInitialOrderConsumed = { pendingOrderId = null },
                                     onLogoutClick = {
+                                        showRegister = false
+                                        // All screen ViewModels (Services/Orders/Profile/Shop/Cart/...)
+                                        // are scoped to this Activity's ViewModelStore, which otherwise
+                                        // outlives login/logout — without clearing it here, logging in
+                                        // as a different account would keep showing the previous
+                                        // account's already-loaded data until each screen happened to
+                                        // refetch on its own.
+                                        viewModelStore.clear()
+                                        app.cartRepository.clear()
                                         app.applicationScope.launch {
                                             app.notificationRepository.deleteCurrentDeviceToken()
                                             app.authRepository.logout()
                                         }
                                     },
+                                    modifier = Modifier.padding(innerPadding)
+                                )
+                            } else if (showRegister) {
+                                val registerViewModel: RegisterViewModel = viewModel(
+                                    factory = RegisterViewModel.Factory(
+                                        app.authRepository,
+                                        app.profileRepository,
+                                        app.catalogRepository,
+                                        context
+                                    )
+                                )
+                                val uiState by registerViewModel.uiState.collectAsState()
+                                val cities by registerViewModel.cities.collectAsState()
+
+                                RegisterScreen(
+                                    uiState = uiState,
+                                    cities = cities,
+                                    onRegisterClick = { username, password, password2, fullName, phone, cityId ->
+                                        registerViewModel.register(username, password, password2, fullName, phone, cityId)
+                                    },
+                                    onLoginClick = { showRegister = false },
                                     modifier = Modifier.padding(innerPadding)
                                 )
                             } else {
@@ -114,6 +148,7 @@ class MainActivity : AppCompatActivity() {
                                     onLoginClick = { username, password ->
                                         loginViewModel.login(username, password)
                                     },
+                                    onRegisterClick = { showRegister = true },
                                     modifier = Modifier.padding(innerPadding)
                                 )
                             }

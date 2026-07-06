@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.catalog.CatalogRepository
-import dev.batipy.rungo.data.network.dto.CityDto
 import dev.batipy.rungo.data.network.dto.LocationDto
 import dev.batipy.rungo.data.network.dto.OrderCreateRequest
 import dev.batipy.rungo.data.orders.OrdersRepository
@@ -20,7 +19,6 @@ sealed interface CreateOrderUiState {
     data object Loading : CreateOrderUiState
     data class LoadError(val message: String) : CreateOrderUiState
     data class Ready(
-        val cities: List<CityDto>,
         val locations: List<LocationDto>,
         val exchangeRates: Map<String, Double> = emptyMap(),
         val selectedCityId: Int? = null,
@@ -58,29 +56,26 @@ class CreateOrderViewModel(
     private fun load() {
         viewModelScope.launch {
             _uiState.value = CreateOrderUiState.Loading
-            val cities = catalogRepository.getCities().getOrNull()
             val locations = profileRepository.getLocations().getOrNull()
             val user = profileRepository.getMe().getOrNull()
             // Best-effort: exchange rates aren't critical, so a failed fetch
             // just leaves non-USD prices unconverted rather than blocking the form.
             val exchangeRates = catalogRepository.getExchangeRates().getOrDefault(emptyMap())
 
-            if (cities == null || locations == null) {
+            if (locations == null) {
                 _uiState.value = CreateOrderUiState.LoadError(context.getString(R.string.order_form_load_error))
                 return@launch
             }
 
-            val defaultCityId = user?.cityId ?: cities.firstOrNull()?.id
+            // The order's city always follows the user's own profile city — no
+            // in-form picker, since services are already filtered to that city.
             _uiState.value = CreateOrderUiState.Ready(
-                cities = cities,
                 locations = locations,
                 exchangeRates = exchangeRates,
-                selectedCityId = defaultCityId
+                selectedCityId = user?.cityId
             )
         }
     }
-
-    fun selectCity(cityId: Int) = updateReady { it.copy(selectedCityId = cityId) }
 
     fun selectPickupLocation(locationId: Int) = updateReady {
         it.copy(selectedPickupLocationId = locationId, manualPickupAddress = "")
@@ -123,7 +118,11 @@ class CreateOrderViewModel(
             ""
         }
 
-        if (cityId == null || dropoffAddress.isBlank() || (isDelivery && pickupAddress.isBlank())) {
+        if (cityId == null) {
+            _uiState.value = state.copy(error = context.getString(R.string.order_form_city_required))
+            return
+        }
+        if (dropoffAddress.isBlank() || (isDelivery && pickupAddress.isBlank())) {
             _uiState.value = state.copy(error = context.getString(R.string.order_form_address_required))
             return
         }

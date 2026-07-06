@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -43,6 +44,9 @@ import dev.batipy.rungo.data.cart.CartItem
 import dev.batipy.rungo.data.network.dto.CategoryDto
 import dev.batipy.rungo.data.network.dto.MerchantDetailDto
 import dev.batipy.rungo.data.network.dto.ProductDto
+import dev.batipy.rungo.ui.common.QuantityStepButton
+import dev.batipy.rungo.ui.common.localizedDescription
+import dev.batipy.rungo.ui.common.localizedName
 import dev.batipy.rungo.ui.theme.RunGoAccent
 import dev.batipy.rungo.ui.theme.RunGoField
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
@@ -87,7 +91,7 @@ fun MerchantDetailScreen(
                         )
                         if (uiState.merchant.description.isNotBlank()) {
                             Text(
-                                text = uiState.merchant.description,
+                                text = uiState.merchant.localizedDescription,
                                 color = RunGoTextSecondary,
                                 style = MaterialTheme.typography.bodyMedium,
                                 maxLines = 1,
@@ -128,6 +132,7 @@ fun MerchantDetailScreen(
                                     AsyncImage(
                                         model = merchant.logo,
                                         contentDescription = merchant.name,
+                                        contentScale = ContentScale.Crop,
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(140.dp)
@@ -169,6 +174,7 @@ fun MerchantDetailScreen(
             ) {
                 Text(
                     text = "🛒 " + stringResource(R.string.shop_go_to_cart),
+                    color = Color.White,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f, fill = false)
                 )
@@ -196,7 +202,7 @@ private fun CategorySection(
     Column {
         if (category.name.isNotBlank()) {
             Text(
-                text = category.name.uppercase(),
+                text = category.localizedName.uppercase(),
                 style = MaterialTheme.typography.labelMedium,
                 color = RunGoTextSecondary,
                 modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
@@ -235,6 +241,7 @@ private fun ProductRow(
                 AsyncImage(
                     model = product.image,
                     contentDescription = product.name,
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(56.dp)
                         .clip(RoundedCornerShape(16.dp))
@@ -275,38 +282,33 @@ private fun ProductRow(
                 )
             }
             if (quantity == 0) {
-                IconButton(
-                    onClick = onAdd,
-                    modifier = Modifier
-                        .size(36.dp)
-                        .background(RunGoAccent, CircleShape)
-                ) {
-                    Text(text = "+", color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                }
+                QuantityStepButton(
+                    symbol = "+",
+                    containerColor = RunGoAccent,
+                    contentColor = Color.White,
+                    size = 28.dp,
+                    onClick = onAdd
+                )
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        onClick = { onUpdateQuantity(quantity - 1) },
-                        modifier = Modifier
-                            .size(32.dp)
-                            .background(RunGoTextSecondary.copy(alpha = 0.15f), CircleShape)
-                    ) {
-                        Text(text = "−", color = RunGoTextPrimary, fontWeight = FontWeight.Bold)
-                    }
+                    QuantityStepButton(
+                        symbol = "−",
+                        containerColor = RunGoTextSecondary.copy(alpha = 0.15f),
+                        contentColor = RunGoTextPrimary,
+                        onClick = { onUpdateQuantity(quantity - 1) }
+                    )
                     Text(
                         text = "$quantity",
                         color = RunGoTextPrimary,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 8.dp)
+                        modifier = Modifier.padding(horizontal = 10.dp)
                     )
-                    IconButton(
-                        onClick = { onUpdateQuantity(quantity + 1) },
-                        modifier = Modifier
-                            .size(32.dp)
-                            .background(RunGoAccent, CircleShape)
-                    ) {
-                        Text(text = "+", color = Color.White, fontWeight = FontWeight.Bold)
-                    }
+                    QuantityStepButton(
+                        symbol = "+",
+                        containerColor = RunGoAccent,
+                        contentColor = Color.White,
+                        onClick = { onUpdateQuantity(quantity + 1) }
+                    )
                 }
             }
         }

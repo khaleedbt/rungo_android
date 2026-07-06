@@ -5,7 +5,7 @@ import dev.batipy.rungo.data.network.RunGoApi
 import dev.batipy.rungo.data.network.dto.LocationCreateRequest
 import dev.batipy.rungo.data.network.dto.LocationDto
 import dev.batipy.rungo.data.network.dto.SupportRequest
-import dev.batipy.rungo.data.network.dto.UpdateLangRequest
+import dev.batipy.rungo.data.network.dto.UpdateProfileRequest
 import dev.batipy.rungo.data.network.dto.UserDto
 import retrofit2.HttpException
 import retrofit2.Response
@@ -45,8 +45,24 @@ class ProfileRepository(private val api: RunGoApi) {
         }.onFailure { Log.e(TAG, "createLocation failed", it) }
 
     suspend fun updateLanguage(lang: String): Result<UserDto> =
-        runCatching { api.updateMe(UpdateLangRequest(lang)) }
+        runCatching { api.updateMe(UpdateProfileRequest(lang = lang)) }
             .onFailure { Log.e(TAG, "updateLanguage failed", it) }
+
+    suspend fun updateProfile(fullName: String, phone: String, email: String, cityId: Int?): Result<UserDto> =
+        runCatching {
+            api.updateMe(
+                UpdateProfileRequest(
+                    fullName = fullName,
+                    phone = phone.ifBlank { null },
+                    email = email.ifBlank { null },
+                    city = cityId
+                )
+            )
+        }.onFailure { Log.e(TAG, "updateProfile failed", it) }
+
+    suspend fun updateCity(cityId: Int): Result<UserDto> =
+        runCatching { api.updateMe(UpdateProfileRequest(city = cityId)) }
+            .onFailure { Log.e(TAG, "updateCity failed", it) }
 
     suspend fun sendSupportMessage(message: String): Result<Unit> =
         runCatching { api.sendSupport(SupportRequest(message)).throwIfUnsuccessful() }

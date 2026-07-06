@@ -9,14 +9,12 @@ fun currencySymbol(currency: String): String = when (currency) {
 }
 
 /**
- * The backend's own SYP rate is 100x too large when it computes order totals
- * (same underlying issue as /api/v1/exchange-rate/'s syp_rate — see
- * CatalogRepository), so stored SYP amounts come back 100x inflated. Dividing
- * by 100 here keeps every screen consistent with the price shown to the
- * client at order-creation time.
+ * The backend used to compute order totals using a SYP rate that was 100x too
+ * large (same underlying issue as /api/v1/exchange-rate/'s syp_rate — see
+ * CatalogRepository), so stored SYP amounts came back 100x inflated. That's
+ * now fixed backend-side, so amounts are used as-is.
  */
 fun formatOrderAmount(amount: String?, currency: String): String {
     val value = amount?.toDoubleOrNull() ?: return "${currencySymbol(currency)}${amount ?: "0.00"}"
-    val corrected = if (currency == "syp") value / 100 else value
-    return "${currencySymbol(currency)}${String.format(Locale.US, "%.2f", corrected)}"
+    return "${currencySymbol(currency)}${String.format(Locale.US, "%.2f", value)}"
 }

@@ -16,11 +16,13 @@ import dev.batipy.rungo.data.network.dto.PaginatedLocationsDto
 import dev.batipy.rungo.data.network.dto.PaginatedMerchantsDto
 import dev.batipy.rungo.data.network.dto.PaginatedOrdersDto
 import dev.batipy.rungo.data.network.dto.PaginatedServicesDto
+import dev.batipy.rungo.data.network.dto.RegisterRequest
+import dev.batipy.rungo.data.network.dto.RegisterResponseDto
 import dev.batipy.rungo.data.network.dto.SupportRequest
 import dev.batipy.rungo.data.network.dto.TokenRefreshRequest
 import dev.batipy.rungo.data.network.dto.TokenRefreshResponse
 import dev.batipy.rungo.data.network.dto.TokenResponse
-import dev.batipy.rungo.data.network.dto.UpdateLangRequest
+import dev.batipy.rungo.data.network.dto.UpdateProfileRequest
 import dev.batipy.rungo.data.network.dto.UserDto
 import kotlinx.serialization.json.JsonObject
 import retrofit2.Response
@@ -40,8 +42,11 @@ interface RunGoApi {
     @POST("api/v1/auth/refresh/")
     suspend fun refreshToken(@Body request: TokenRefreshRequest): TokenRefreshResponse
 
+    @POST("api/v1/auth/register/")
+    suspend fun register(@Body request: RegisterRequest): RegisterResponseDto
+
     @GET("api/v1/services/")
-    suspend fun getServices(): PaginatedServicesDto
+    suspend fun getServices(@Query("city") cityId: Int? = null): PaginatedServicesDto
 
     @GET("api/v1/merchants/")
     suspend fun getMerchants(@Query("city") cityId: Int? = null): PaginatedMerchantsDto
@@ -79,7 +84,7 @@ interface RunGoApi {
     suspend fun getMe(): UserDto
 
     @PATCH("api/v1/auth/me/")
-    suspend fun updateMe(@Body request: UpdateLangRequest): UserDto
+    suspend fun updateMe(@Body request: UpdateProfileRequest): UserDto
 
     @GET("api/v1/locations/")
     suspend fun getLocations(): PaginatedLocationsDto

@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.MerchantDto
+import dev.batipy.rungo.ui.common.localizedDescription
 import dev.batipy.rungo.ui.theme.RunGoField
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
@@ -113,7 +114,7 @@ private fun ShopMerchantCard(merchant: MerchantDto, onClick: () -> Unit) {
                 )
                 if (merchant.description.isNotBlank()) {
                     Text(
-                        text = merchant.description,
+                        text = merchant.localizedDescription,
                         style = MaterialTheme.typography.bodyMedium,
                         color = RunGoTextSecondary,
                         modifier = Modifier.padding(top = 4.dp)

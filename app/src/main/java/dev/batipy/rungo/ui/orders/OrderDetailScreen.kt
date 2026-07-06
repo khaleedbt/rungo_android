@@ -75,7 +75,15 @@ import java.util.Locale
 private val ErrorColor = Color(0xFFFF6B6B)
 private val SuccessColor = Color(0xFF4CAF6D)
 private val BalanceColor = Color(0xFF5B3E8C)
-private val DetailDateFormatter = DateTimeFormatter.ofPattern("d MMMM 'в' HH:mm", Locale("ru"))
+private fun detailDateFormatter(): DateTimeFormatter {
+    val locale = Locale.getDefault()
+    val pattern = when (locale.language) {
+        "ru" -> "d MMMM 'в' HH:mm"
+        "ar" -> "d MMMM HH:mm"
+        else -> "d MMMM 'at' HH:mm"
+    }
+    return DateTimeFormatter.ofPattern(pattern, locale)
+}
 
 private val deliverySteps = listOf("new", "confirmed", "in_progress", "in_delivery", "delivered")
 
@@ -124,11 +132,7 @@ private fun hasSufficientBalance(
     userBalance: String?,
     exchangeRates: Map<String, Double>
 ): Boolean {
-    val rawTotal = (order.codTotal ?: order.serviceFee)?.toDoubleOrNull() ?: return false
-    // The backend's stored SYP total is 100x inflated (same quirk as its
-    // exchange-rate endpoint), so correct it before converting — exchangeRates
-    // here already has the /100 correction applied (see CatalogRepository).
-    val total = if (order.currency == "syp") rawTotal / 100 else rawTotal
+    val total = (order.codTotal ?: order.serviceFee)?.toDoubleOrNull() ?: return false
     val balance = userBalance?.toDoubleOrNull() ?: return false
     val totalInUsd = when (order.currency) {
         "usd" -> total
@@ -142,7 +146,7 @@ private fun hasSufficientBalance(
 }
 
 private fun formatDetailDate(iso: String): String = try {
-    OffsetDateTime.parse(iso).format(DetailDateFormatter)
+    OffsetDateTime.parse(iso).format(detailDateFormatter())
 } catch (e: DateTimeParseException) {
     iso
 }
@@ -612,7 +616,7 @@ private fun ReviewForm(
             if (submitting) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
             } else {
-                Text(stringResource(R.string.review_submit_button), fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.review_submit_button), color = Color.White, fontWeight = FontWeight.SemiBold)
             }
         }
     }

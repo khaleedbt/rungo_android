@@ -21,12 +21,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,8 +47,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.cart.CartItem
-import dev.batipy.rungo.data.network.dto.CityDto
 import dev.batipy.rungo.data.network.dto.LocationDto
+import dev.batipy.rungo.ui.common.QuantityStepButton
 import dev.batipy.rungo.ui.common.currencySymbol
 import dev.batipy.rungo.ui.theme.RunGoAccent
 import dev.batipy.rungo.ui.theme.RunGoBackground
@@ -87,7 +84,6 @@ fun CartScreen(
     onGoToShopClick: () -> Unit,
     onUpdateQuantity: (productId: Int, quantity: Int) -> Unit,
     onRemoveItem: (Int) -> Unit,
-    onCitySelect: (Int) -> Unit,
     onLocationSelect: (Int) -> Unit,
     onManualEntrySelect: () -> Unit,
     onManualAddressChange: (String) -> Unit,
@@ -120,7 +116,6 @@ fun CartScreen(
                 cartItems = cartItems,
                 onUpdateQuantity = onUpdateQuantity,
                 onRemoveItem = onRemoveItem,
-                onCitySelect = onCitySelect,
                 onLocationSelect = onLocationSelect,
                 onManualEntrySelect = onManualEntrySelect,
                 onManualAddressChange = onManualAddressChange,
@@ -139,7 +134,6 @@ private fun CartForm(
     cartItems: List<CartItem>,
     onUpdateQuantity: (productId: Int, quantity: Int) -> Unit,
     onRemoveItem: (Int) -> Unit,
-    onCitySelect: (Int) -> Unit,
     onLocationSelect: (Int) -> Unit,
     onManualEntrySelect: () -> Unit,
     onManualAddressChange: (String) -> Unit,
@@ -198,16 +192,6 @@ private fun CartForm(
                         }
                     }
                 }
-            }
-        }
-
-        item {
-            SectionCard(title = stringResource(R.string.section_city)) {
-                CityDropdown(
-                    cities = uiState.cities,
-                    selectedCityId = uiState.selectedCityId,
-                    onCitySelect = onCitySelect
-                )
             }
         }
 
@@ -342,7 +326,7 @@ private fun CartForm(
                 if (uiState.submitting) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                 } else {
-                    Text(stringResource(R.string.cart_submit_button), fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.cart_submit_button), color = Color.White, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -395,28 +379,24 @@ private fun CartItemRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
-                    onClick = { onUpdateQuantity(item.quantity - 1) },
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(RunGoTextSecondary.copy(alpha = 0.15f), CircleShape)
-                ) {
-                    Text(text = "−", color = RunGoTextPrimary, fontWeight = FontWeight.Bold)
-                }
+                QuantityStepButton(
+                    symbol = "−",
+                    containerColor = RunGoTextSecondary.copy(alpha = 0.15f),
+                    contentColor = RunGoTextPrimary,
+                    onClick = { onUpdateQuantity(item.quantity - 1) }
+                )
                 Text(
                     text = "${item.quantity}",
                     color = RunGoTextPrimary,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 10.dp)
                 )
-                IconButton(
-                    onClick = { onUpdateQuantity(item.quantity + 1) },
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(RunGoAccent, CircleShape)
-                ) {
-                    Text(text = "+", color = Color.White, fontWeight = FontWeight.Bold)
-                }
+                QuantityStepButton(
+                    symbol = "+",
+                    containerColor = RunGoAccent,
+                    contentColor = Color.White,
+                    onClick = { onUpdateQuantity(item.quantity + 1) }
+                )
             }
             val itemTotal = (item.product.priceUsd.toDoubleOrNull() ?: 0.0) * item.quantity
             Text(
@@ -443,46 +423,6 @@ private fun SectionCard(title: String, content: @Composable () -> Unit) {
                 modifier = Modifier.padding(bottom = 10.dp)
             )
             content()
-        }
-    }
-}
-
-@Composable
-private fun CityDropdown(
-    cities: List<CityDto>,
-    selectedCityId: Int?,
-    onCitySelect: (Int) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val selectedName = cities.find { it.id == selectedCityId }?.name ?: stringResource(R.string.city_dropdown_placeholder)
-
-    Box {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = true },
-            color = RunGoBackground,
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = selectedName, color = RunGoTextPrimary, modifier = Modifier.weight(1f))
-                Icon(Icons.Filled.UnfoldMore, contentDescription = null, tint = RunGoTextSecondary)
-            }
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            cities.forEach { city ->
-                DropdownMenuItem(
-                    text = { Text(city.name) },
-                    onClick = {
-                        onCitySelect(city.id)
-                        expanded = false
-                    }
-                )
-            }
         }
     }
 }

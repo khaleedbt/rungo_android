@@ -11,6 +11,7 @@ import dev.batipy.rungo.data.network.dto.MerchantDto
 import dev.batipy.rungo.data.network.dto.OrderDto
 import dev.batipy.rungo.data.network.dto.ServiceDto
 import dev.batipy.rungo.data.orders.OrdersRepository
+import dev.batipy.rungo.data.profile.ProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +30,7 @@ sealed interface ServicesUiState {
 class ServicesViewModel(
     private val catalogRepository: CatalogRepository,
     private val ordersRepository: OrdersRepository,
+    private val profileRepository: ProfileRepository,
     private val context: Context
 ) : ViewModel() {
 
@@ -58,8 +60,9 @@ class ServicesViewModel(
     }
 
     private suspend fun fetch(): ServicesUiState {
-        val services = catalogRepository.getServices().getOrNull()
-        val merchants = catalogRepository.getMerchants().getOrNull()
+        val cityId = profileRepository.getMe().getOrNull()?.cityId
+        val services = catalogRepository.getServices(cityId).getOrNull()
+        val merchants = catalogRepository.getMerchants(cityId).getOrNull()
         val activeOrder = ordersRepository.getRecentOrders(limit = 5).getOrNull()
             ?.firstOrNull { it.status in ACTIVE_ORDER_STATUSES }
 
@@ -73,11 +76,12 @@ class ServicesViewModel(
     class Factory(
         private val catalogRepository: CatalogRepository,
         private val ordersRepository: OrdersRepository,
+        private val profileRepository: ProfileRepository,
         private val context: Context
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return ServicesViewModel(catalogRepository, ordersRepository, context) as T
+            return ServicesViewModel(catalogRepository, ordersRepository, profileRepository, context) as T
         }
     }
 }

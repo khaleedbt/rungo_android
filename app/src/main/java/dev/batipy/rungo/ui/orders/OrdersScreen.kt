@@ -42,7 +42,8 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.Locale
 
-private val OrderDateFormatter = DateTimeFormatter.ofPattern("d MMMM, HH:mm", Locale("ru"))
+private fun orderDateFormatter(): DateTimeFormatter =
+    DateTimeFormatter.ofPattern("d MMMM, HH:mm", Locale.getDefault())
 
 private data class StatusStyle(val label: String, val container: Color, val content: Color)
 
@@ -58,7 +59,7 @@ private fun statusStyle(status: String): StatusStyle = when (status) {
 }
 
 private fun formatOrderDate(iso: String): String = try {
-    OffsetDateTime.parse(iso).format(OrderDateFormatter)
+    OffsetDateTime.parse(iso).format(orderDateFormatter())
 } catch (e: DateTimeParseException) {
     iso
 }

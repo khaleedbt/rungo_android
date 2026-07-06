@@ -7,7 +7,11 @@ import kotlinx.serialization.Serializable
 data class ServiceDto(
     val id: Int,
     val name: String,
+    @SerialName("name_en") val nameEn: String? = null,
+    @SerialName("name_ar") val nameAr: String? = null,
     val description: String = "",
+    @SerialName("description_en") val descriptionEn: String? = null,
+    @SerialName("description_ar") val descriptionAr: String? = null,
     val kind: String,
     @SerialName("base_fare_usd") val baseFareUsd: String,
     val image: String? = null
@@ -26,6 +30,8 @@ data class MerchantDto(
     val id: Int,
     val name: String,
     val description: String = "",
+    @SerialName("description_en") val descriptionEn: String? = null,
+    @SerialName("description_ar") val descriptionAr: String? = null,
     val logo: String? = null,
     @SerialName("city_name") val cityName: String = "",
     @SerialName("delivery_fee_usd") val deliveryFeeUsd: String
@@ -55,6 +61,8 @@ data class ProductDto(
 data class CategoryDto(
     val id: Int? = null,
     val name: String = "",
+    @SerialName("name_en") val nameEn: String? = null,
+    @SerialName("name_ar") val nameAr: String? = null,
     val products: List<ProductDto> = emptyList()
 )
 
@@ -63,6 +71,8 @@ data class MerchantDetailDto(
     val id: Int,
     val name: String,
     val description: String = "",
+    @SerialName("description_en") val descriptionEn: String? = null,
+    @SerialName("description_ar") val descriptionAr: String? = null,
     val logo: String? = null,
     val categories: List<CategoryDto> = emptyList()
 )

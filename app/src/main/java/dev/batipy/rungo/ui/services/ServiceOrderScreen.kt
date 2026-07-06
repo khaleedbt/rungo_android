@@ -19,12 +19,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,9 +42,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.batipy.rungo.R
-import dev.batipy.rungo.data.network.dto.CityDto
 import dev.batipy.rungo.data.network.dto.LocationDto
 import dev.batipy.rungo.data.network.dto.ServiceDto
+import dev.batipy.rungo.ui.common.localizedName
 import dev.batipy.rungo.ui.theme.RunGoAccent
 import dev.batipy.rungo.ui.theme.RunGoBackground
 import dev.batipy.rungo.ui.theme.RunGoField
@@ -92,7 +89,6 @@ fun ServiceOrderScreen(
     service: ServiceDto,
     uiState: CreateOrderUiState,
     onBack: () -> Unit,
-    onCitySelect: (Int) -> Unit,
     onPickupLocationSelect: (Int) -> Unit,
     onPickupManualEntrySelect: () -> Unit,
     onPickupManualAddressChange: (String) -> Unit,
@@ -124,7 +120,7 @@ fun ServiceOrderScreen(
             }
             Column(modifier = Modifier.padding(start = 12.dp)) {
                 Text(
-                    text = service.name,
+                    text = service.localizedName,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleLarge,
                     color = RunGoTextPrimary
@@ -156,15 +152,6 @@ fun ServiceOrderScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    item {
-                        SectionCard(title = stringResource(R.string.section_city)) {
-                            CityDropdown(
-                                cities = uiState.cities,
-                                selectedCityId = uiState.selectedCityId,
-                                onCitySelect = onCitySelect
-                            )
-                        }
-                    }
                     if (isDelivery) {
                         item {
                             SectionCard(title = stringResource(R.string.section_pickup_address)) {
@@ -302,7 +289,7 @@ fun ServiceOrderScreen(
                                     strokeWidth = 2.dp
                                 )
                             } else {
-                                Text(stringResource(R.string.create_order_button), fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(R.string.create_order_button), color = Color.White, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
@@ -327,46 +314,6 @@ private fun SectionCard(title: String, content: @Composable () -> Unit) {
             )
             Box(modifier = Modifier.padding(top = 10.dp)) {
                 content()
-            }
-        }
-    }
-}
-
-@Composable
-private fun CityDropdown(
-    cities: List<CityDto>,
-    selectedCityId: Int?,
-    onCitySelect: (Int) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val selectedName = cities.find { it.id == selectedCityId }?.name ?: stringResource(R.string.city_dropdown_placeholder)
-
-    Box {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = true },
-            color = RunGoBackground,
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = selectedName, color = RunGoTextPrimary, modifier = Modifier.weight(1f))
-                Icon(Icons.Filled.UnfoldMore, contentDescription = null, tint = RunGoTextSecondary)
-            }
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            cities.forEach { city ->
-                DropdownMenuItem(
-                    text = { Text(city.name) },
-                    onClick = {
-                        onCitySelect(city.id)
-                        expanded = false
-                    }
-                )
             }
         }
     }

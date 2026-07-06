@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -34,8 +35,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.batipy.rungo.R
-import dev.batipy.rungo.ui.theme.RunGoField
+import dev.batipy.rungo.ui.theme.RunGoAccent
+import dev.batipy.rungo.ui.theme.RunGoBackground
 import dev.batipy.rungo.ui.theme.RunGoPlaceholder
+import dev.batipy.rungo.ui.theme.RunGoTextPrimary
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
 import dev.batipy.rungo.ui.theme.RunGoTheme
 
@@ -45,6 +48,7 @@ private val ErrorColor = Color(0xFFFF6B6B)
 fun LoginScreen(
     uiState: LoginUiState = LoginUiState.Idle,
     onLoginClick: (username: String, password: String) -> Unit = { _, _ -> },
+    onRegisterClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var username by remember { mutableStateOf("") }
@@ -127,6 +131,14 @@ fun LoginScreen(
                     Text(text = stringResource(R.string.login_button), fontWeight = FontWeight.SemiBold)
                 }
             }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.login_register_link),
+                color = RunGoAccent,
+                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.clickable(onClick = onRegisterClick)
+            )
         }
         Text(
             text = "@aquagobot",
@@ -142,13 +154,13 @@ fun LoginScreen(
 
 @Composable
 private fun loginFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedContainerColor = RunGoField,
-    unfocusedContainerColor = RunGoField,
-    disabledContainerColor = RunGoField,
-    focusedBorderColor = RunGoField,
-    unfocusedBorderColor = RunGoField,
-    focusedTextColor = MaterialTheme.colorScheme.onBackground,
-    unfocusedTextColor = MaterialTheme.colorScheme.onBackground
+    focusedContainerColor = RunGoBackground,
+    unfocusedContainerColor = RunGoBackground,
+    disabledContainerColor = RunGoBackground,
+    focusedBorderColor = RunGoAccent,
+    unfocusedBorderColor = RunGoTextSecondary.copy(alpha = 0.4f),
+    focusedTextColor = RunGoTextPrimary,
+    unfocusedTextColor = RunGoTextPrimary
 )
 
 @Preview(showBackground = true)

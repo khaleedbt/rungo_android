@@ -7,7 +7,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.batipy.rungo.R
+import dev.batipy.rungo.data.catalog.CatalogRepository
 import dev.batipy.rungo.data.location.LocationProvider
+import dev.batipy.rungo.data.network.dto.CityDto
 import dev.batipy.rungo.data.network.dto.LocationDto
 import dev.batipy.rungo.data.network.dto.UserDto
 import dev.batipy.rungo.data.profile.ProfileRepository
@@ -18,12 +20,17 @@ import kotlinx.coroutines.launch
 
 sealed interface ProfileUiState {
     data object Loading : ProfileUiState
-    data class Success(val user: UserDto, val locations: List<LocationDto>) : ProfileUiState
+    data class Success(
+        val user: UserDto,
+        val locations: List<LocationDto>,
+        val cities: List<CityDto> = emptyList()
+    ) : ProfileUiState
     data class Error(val message: String) : ProfileUiState
 }
 
 class ProfileViewModel(
     private val repository: ProfileRepository,
+    private val catalogRepository: CatalogRepository,
     private val locationProvider: LocationProvider,
     private val context: Context
 ) : ViewModel() {
@@ -36,6 +43,9 @@ class ProfileViewModel(
 
     private val _addingLocation = MutableStateFlow(false)
     val addingLocation: StateFlow<Boolean> = _addingLocation.asStateFlow()
+
+    private val _updatingProfile = MutableStateFlow(false)
+    val updatingProfile: StateFlow<Boolean> = _updatingProfile.asStateFlow()
 
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()
@@ -62,8 +72,9 @@ class ProfileViewModel(
     private suspend fun fetch(): ProfileUiState {
         val user = repository.getMe().getOrNull()
         val locations = repository.getLocations().getOrNull()
+        val cities = catalogRepository.getCities().getOrDefault(emptyList())
         return if (user != null && locations != null) {
-            ProfileUiState.Success(user, locations)
+            ProfileUiState.Success(user, locations, cities)
         } else {
             ProfileUiState.Error(context.getString(R.string.profile_load_error))
         }
@@ -114,6 +125,20 @@ class ProfileViewModel(
         }
     }
 
+    fun updateProfile(fullName: String, phone: String, email: String, cityId: Int?) {
+        val current = _uiState.value as? ProfileUiState.Success ?: return
+        _updatingProfile.value = true
+        viewModelScope.launch {
+            repository.updateProfile(fullName, phone, email, cityId)
+                .onSuccess { updatedUser ->
+                    _uiState.value = current.copy(user = updatedUser)
+                    _message.value = context.getString(R.string.profile_update_success)
+                }
+                .onFailure { _message.value = context.getString(R.string.profile_update_error) }
+            _updatingProfile.value = false
+        }
+    }
+
     fun sendSupportMessage(text: String) {
         if (text.isBlank()) return
         viewModelScope.launch {
@@ -129,12 +154,13 @@ class ProfileViewModel(
 
     class Factory(
         private val repository: ProfileRepository,
+        private val catalogRepository: CatalogRepository,
         private val locationProvider: LocationProvider,
         private val context: Context
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return ProfileViewModel(repository, locationProvider, context) as T
+            return ProfileViewModel(repository, catalogRepository, locationProvider, context) as T
         }
     }
 }

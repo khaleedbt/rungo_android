@@ -11,6 +11,7 @@
     <string name="label_service">Service</string>
     <string name="label_login">Username</string>
     <string name="label_name">Name</string>
+    <string name="label_phone">Phone</string>
 
     <!-- Bottom navigation -->
     <string name="nav_services">Services</string>
@@ -28,6 +29,19 @@
     <string name="login_error_invalid">Invalid username or password</string>
     <string name="login_error_server">Server error (%1$d)</string>
     <string name="login_error_no_connection">No connection to the server</string>
+    <string name="login_register_link">Create an account</string>
+
+    <!-- Register -->
+    <string name="register_title">Create account</string>
+    <string name="register_fullname_placeholder">Name</string>
+    <string name="register_phone_placeholder">Phone</string>
+    <string name="register_password2_placeholder">Confirm password</string>
+    <string name="register_submit_button">Sign up</string>
+    <string name="register_registering">Signing up…</string>
+    <string name="register_login_link">Already have an account? Sign in</string>
+    <string name="register_error_generic">Failed to create account</string>
+    <string name="register_password_mismatch">Passwords do not match</string>
+    <string name="register_password_min_length">Minimum 8 characters</string>
 
     <!-- Services -->
     <string name="service_kind_visit">Visit to client</string>
@@ -45,7 +59,8 @@
 
     <!-- Create order form -->
     <string name="order_form_load_error">Failed to load order data</string>
-    <string name="order_form_address_required">Specify the city and address(es)</string>
+    <string name="order_form_address_required">Specify the address(es)</string>
+    <string name="order_form_city_required">Set your city in your profile</string>
     <string name="order_form_create_error">Failed to create order</string>
     <string name="section_city">CITY</string>
     <string name="section_pickup_address">PICKUP ADDRESS</string>
@@ -88,6 +103,11 @@
     <string name="profile_language_change_error">Failed to change language</string>
     <string name="profile_support_sent">Message sent to the operator</string>
     <string name="profile_support_error">Failed to send message</string>
+    <string name="profile_edit_title">Edit profile</string>
+    <string name="profile_edit_email_placeholder">Email</string>
+    <string name="profile_edit_save_button">Save</string>
+    <string name="profile_update_success">Profile updated</string>
+    <string name="profile_update_error">Failed to update profile</string>
 
     <!-- Shop -->
     <string name="shop_title">Shop</string>

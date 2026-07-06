@@ -230,7 +230,6 @@ fun HomeScreen(
                         service = service,
                         uiState = orderUiState,
                         onBack = { selectedService = null },
-                        onCitySelect = createOrderViewModel::selectCity,
                         onPickupLocationSelect = createOrderViewModel::selectPickupLocation,
                         onPickupManualEntrySelect = createOrderViewModel::selectPickupManualEntry,
                         onPickupManualAddressChange = createOrderViewModel::updatePickupManualAddress,
@@ -317,7 +316,6 @@ fun HomeScreen(
                     onGoToShopClick = { selectedTab = 1 },
                     onUpdateQuantity = cartViewModel::updateItemQuantity,
                     onRemoveItem = cartViewModel::removeItem,
-                    onCitySelect = cartViewModel::selectCity,
                     onLocationSelect = cartViewModel::selectLocation,
                     onManualEntrySelect = cartViewModel::selectManualEntry,
                     onManualAddressChange = cartViewModel::updateManualAddress,
@@ -330,12 +328,13 @@ fun HomeScreen(
 
             4 -> {
                 val profileViewModel: ProfileViewModel = viewModel(
-                    factory = ProfileViewModel.Factory(profileRepository, locationProvider, context)
+                    factory = ProfileViewModel.Factory(profileRepository, catalogRepository, locationProvider, context)
                 )
                 val uiState by profileViewModel.uiState.collectAsState()
                 val message by profileViewModel.message.collectAsState()
                 val isRefreshing by profileViewModel.isRefreshing.collectAsState()
                 val isAddingLocation by profileViewModel.addingLocation.collectAsState()
+                val isUpdatingProfile by profileViewModel.updatingProfile.collectAsState()
                 ProfileScreen(
                     uiState = uiState,
                     message = message,
@@ -347,6 +346,8 @@ fun HomeScreen(
                     isAddingLocation = isAddingLocation,
                     onLocationPermissionDenied = profileViewModel::locationPermissionDenied,
                     onLanguageSelect = profileViewModel::setLanguage,
+                    onSaveProfile = profileViewModel::updateProfile,
+                    isUpdatingProfile = isUpdatingProfile,
                     onSendSupportMessage = profileViewModel::sendSupportMessage,
                     onLogoutClick = onLogoutClick,
                     modifier = Modifier.padding(innerPadding)

@@ -7,6 +7,8 @@ import kotlinx.serialization.Serializable
 data class UserDto(
     val username: String,
     @SerialName("full_name") val fullName: String = "",
+    val phone: String? = null,
+    val email: String? = null,
     @SerialName("city") val cityId: Int? = null,
     @SerialName("city_name") val cityName: String = "",
     val role: String,
@@ -15,7 +17,13 @@ data class UserDto(
 )
 
 @Serializable
-data class UpdateLangRequest(val lang: String)
+data class UpdateProfileRequest(
+    val lang: String? = null,
+    @SerialName("full_name") val fullName: String? = null,
+    val phone: String? = null,
+    val email: String? = null,
+    val city: Int? = null
+)
 
 @Serializable
 data class LocationDto(

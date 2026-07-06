@@ -31,9 +31,12 @@ import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -63,9 +66,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import dev.batipy.rungo.R
+import dev.batipy.rungo.data.network.dto.CityDto
 import dev.batipy.rungo.data.network.dto.LocationDto
 import dev.batipy.rungo.data.network.dto.UserDto
 import dev.batipy.rungo.ui.theme.RunGoAccent
+import dev.batipy.rungo.ui.theme.RunGoBackground
 import dev.batipy.rungo.ui.theme.RunGoField
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
@@ -103,6 +108,8 @@ fun ProfileScreen(
     isAddingLocation: Boolean = false,
     onLocationPermissionDenied: () -> Unit = {},
     onLanguageSelect: (String) -> Unit,
+    onSaveProfile: (fullName: String, phone: String, email: String, cityId: Int?) -> Unit = { _, _, _, _ -> },
+    isUpdatingProfile: Boolean = false,
     onSendSupportMessage: (String) -> Unit,
     onLogoutClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -159,6 +166,14 @@ fun ProfileScreen(
                         )
                     }
                     item { UserCard(uiState.user) }
+                    item {
+                        EditProfileCard(
+                            user = uiState.user,
+                            cities = uiState.cities,
+                            isUpdating = isUpdatingProfile,
+                            onSave = onSaveProfile
+                        )
+                    }
                     item { BalanceCard(uiState.user.balance) }
                     item {
                         LocationsCard(
@@ -247,6 +262,8 @@ private fun UserCard(user: UserDto) {
             HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
             ProfileFieldRow(stringResource(R.string.label_name), user.fullName)
             HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
+            ProfileFieldRow(stringResource(R.string.label_phone), user.phone?.ifBlank { "—" } ?: "—")
+            HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
             ProfileFieldRow(stringResource(R.string.label_city), user.cityName)
         }
     }
@@ -262,6 +279,146 @@ private fun ProfileFieldRow(label: String, value: String) {
         Text(text = value, color = RunGoTextPrimary, fontWeight = FontWeight.SemiBold)
     }
 }
+
+@Composable
+private fun EditProfileCard(
+    user: UserDto,
+    cities: List<CityDto>,
+    isUpdating: Boolean,
+    onSave: (fullName: String, phone: String, email: String, cityId: Int?) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var fullName by remember(user.fullName) { mutableStateOf(user.fullName) }
+    var phone by remember(user.phone) { mutableStateOf(user.phone ?: "") }
+    var email by remember(user.email) { mutableStateOf(user.email ?: "") }
+    var selectedCityId by remember(user.cityId) { mutableStateOf(user.cityId) }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = RunGoField,
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.profile_edit_title),
+                    color = RunGoTextPrimary
+                )
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                    contentDescription = null,
+                    tint = RunGoTextSecondary
+                )
+            }
+            if (expanded) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = fullName,
+                    onValueChange = { fullName = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.register_fullname_placeholder)) },
+                    singleLine = true,
+                    colors = editFieldColors()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = phone,
+                    onValueChange = { phone = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.label_phone)) },
+                    singleLine = true,
+                    colors = editFieldColors()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.profile_edit_email_placeholder)) },
+                    singleLine = true,
+                    colors = editFieldColors()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                EditCityDropdown(
+                    cities = cities,
+                    selectedCityId = selectedCityId,
+                    onCitySelect = { selectedCityId = it }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = { onSave(fullName, phone, email, selectedCityId) },
+                    enabled = !isUpdating,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    if (isUpdating) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Text(stringResource(R.string.profile_edit_save_button), color = Color.White)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditCityDropdown(
+    cities: List<CityDto>,
+    selectedCityId: Int?,
+    onCitySelect: (Int) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedName = cities.find { it.id == selectedCityId }?.name ?: stringResource(R.string.city_dropdown_placeholder)
+
+    Box {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = true },
+            color = RunGoBackground,
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = selectedName, color = RunGoTextPrimary, modifier = Modifier.weight(1f))
+                Icon(Icons.Filled.UnfoldMore, contentDescription = null, tint = RunGoTextSecondary)
+            }
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            cities.forEach { city ->
+                DropdownMenuItem(
+                    text = { Text(city.name) },
+                    onClick = {
+                        onCitySelect(city.id)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun editFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedContainerColor = RunGoBackground,
+    unfocusedContainerColor = RunGoBackground,
+    focusedTextColor = RunGoTextPrimary,
+    unfocusedTextColor = RunGoTextPrimary,
+    focusedLabelColor = RunGoAccent,
+    unfocusedLabelColor = RunGoTextSecondary,
+    focusedBorderColor = RunGoAccent,
+    unfocusedBorderColor = RunGoTextSecondary.copy(alpha = 0.4f)
+)
 
 @Composable
 private fun BalanceCard(balance: String) {
@@ -352,7 +509,7 @@ private fun LocationsCard(
                 if (isAddingLocation) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                 } else {
-                    Text(stringResource(R.string.profile_location_request_button), fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.profile_location_request_button), color = Color.White, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -504,7 +661,7 @@ private fun SupportRow(onSendSupportMessage: (String) -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Text(stringResource(R.string.profile_support_send))
+                    Text(stringResource(R.string.profile_support_send), color = Color.White)
                 }
             }
         }

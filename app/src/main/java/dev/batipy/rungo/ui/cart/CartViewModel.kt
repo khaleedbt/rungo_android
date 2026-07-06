@@ -8,7 +8,6 @@ import dev.batipy.rungo.R
 import dev.batipy.rungo.data.cart.CartItem
 import dev.batipy.rungo.data.cart.CartRepository
 import dev.batipy.rungo.data.catalog.CatalogRepository
-import dev.batipy.rungo.data.network.dto.CityDto
 import dev.batipy.rungo.data.network.dto.LocationDto
 import dev.batipy.rungo.data.network.dto.OrderCreateRequest
 import dev.batipy.rungo.data.network.dto.OrderItemRequest
@@ -23,7 +22,6 @@ sealed interface CartUiState {
     data object Loading : CartUiState
     data class Error(val message: String) : CartUiState
     data class Ready(
-        val cities: List<CityDto>,
         val locations: List<LocationDto>,
         val exchangeRates: Map<String, Double> = emptyMap(),
         val selectedCityId: Int? = null,
@@ -59,28 +57,25 @@ class CartViewModel(
     fun load() {
         viewModelScope.launch {
             _uiState.value = CartUiState.Loading
-            val cities = catalogRepository.getCities().getOrNull()
             val locations = profileRepository.getLocations().getOrNull()
             val user = profileRepository.getMe().getOrNull()
             // Best-effort: a failed fetch just leaves non-USD prices unconverted.
             val exchangeRates = catalogRepository.getExchangeRates().getOrDefault(emptyMap())
 
-            if (cities == null || locations == null) {
+            if (locations == null) {
                 _uiState.value = CartUiState.Error(context.getString(R.string.order_form_load_error))
                 return@launch
             }
 
-            val defaultCityId = user?.cityId ?: cities.firstOrNull()?.id
+            // The order's city always follows the user's own profile city — no
+            // in-form picker, since shops are already filtered to that city.
             _uiState.value = CartUiState.Ready(
-                cities = cities,
                 locations = locations,
                 exchangeRates = exchangeRates,
-                selectedCityId = defaultCityId
+                selectedCityId = user?.cityId
             )
         }
     }
-
-    fun selectCity(cityId: Int) = updateReady { it.copy(selectedCityId = cityId) }
 
     fun selectLocation(locationId: Int) = updateReady {
         it.copy(selectedLocationId = locationId, manualAddress = "")
@@ -108,7 +103,11 @@ class CartViewModel(
         val address = location?.label?.ifBlank { "${location.latitude}, ${location.longitude}" }
             ?: state.manualAddress
 
-        if (cityId == null || address.isBlank()) {
+        if (cityId == null) {
+            _uiState.value = state.copy(error = context.getString(R.string.order_form_city_required))
+            return
+        }
+        if (address.isBlank()) {
             _uiState.value = state.copy(error = context.getString(R.string.order_form_address_required))
             return
         }

@@ -11,6 +11,7 @@
     <string name="label_service">Услуга</string>
     <string name="label_login">Логин</string>
     <string name="label_name">Имя</string>
+    <string name="label_phone">Телефон</string>
 
     <!-- Bottom navigation -->
     <string name="nav_services">Услуги</string>
@@ -28,6 +29,19 @@
     <string name="login_error_invalid">Неверный логин или пароль</string>
     <string name="login_error_server">Ошибка сервера (%1$d)</string>
     <string name="login_error_no_connection">Нет соединения с сервером</string>
+    <string name="login_register_link">Зарегистрироваться</string>
+
+    <!-- Register -->
+    <string name="register_title">Регистрация</string>
+    <string name="register_fullname_placeholder">Имя</string>
+    <string name="register_phone_placeholder">Телефон</string>
+    <string name="register_password2_placeholder">Повторите пароль</string>
+    <string name="register_submit_button">Зарегистрироваться</string>
+    <string name="register_registering">Регистрируем…</string>
+    <string name="register_login_link">Уже есть аккаунт? Войти</string>
+    <string name="register_error_generic">Не удалось зарегистрироваться</string>
+    <string name="register_password_mismatch">Пароли не совпадают</string>
+    <string name="register_password_min_length">Минимум 8 символов</string>
 
     <!-- Services -->
     <string name="service_kind_visit">Выезд к клиенту</string>
@@ -45,7 +59,8 @@
 
     <!-- Create order form -->
     <string name="order_form_load_error">Не удалось загрузить данные для заказа</string>
-    <string name="order_form_address_required">Укажите город и адрес(а)</string>
+    <string name="order_form_address_required">Укажите адрес(а)</string>
+    <string name="order_form_city_required">Укажите город в профиле</string>
     <string name="order_form_create_error">Не удалось создать заказ</string>
     <string name="section_city">ГОРОД</string>
     <string name="section_pickup_address">АДРЕС ПОЛУЧЕНИЯ</string>
@@ -88,6 +103,11 @@
     <string name="profile_language_change_error">Не удалось сменить язык</string>
     <string name="profile_support_sent">Сообщение отправлено оператору</string>
     <string name="profile_support_error">Не удалось отправить сообщение</string>
+    <string name="profile_edit_title">Изменить профиль</string>
+    <string name="profile_edit_email_placeholder">Email</string>
+    <string name="profile_edit_save_button">Сохранить</string>
+    <string name="profile_update_success">Профиль обновлён</string>
+    <string name="profile_update_error">Не удалось обновить профиль</string>
 
     <!-- Shop -->
     <string name="shop_title">Магазин</string>
