@@ -93,6 +93,8 @@ class CartViewModel(
 
     fun removeItem(productId: Int) = cartRepository.removeItem(productId)
 
+    fun clearCart() = cartRepository.clear()
+
     fun submit() {
         val state = _uiState.value as? CartUiState.Ready ?: return
         val items = cartItems.value

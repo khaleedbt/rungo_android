@@ -87,6 +87,7 @@
     <string name="role_admin">Администратор</string>
     <string name="role_partner">Партнёр</string>
     <string name="profile_logout">Выйти</string>
+    <string name="profile_app_version">Версия %1$s</string>
     <string name="profile_balance_label">Баланс</string>
     <string name="profile_location_title">Моя геолокация</string>
     <string name="profile_location_default_label">Локация %1$d</string>
@@ -124,6 +125,7 @@
     <string name="cart_title">Корзина</string>
     <string name="cart_total_label">Итого</string>
     <string name="cart_submit_button">Подтвердить заказ</string>
+    <string name="cart_clear_button">Очистить корзину</string>
 
     <!-- Orders list -->
     <string name="orders_title">Мои заказы</string>

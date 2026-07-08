@@ -202,6 +202,7 @@ fun ServiceOrderScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 placeholder = { Text(stringResource(R.string.comment_placeholder), color = RunGoPlaceholder) },
                                 minLines = 2,
+                                shape = RoundedCornerShape(14.dp),
                                 colors = fieldColors()
                             )
                         }
@@ -354,6 +355,7 @@ private fun AddressPicker(
                     .fillMaxWidth()
                     .padding(top = 12.dp),
                 placeholder = { Text(placeholder, color = RunGoPlaceholder) },
+                shape = RoundedCornerShape(14.dp),
                 colors = fieldColors()
             )
         }
@@ -365,7 +367,7 @@ private fun AddressChip(label: String, selected: Boolean, onClick: () -> Unit) {
     Surface(
         modifier = Modifier.clickable(onClick = onClick),
         color = if (selected) RunGoAccent else RunGoBackground,
-        shape = RoundedCornerShape(50)
+        shape = RoundedCornerShape(12.dp)
     ) {
         Text(
             text = label,

@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -84,6 +85,7 @@ fun CartScreen(
     onGoToShopClick: () -> Unit,
     onUpdateQuantity: (productId: Int, quantity: Int) -> Unit,
     onRemoveItem: (Int) -> Unit,
+    onClearCart: () -> Unit,
     onLocationSelect: (Int) -> Unit,
     onManualEntrySelect: () -> Unit,
     onManualAddressChange: (String) -> Unit,
@@ -116,6 +118,7 @@ fun CartScreen(
                 cartItems = cartItems,
                 onUpdateQuantity = onUpdateQuantity,
                 onRemoveItem = onRemoveItem,
+                onClearCart = onClearCart,
                 onLocationSelect = onLocationSelect,
                 onManualEntrySelect = onManualEntrySelect,
                 onManualAddressChange = onManualAddressChange,
@@ -134,6 +137,7 @@ private fun CartForm(
     cartItems: List<CartItem>,
     onUpdateQuantity: (productId: Int, quantity: Int) -> Unit,
     onRemoveItem: (Int) -> Unit,
+    onClearCart: () -> Unit,
     onLocationSelect: (Int) -> Unit,
     onManualEntrySelect: () -> Unit,
     onManualAddressChange: (String) -> Unit,
@@ -159,11 +163,34 @@ private fun CartForm(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Text(
-                text = stringResource(R.string.cart_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.cart_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Row(
+                    modifier = Modifier.clickable(onClick = onClearCart),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = stringResource(R.string.cart_clear_button),
+                        tint = RunGoTextSecondary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.cart_clear_button),
+                        color = RunGoTextSecondary,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
+            }
         }
 
         items(merchantGroups, key = { it.merchantId }) { group ->
@@ -222,6 +249,7 @@ private fun CartForm(
                                 .fillMaxWidth()
                                 .padding(top = 12.dp),
                             placeholder = { Text(stringResource(R.string.delivery_placeholder), color = RunGoPlaceholder) },
+                            shape = RoundedCornerShape(14.dp),
                             colors = fieldColors()
                         )
                     }
@@ -233,6 +261,7 @@ private fun CartForm(
                             .padding(top = 12.dp),
                         placeholder = { Text(stringResource(R.string.comment_placeholder), color = RunGoPlaceholder) },
                         minLines = 2,
+                        shape = RoundedCornerShape(14.dp),
                         colors = fieldColors()
                     )
                 }
@@ -432,7 +461,7 @@ private fun AddressChip(label: String, selected: Boolean, onClick: () -> Unit) {
     Surface(
         modifier = Modifier.clickable(onClick = onClick),
         color = if (selected) RunGoAccent else RunGoBackground,
-        shape = RoundedCornerShape(50)
+        shape = RoundedCornerShape(12.dp)
     ) {
         Text(
             text = label,
@@ -492,7 +521,7 @@ private fun EmptyCart(onGoToShopClick: () -> Unit, modifier: Modifier = Modifier
                 containerColor = MaterialTheme.colorScheme.primary
             )
         ) {
-            Text(text = stringResource(R.string.cart_go_to_shop), fontWeight = FontWeight.SemiBold)
+            Text(text = stringResource(R.string.cart_go_to_shop), color = Color.White, fontWeight = FontWeight.SemiBold)
         }
     }
 }

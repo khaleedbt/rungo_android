@@ -87,6 +87,7 @@
     <string name="role_admin">مدير</string>
     <string name="role_partner">شريك</string>
     <string name="profile_logout">تسجيل الخروج</string>
+    <string name="profile_app_version">الإصدار %1$s</string>
     <string name="profile_balance_label">الرصيد</string>
     <string name="profile_location_title">موقعي</string>
     <string name="profile_location_default_label">الموقع %1$d</string>
@@ -124,6 +125,7 @@
     <string name="cart_title">السلة</string>
     <string name="cart_total_label">المجموع</string>
     <string name="cart_submit_button">تأكيد الطلب</string>
+    <string name="cart_clear_button">إفراغ السلة</string>
 
     <!-- Orders list -->
     <string name="orders_title">طلباتي</string>

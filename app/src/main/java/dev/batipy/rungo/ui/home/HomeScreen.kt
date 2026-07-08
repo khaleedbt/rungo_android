@@ -316,6 +316,7 @@ fun HomeScreen(
                     onGoToShopClick = { selectedTab = 1 },
                     onUpdateQuantity = cartViewModel::updateItemQuantity,
                     onRemoveItem = cartViewModel::removeItem,
+                    onClearCart = cartViewModel::clearCart,
                     onLocationSelect = cartViewModel::selectLocation,
                     onManualEntrySelect = cartViewModel::selectManualEntry,
                     onManualAddressChange = cartViewModel::updateManualAddress,

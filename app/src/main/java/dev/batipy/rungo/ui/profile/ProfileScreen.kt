@@ -1,5 +1,6 @@
 package dev.batipy.rungo.ui.profile
 
+import dev.batipy.rungo.BuildConfig
 import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -63,6 +64,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import dev.batipy.rungo.R
@@ -200,6 +202,15 @@ fun ProfileScreen(
                         ) {
                             Text(stringResource(R.string.profile_logout))
                         }
+                    }
+                    item {
+                        Text(
+                            text = stringResource(R.string.profile_app_version, BuildConfig.VERSION_NAME),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = RunGoTextSecondary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
             }
