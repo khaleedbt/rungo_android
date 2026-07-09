@@ -302,6 +302,13 @@ fun HomeScreen(
                 val uiState by cartViewModel.uiState.collectAsState()
                 val orderCreated by cartViewModel.orderCreated.collectAsState()
 
+                // This branch is torn down and rebuilt each time the user leaves
+                // and returns to the Cart tab, so this fires on every re-entry —
+                // picks up locations added/deleted from Profile in the meantime.
+                LaunchedEffect(Unit) {
+                    cartViewModel.refreshLocations()
+                }
+
                 LaunchedEffect(orderCreated) {
                     val createdId = orderCreated
                     if (createdId != null) {

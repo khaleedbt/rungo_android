@@ -495,8 +495,10 @@ private fun DeliveryStepper(currentStatus: String) {
     ) {
         deliverySteps.forEachIndexed { index, status ->
             val label = stepLabel(status)
-            val completed = index < currentIndex
-            val active = index == currentIndex
+            // The final step is a terminal state, not "in progress" — treat it
+            // as completed (checkmark, no pulse) rather than the active step.
+            val completed = index < currentIndex || (index == currentIndex && index == deliverySteps.lastIndex)
+            val active = index == currentIndex && index != deliverySteps.lastIndex
             val circleColor by animateColorAsState(
                 targetValue = if (completed || active) RunGoAccent else RunGoField,
                 label = "stepCircleColor"
@@ -505,7 +507,10 @@ private fun DeliveryStepper(currentStatus: String) {
                 targetValue = if (completed || active) RunGoAccent else RunGoTextSecondary,
                 label = "stepLabelColor"
             )
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                modifier = Modifier.weight(2f),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Box(
                     modifier = Modifier
                         .size(38.dp)
@@ -547,6 +552,7 @@ private fun DeliveryStepper(currentStatus: String) {
                     color = labelColor,
                     style = MaterialTheme.typography.labelSmall,
                     textAlign = TextAlign.Center,
+                    maxLines = 2,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
@@ -558,7 +564,7 @@ private fun DeliveryStepper(currentStatus: String) {
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(top = 16.dp)
+                        .padding(top = 18.dp)
                         .height(2.dp)
                         .background(lineColor)
                 )

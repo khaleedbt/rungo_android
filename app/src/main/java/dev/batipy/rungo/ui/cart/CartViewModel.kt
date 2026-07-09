@@ -77,6 +77,22 @@ class CartViewModel(
         }
     }
 
+    // Locations are fetched once at init, but the user can add/delete them
+    // from the Profile tab while a cart draft is already open — re-sync the
+    // list (and drop a selection that was deleted) each time Cart is shown.
+    fun refreshLocations() {
+        viewModelScope.launch {
+            val locations = profileRepository.getLocations().getOrNull() ?: return@launch
+            updateReady { state ->
+                val selectionStillValid = state.selectedLocationId?.let { id -> locations.any { it.id == id } } ?: false
+                state.copy(
+                    locations = locations,
+                    selectedLocationId = if (selectionStillValid) state.selectedLocationId else null
+                )
+            }
+        }
+    }
+
     fun selectLocation(locationId: Int) = updateReady {
         it.copy(selectedLocationId = locationId, manualAddress = "")
     }

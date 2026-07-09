@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -61,7 +63,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -313,7 +317,10 @@ private fun EditProfileCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { expanded = !expanded },
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { expanded = !expanded },
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -329,33 +336,30 @@ private fun EditProfileCard(
             }
             if (expanded) {
                 Spacer(modifier = Modifier.height(12.dp))
-                OutlinedTextField(
+                LabeledField(
+                    caption = stringResource(R.string.register_fullname_placeholder),
                     value = fullName,
-                    onValueChange = { fullName = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(R.string.register_fullname_placeholder)) },
-                    singleLine = true,
-                    colors = editFieldColors()
+                    onValueChange = { fullName = it }
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
+                Spacer(modifier = Modifier.height(12.dp))
+                LabeledField(
+                    caption = stringResource(R.string.label_phone),
                     value = phone,
-                    onValueChange = { phone = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(R.string.label_phone)) },
-                    singleLine = true,
-                    colors = editFieldColors()
+                    onValueChange = { phone = it }
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
+                Spacer(modifier = Modifier.height(12.dp))
+                LabeledField(
+                    caption = stringResource(R.string.profile_edit_email_placeholder),
                     value = email,
-                    onValueChange = { email = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(R.string.profile_edit_email_placeholder)) },
-                    singleLine = true,
-                    colors = editFieldColors()
+                    onValueChange = { email = it }
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.label_city).uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = RunGoTextSecondary,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
+                )
                 EditCityDropdown(
                     cities = cities,
                     selectedCityId = selectedCityId,
@@ -386,12 +390,15 @@ private fun EditCityDropdown(
     onCitySelect: (Int) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var fieldWidthPx by remember { mutableStateOf(0) }
+    val density = LocalDensity.current
     val selectedName = cities.find { it.id == selectedCityId }?.name ?: stringResource(R.string.city_dropdown_placeholder)
 
     Box {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
+                .onSizeChanged { fieldWidthPx = it.width }
                 .clickable { expanded = true },
             color = RunGoBackground,
             shape = RoundedCornerShape(12.dp)
@@ -405,10 +412,16 @@ private fun EditCityDropdown(
                 Icon(Icons.Filled.UnfoldMore, contentDescription = null, tint = RunGoTextSecondary)
             }
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.width(with(density) { fieldWidthPx.toDp() }),
+            containerColor = RunGoField,
+            shape = RoundedCornerShape(14.dp)
+        ) {
             cities.forEach { city ->
                 DropdownMenuItem(
-                    text = { Text(city.name) },
+                    text = { Text(city.name, color = RunGoTextPrimary) },
                     onClick = {
                         onCitySelect(city.id)
                         expanded = false
@@ -420,13 +433,35 @@ private fun EditCityDropdown(
 }
 
 @Composable
+private fun LabeledField(
+    caption: String,
+    value: String,
+    onValueChange: (String) -> Unit
+) {
+    Column {
+        Text(
+            text = caption.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            color = RunGoTextSecondary,
+            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
+        )
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            shape = RoundedCornerShape(14.dp),
+            colors = editFieldColors()
+        )
+    }
+}
+
+@Composable
 private fun editFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedContainerColor = RunGoBackground,
     unfocusedContainerColor = RunGoBackground,
     focusedTextColor = RunGoTextPrimary,
     unfocusedTextColor = RunGoTextPrimary,
-    focusedLabelColor = RunGoAccent,
-    unfocusedLabelColor = RunGoTextSecondary,
     focusedBorderColor = RunGoAccent,
     unfocusedBorderColor = RunGoTextSecondary.copy(alpha = 0.4f)
 )
@@ -628,7 +663,10 @@ private fun SupportRow(onSendSupportMessage: (String) -> Unit) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { expanded = !expanded },
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { expanded = !expanded },
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -657,6 +695,7 @@ private fun SupportRow(onSendSupportMessage: (String) -> Unit) {
                     onValueChange = { text = it },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text(stringResource(R.string.profile_support_placeholder)) },
+                    shape = RoundedCornerShape(14.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = RunGoField,
                         unfocusedContainerColor = RunGoField

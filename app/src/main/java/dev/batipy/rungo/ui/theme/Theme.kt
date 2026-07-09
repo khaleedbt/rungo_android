@@ -1,7 +1,11 @@
 package dev.batipy.rungo.ui.theme
 
+import androidx.compose.material.ripple.RippleAlpha
+import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RippleConfiguration
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
@@ -16,6 +20,19 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = RunGoTextPrimary
 )
 
+// Material3's default ripple derives its color from LocalContentColor, which on
+// an accent-colored button (white text/icon) produces a jarring bright-white
+// flash on press. Pin it to a fixed, subdued accent tint everywhere instead.
+private val RunGoRippleConfiguration = RippleConfiguration(
+    color = RunGoAccent,
+    rippleAlpha = RippleAlpha(
+        draggedAlpha = 0.16f,
+        focusedAlpha = 0.20f,
+        hoveredAlpha = 0.08f,
+        pressedAlpha = 0.20f
+    )
+)
+
 @Composable
 fun RunGoTheme(
     content: @Composable () -> Unit
@@ -24,7 +41,10 @@ fun RunGoTheme(
     // so we ignore the system theme instead of falling back to unstyled defaults.
     MaterialTheme(
         colorScheme = DarkColorScheme,
-        typography = Typography,
-        content = content
-    )
+        typography = Typography
+    ) {
+        CompositionLocalProvider(LocalRippleConfiguration provides RunGoRippleConfiguration) {
+            content()
+        }
+    }
 }

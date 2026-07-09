@@ -1,5 +1,6 @@
 package dev.batipy.rungo.ui.services
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -42,6 +44,7 @@ import dev.batipy.rungo.data.network.dto.ServiceDto
 import dev.batipy.rungo.ui.common.localizedDescription
 import dev.batipy.rungo.ui.common.localizedName
 import dev.batipy.rungo.ui.theme.RunGoAccent
+import dev.batipy.rungo.ui.theme.RunGoAccentLight
 import dev.batipy.rungo.ui.theme.RunGoBackground
 import dev.batipy.rungo.ui.theme.RunGoField
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
@@ -108,10 +111,8 @@ fun ServicesScreen(
                             fontWeight = FontWeight.Bold
                         )
                     }
-                    if (uiState.activeOrder != null) {
-                        item {
-                            ActiveOrderCard(uiState.activeOrder, onClick = { onActiveOrderClick(uiState.activeOrder) })
-                        }
+                    items(uiState.activeOrders, key = { it.id }) { order ->
+                        ActiveOrderCard(order, onClick = { onActiveOrderClick(order) })
                     }
                     items(uiState.services) { service ->
                         ServiceCard(service, onClick = { onServiceClick(service) })
@@ -137,80 +138,72 @@ fun ServicesScreen(
 
 @Composable
 private fun ActiveOrderCard(order: OrderDto, onClick: () -> Unit) {
-    Column(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(RunGoField)
+            .clickable(onClick = onClick),
+        color = RunGoField,
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(4.dp)
-                .background(RunGoAccent)
-        )
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(16.dp)
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = stringResource(R.string.services_active_order_badge),
-                color = RunGoAccent,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Row(
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .width(4.dp)
+                    .height(36.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(RunGoAccent)
+            )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 12.dp)
             ) {
-                Text(
-                    text = stringResource(R.string.order_number, order.id),
-                    color = RunGoTextPrimary,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Surface(color = ActiveOrderPillBackground, shape = RoundedCornerShape(50)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = activeOrderStatusLabel(order.status),
-                        color = ActiveOrderPillText,
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        text = stringResource(R.string.order_number, order.id),
+                        color = RunGoTextPrimary,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    if (!order.serviceName.isNullOrBlank()) {
+                        Text(
+                            text = " · " + order.serviceName,
+                            color = RunGoAccent,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+                if (!order.deliveryAddress.isNullOrBlank()) {
+                    Text(
+                        text = order.deliveryAddress,
+                        color = RunGoTextSecondary,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp)
                     )
                 }
             }
-            if (!order.serviceName.isNullOrBlank()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = order.serviceName,
-                        color = RunGoAccent,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = RunGoTextSecondary
-                    )
-                }
-            }
-            if (!order.deliveryAddress.isNullOrBlank()) {
+            Surface(color = ActiveOrderPillBackground, shape = RoundedCornerShape(50)) {
                 Text(
-                    text = order.deliveryAddress,
-                    color = RunGoTextSecondary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 4.dp)
+                    text = activeOrderStatusLabel(order.status),
+                    color = ActiveOrderPillText,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                 )
             }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = RunGoTextSecondary,
+                modifier = Modifier.padding(start = 4.dp)
+            )
         }
     }
 }
@@ -235,6 +228,7 @@ private fun MerchantCard(merchant: MerchantDto, onClick: () -> Unit) {
         description = merchant.localizedDescription,
         badge = null,
         price = stringResource(R.string.services_delivery_price, merchant.deliveryFeeUsd),
+        bordered = true,
         onClick = onClick
     )
 }
@@ -246,6 +240,7 @@ private fun CatalogCard(
     description: String,
     badge: String?,
     price: String,
+    bordered: Boolean = false,
     onClick: () -> Unit
 ) {
     Surface(
@@ -253,6 +248,7 @@ private fun CatalogCard(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         color = RunGoField,
+        border = if (bordered) BorderStroke(1.5.dp, RunGoAccentLight.copy(alpha = 0.55f)) else null,
         shape = RoundedCornerShape(16.dp)
     ) {
         Row(

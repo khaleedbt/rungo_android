@@ -1,5 +1,6 @@
 package dev.batipy.rungo.ui.shop
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,6 +32,7 @@ import coil.compose.AsyncImage
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.MerchantDto
 import dev.batipy.rungo.ui.common.localizedDescription
+import dev.batipy.rungo.ui.theme.RunGoAccentLight
 import dev.batipy.rungo.ui.theme.RunGoField
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
@@ -91,6 +93,7 @@ private fun ShopMerchantCard(merchant: MerchantDto, onClick: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onClick),
         color = RunGoField,
+        border = BorderStroke(1.5.dp, RunGoAccentLight.copy(alpha = 0.55f)),
         shape = RoundedCornerShape(20.dp)
     ) {
         Column {

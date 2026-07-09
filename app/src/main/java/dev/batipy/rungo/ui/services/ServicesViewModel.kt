@@ -22,7 +22,7 @@ sealed interface ServicesUiState {
     data class Success(
         val services: List<ServiceDto>,
         val merchants: List<MerchantDto>,
-        val activeOrder: OrderDto? = null
+        val activeOrders: List<OrderDto> = emptyList()
     ) : ServicesUiState
     data class Error(val message: String) : ServicesUiState
 }
@@ -63,11 +63,12 @@ class ServicesViewModel(
         val cityId = profileRepository.getMe().getOrNull()?.cityId
         val services = catalogRepository.getServices(cityId).getOrNull()
         val merchants = catalogRepository.getMerchants(cityId).getOrNull()
-        val activeOrder = ordersRepository.getRecentOrders(limit = 5).getOrNull()
-            ?.firstOrNull { it.status in ACTIVE_ORDER_STATUSES }
+        val activeOrders = ordersRepository.getRecentOrders(limit = 20).getOrNull()
+            ?.filter { it.status in ACTIVE_ORDER_STATUSES }
+            .orEmpty()
 
         return if (services != null && merchants != null) {
-            ServicesUiState.Success(services, merchants, activeOrder)
+            ServicesUiState.Success(services, merchants, activeOrders)
         } else {
             ServicesUiState.Error(context.getString(R.string.services_load_error))
         }

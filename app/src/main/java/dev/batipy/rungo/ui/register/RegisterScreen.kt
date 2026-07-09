@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -36,6 +37,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -46,6 +49,7 @@ import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.CityDto
 import dev.batipy.rungo.ui.theme.RunGoAccent
 import dev.batipy.rungo.ui.theme.RunGoBackground
+import dev.batipy.rungo.ui.theme.RunGoField
 import dev.batipy.rungo.ui.theme.RunGoPlaceholder
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
@@ -203,6 +207,8 @@ private fun RegisterCityDropdown(
     onCitySelect: (Int) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var fieldWidthPx by remember { mutableStateOf(0) }
+    val density = LocalDensity.current
     val selectedName = cities.find { it.id == selectedCityId }?.name
         ?: stringResource(R.string.city_dropdown_placeholder)
 
@@ -210,6 +216,7 @@ private fun RegisterCityDropdown(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
+                .onSizeChanged { fieldWidthPx = it.width }
                 .clickable(enabled = enabled) { expanded = true },
             color = RunGoBackground,
             shape = RoundedCornerShape(12.dp)
@@ -227,10 +234,16 @@ private fun RegisterCityDropdown(
                 Icon(Icons.Filled.UnfoldMore, contentDescription = null, tint = RunGoTextSecondary)
             }
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.width(with(density) { fieldWidthPx.toDp() }),
+            containerColor = RunGoField,
+            shape = RoundedCornerShape(14.dp)
+        ) {
             cities.forEach { city ->
                 DropdownMenuItem(
-                    text = { Text(city.name) },
+                    text = { Text(city.name, color = RunGoTextPrimary) },
                     onClick = {
                         onCitySelect(city.id)
                         expanded = false
