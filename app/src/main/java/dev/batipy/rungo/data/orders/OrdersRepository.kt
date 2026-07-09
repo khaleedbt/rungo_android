@@ -7,6 +7,7 @@ import dev.batipy.rungo.data.network.dto.EmptyRequestBody
 import dev.batipy.rungo.data.network.dto.OrderCreateRequest
 import dev.batipy.rungo.data.network.dto.OrderDetailDto
 import dev.batipy.rungo.data.network.dto.OrderDto
+import dev.batipy.rungo.data.network.dto.OrderStatusRequest
 import dev.batipy.rungo.data.network.dto.ReviewCreateRequest
 import retrofit2.HttpException
 import retrofit2.Response
@@ -48,4 +49,24 @@ class OrdersRepository(private val api: RunGoApi) {
     suspend fun submitReview(id: Int, rating: Int, text: String): Result<Unit> =
         runCatching { api.submitReview(id, ReviewCreateRequest(rating, text)).throwIfUnsuccessful() }
             .onFailure { Log.e(TAG, "submitReview failed", it) }
+
+    suspend fun getCourierOrders(): Result<List<OrderDto>> =
+        runCatching { api.getCourierOrders().results }
+            .onFailure { Log.e(TAG, "getCourierOrders failed", it) }
+
+    suspend fun takeCourierOrder(id: Int): Result<OrderDetailDto> =
+        runCatching { api.takeCourierOrder(id) }
+            .onFailure { Log.e(TAG, "takeCourierOrder failed", it) }
+
+    suspend fun releaseCourierOrder(id: Int): Result<OrderDetailDto> =
+        runCatching { api.releaseCourierOrder(id) }
+            .onFailure { Log.e(TAG, "releaseCourierOrder failed", it) }
+
+    suspend fun updateCourierOrderStatus(id: Int, status: String): Result<OrderDetailDto> =
+        runCatching { api.updateCourierOrderStatus(id, OrderStatusRequest(status)) }
+            .onFailure { Log.e(TAG, "updateCourierOrderStatus failed", it) }
+
+    suspend fun collectPayment(id: Int): Result<OrderDetailDto> =
+        runCatching { api.collectPayment(id) }
+            .onFailure { Log.e(TAG, "collectPayment failed", it) }
 }

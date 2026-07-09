@@ -2,6 +2,7 @@ package dev.batipy.rungo.data.profile
 
 import android.util.Log
 import dev.batipy.rungo.data.network.RunGoApi
+import dev.batipy.rungo.data.network.dto.CourierAvailabilityRequest
 import dev.batipy.rungo.data.network.dto.LocationCreateRequest
 import dev.batipy.rungo.data.network.dto.LocationDto
 import dev.batipy.rungo.data.network.dto.SupportRequest
@@ -67,4 +68,8 @@ class ProfileRepository(private val api: RunGoApi) {
     suspend fun sendSupportMessage(message: String): Result<Unit> =
         runCatching { api.sendSupport(SupportRequest(message)).throwIfUnsuccessful() }
             .onFailure { Log.e(TAG, "sendSupportMessage failed", it) }
+
+    suspend fun setCourierAvailability(isAvailable: Boolean): Result<Boolean> =
+        runCatching { api.setCourierAvailability(CourierAvailabilityRequest(isAvailable)).isAvailable }
+            .onFailure { Log.e(TAG, "setCourierAvailability failed", it) }
 }

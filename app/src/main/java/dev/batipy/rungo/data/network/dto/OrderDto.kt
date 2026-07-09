@@ -56,11 +56,21 @@ data class OrderDetailDto(
     @SerialName("created_at") val createdAt: String,
     @SerialName("service_name") val serviceName: String? = null,
     @SerialName("city_name") val cityName: String? = null,
+    @SerialName("pickup_address") val pickupAddress: String? = null,
+    @SerialName("pickup_latitude") val pickupLatitude: String? = null,
+    @SerialName("pickup_longitude") val pickupLongitude: String? = null,
     @SerialName("delivery_address") val deliveryAddress: String? = null,
+    @SerialName("delivery_latitude") val deliveryLatitude: String? = null,
+    @SerialName("delivery_longitude") val deliveryLongitude: String? = null,
+    @SerialName("distance_km") val distanceKm: String? = null,
+    val comment: String? = null,
     @SerialName("service_fee") val serviceFee: String? = null,
     @SerialName("cod_total") val codTotal: String? = null,
     val currency: String = "usd",
     @SerialName("payment_method") val paymentMethod: String? = null,
+    @SerialName("payment_collected") val paymentCollected: Boolean = false,
+    @SerialName("client_name") val clientName: String? = null,
+    @SerialName("client_phone") val clientPhone: String? = null,
     @SerialName("courier_full_name") val courierFullName: String? = null,
     @SerialName("courier_username") val courierUsername: String? = null,
     val review: ReviewDto? = null
@@ -68,6 +78,9 @@ data class OrderDetailDto(
     val courierDisplayName: String?
         get() = courierFullName?.ifBlank { null } ?: courierUsername?.ifBlank { null }
 }
+
+@Serializable
+data class OrderStatusRequest(val status: String)
 
 @Serializable
 data class ReviewDto(

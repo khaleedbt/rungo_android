@@ -4,6 +4,11 @@
     <!-- Common -->
     <string name="common_back">Back</string>
     <string name="common_cancel">Cancel</string>
+    <string name="common_confirm">Confirm</string>
+    <string name="common_details">Details</string>
+    <string name="client_info_title">Client</string>
+    <string name="common_retry">Retry</string>
+    <string name="home_role_load_error">Failed to load profile</string>
     <string name="order_number">Order #%1$d</string>
     <string name="label_city">City</string>
     <string name="label_address">Address</string>
@@ -126,6 +131,37 @@
     <string name="cart_total_label">Total</string>
     <string name="cart_submit_button">Place order</string>
     <string name="cart_clear_button">Clear cart</string>
+
+    <!-- Courier -->
+    <string name="courier_orders_load_error">Failed to load orders</string>
+    <string name="courier_availability_error">Failed to change availability</string>
+    <string name="courier_take_order_error">Failed to take the order</string>
+    <string name="courier_online">Online — accepting orders</string>
+    <string name="courier_offline">Offline — not receiving orders</string>
+    <string name="courier_tab_available">Available</string>
+    <string name="courier_tab_history">History</string>
+    <string name="courier_no_history_orders">No history yet</string>
+    <string name="courier_section_available">Available orders</string>
+    <string name="courier_section_active">My active orders</string>
+    <string name="courier_take_button">Take</string>
+    <string name="courier_action_error">Failed to complete the action</string>
+    <string name="courier_pickup_address_label">Pickup point</string>
+    <string name="courier_delivery_address_label">Delivery address</string>
+    <string name="courier_navigate_button">Navigate</string>
+    <string name="courier_call_button">Call</string>
+    <string name="courier_distance_label">Distance: %1$s km</string>
+    <string name="courier_comment_label">Comment</string>
+    <string name="courier_payment_label">Payment</string>
+    <string name="courier_payment_collected">Payment collected</string>
+    <string name="courier_payment_pending">Payment pending</string>
+    <string name="courier_in_delivery_button">On my way</string>
+    <string name="courier_release_button">Return order</string>
+    <string name="courier_collect_payment_button">Payment received</string>
+    <string name="courier_collect_payment_confirm">Confirm that you received cash payment from the client</string>
+    <string name="courier_waiting_client_confirmation">Waiting for client confirmation</string>
+    <string name="courier_order_delivered_note">Order delivered ✅</string>
+    <string name="courier_order_cancelled_note">Order cancelled</string>
+    <string name="courier_navigate_error">Failed to open navigation</string>
 
     <!-- Orders list -->
     <string name="orders_title">My orders</string>

@@ -6,9 +6,18 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.ShoppingCart
+import android.content.Context
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -23,6 +32,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -38,6 +48,10 @@ import dev.batipy.rungo.data.orders.OrdersRepository
 import dev.batipy.rungo.data.profile.ProfileRepository
 import dev.batipy.rungo.ui.cart.CartScreen
 import dev.batipy.rungo.ui.cart.CartViewModel
+import dev.batipy.rungo.ui.courier.CourierOrderDetailScreen
+import dev.batipy.rungo.ui.courier.CourierOrderDetailViewModel
+import dev.batipy.rungo.ui.courier.CourierOrdersScreen
+import dev.batipy.rungo.ui.courier.CourierOrdersViewModel
 import dev.batipy.rungo.ui.orders.OrderDetailScreen
 import dev.batipy.rungo.ui.orders.OrderDetailViewModel
 import dev.batipy.rungo.ui.orders.OrdersScreen
@@ -52,6 +66,7 @@ import dev.batipy.rungo.ui.shop.MerchantDetailScreen
 import dev.batipy.rungo.ui.shop.MerchantDetailViewModel
 import dev.batipy.rungo.ui.shop.ShopScreen
 import dev.batipy.rungo.ui.shop.ShopViewModel
+import dev.batipy.rungo.ui.theme.RunGoTextSecondary
 
 private data class HomeTab(val label: String, val icon: ImageVector)
 
@@ -61,6 +76,13 @@ private fun homeTabs(): List<HomeTab> = listOf(
     HomeTab(stringResource(R.string.nav_shop), Icons.Filled.ShoppingCart),
     HomeTab(stringResource(R.string.nav_orders), Icons.AutoMirrored.Filled.Assignment),
     HomeTab(stringResource(R.string.nav_cart), Icons.Filled.ShoppingBag),
+    HomeTab(stringResource(R.string.nav_profile), Icons.Filled.Person)
+)
+
+// Courier accounts don't shop/order — just a queue of deliveries to work and a profile.
+@Composable
+private fun courierHomeTabs(): List<HomeTab> = listOf(
+    HomeTab(stringResource(R.string.nav_orders), Icons.AutoMirrored.Filled.Assignment),
     HomeTab(stringResource(R.string.nav_profile), Icons.Filled.Person)
 )
 
@@ -91,6 +113,42 @@ fun HomeScreen(
         }
     }
 
+    // Determines which screen set to show — fetched once on entry rather than
+    // stored globally, matching how every other screen independently pulls
+    // what it needs from ProfileRepository.
+    var role by remember { mutableStateOf<String?>(null) }
+    var roleLoadFailed by remember { mutableStateOf(false) }
+    var roleLoadAttempt by remember { mutableIntStateOf(0) }
+    LaunchedEffect(roleLoadAttempt) {
+        val fetchedRole = profileRepository.getMe().getOrNull()?.role
+        if (fetchedRole != null) {
+            role = fetchedRole
+        } else {
+            roleLoadFailed = true
+        }
+    }
+
+    if (role == null) {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            if (roleLoadFailed) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(stringResource(R.string.home_role_load_error), color = RunGoTextSecondary)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(onClick = {
+                        roleLoadFailed = false
+                        roleLoadAttempt++
+                    }) {
+                        Text(stringResource(R.string.common_retry))
+                    }
+                }
+            } else {
+                CircularProgressIndicator()
+            }
+        }
+        return
+    }
+    val isCourier = role == "courier"
+
     // Hoisted (rather than created inside the `when` branch below) so the bottom
     // bar's onClick can trigger a refresh even when tapping a tab you're already on.
     val ordersViewModel: OrdersViewModel = viewModel(
@@ -103,7 +161,7 @@ fun HomeScreen(
         modifier = modifier,
         bottomBar = {
             NavigationBar {
-                homeTabs().forEachIndexed { index, tab ->
+                (if (isCourier) courierHomeTabs() else homeTabs()).forEachIndexed { index, tab ->
                     NavigationBarItem(
                         selected = selectedTab == index && selectedOrderId == null,
                         onClick = {
@@ -114,7 +172,7 @@ fun HomeScreen(
                             val isNavigatingHere = selectedTab != index || selectedOrderId != null
                             selectedTab = index
                             selectedOrderId = null
-                            if (isNavigatingHere) {
+                            if (isNavigatingHere && !isCourier) {
                                 when (index) {
                                     0 -> servicesViewModel.refresh()
                                     2 -> ordersViewModel.refresh()
@@ -122,7 +180,7 @@ fun HomeScreen(
                             }
                         },
                         icon = {
-                            if (index == 3 && cartCount > 0) {
+                            if (!isCourier && index == 3 && cartCount > 0) {
                                 BadgedBox(badge = { Badge { Text("$cartCount") } }) {
                                     Icon(tab.icon, contentDescription = tab.label)
                                 }
@@ -137,7 +195,34 @@ fun HomeScreen(
         }
     ) { innerPadding ->
         val orderId = selectedOrderId
-        if (orderId != null) {
+        if (orderId != null && isCourier) {
+            val courierOrderDetailViewModel: CourierOrderDetailViewModel = viewModel(
+                key = "courier-order-detail-$orderId",
+                factory = CourierOrderDetailViewModel.Factory(orderId, ordersRepository, context)
+            )
+            val courierOrderDetailState by courierOrderDetailViewModel.uiState.collectAsState()
+            val courierOrderDetailMessage by courierOrderDetailViewModel.message.collectAsState()
+
+            // The ViewModel is cached in the Activity's ViewModelStore by order
+            // id, so re-opening the same order's detail (e.g. after taking it
+            // from the list) would otherwise keep showing the stale snapshot
+            // from the first visit instead of re-fetching current status.
+            LaunchedEffect(orderId) {
+                courierOrderDetailViewModel.load()
+            }
+
+            CourierOrderDetailScreen(
+                uiState = courierOrderDetailState,
+                message = courierOrderDetailMessage,
+                onConsumeMessage = courierOrderDetailViewModel::consumeMessage,
+                onBack = { selectedOrderId = null },
+                onTakeOrder = courierOrderDetailViewModel::takeOrder,
+                onMarkInDelivery = courierOrderDetailViewModel::markInDelivery,
+                onReleaseOrder = courierOrderDetailViewModel::releaseOrder,
+                onCollectPayment = courierOrderDetailViewModel::collectPayment,
+                modifier = Modifier.padding(innerPadding)
+            )
+        } else if (orderId != null) {
             val orderDetailViewModel: OrderDetailViewModel = viewModel(
                 key = "order-detail-$orderId",
                 factory = OrderDetailViewModel.Factory(orderId, ordersRepository, profileRepository, catalogRepository, context)
@@ -161,6 +246,36 @@ fun HomeScreen(
                 onSubmitReview = orderDetailViewModel::submitReview,
                 modifier = Modifier.padding(innerPadding)
             )
+        } else if (isCourier) {
+        when (selectedTab) {
+            0 -> {
+                val courierOrdersViewModel: CourierOrdersViewModel = viewModel(
+                    factory = CourierOrdersViewModel.Factory(ordersRepository, profileRepository, context)
+                )
+                val uiState by courierOrdersViewModel.uiState.collectAsState()
+                val isRefreshing by courierOrdersViewModel.isRefreshing.collectAsState()
+                CourierOrdersScreen(
+                    uiState = uiState,
+                    isRefreshing = isRefreshing,
+                    onRefresh = courierOrdersViewModel::refresh,
+                    onToggleAvailability = courierOrdersViewModel::toggleAvailability,
+                    onTakeOrder = courierOrdersViewModel::takeOrder,
+                    onOrderClick = { order -> selectedOrderId = order.id },
+                    modifier = Modifier.padding(innerPadding)
+                )
+            }
+
+            1 -> {
+                ProfileTab(
+                    profileRepository = profileRepository,
+                    catalogRepository = catalogRepository,
+                    locationProvider = locationProvider,
+                    context = context,
+                    innerPadding = innerPadding,
+                    onLogoutClick = onLogoutClick
+                )
+            }
+        }
         } else {
         when (selectedTab) {
             0 -> {
@@ -335,33 +450,54 @@ fun HomeScreen(
             }
 
             4 -> {
-                val profileViewModel: ProfileViewModel = viewModel(
-                    factory = ProfileViewModel.Factory(profileRepository, catalogRepository, locationProvider, context)
-                )
-                val uiState by profileViewModel.uiState.collectAsState()
-                val message by profileViewModel.message.collectAsState()
-                val isRefreshing by profileViewModel.isRefreshing.collectAsState()
-                val isAddingLocation by profileViewModel.addingLocation.collectAsState()
-                val isUpdatingProfile by profileViewModel.updatingProfile.collectAsState()
-                ProfileScreen(
-                    uiState = uiState,
-                    message = message,
-                    isRefreshing = isRefreshing,
-                    onRefresh = profileViewModel::refresh,
-                    onConsumeMessage = profileViewModel::consumeMessage,
-                    onDeleteLocation = profileViewModel::deleteLocation,
-                    onRequestLocation = profileViewModel::addCurrentLocation,
-                    isAddingLocation = isAddingLocation,
-                    onLocationPermissionDenied = profileViewModel::locationPermissionDenied,
-                    onLanguageSelect = profileViewModel::setLanguage,
-                    onSaveProfile = profileViewModel::updateProfile,
-                    isUpdatingProfile = isUpdatingProfile,
-                    onSendSupportMessage = profileViewModel::sendSupportMessage,
-                    onLogoutClick = onLogoutClick,
-                    modifier = Modifier.padding(innerPadding)
+                ProfileTab(
+                    profileRepository = profileRepository,
+                    catalogRepository = catalogRepository,
+                    locationProvider = locationProvider,
+                    context = context,
+                    innerPadding = innerPadding,
+                    onLogoutClick = onLogoutClick
                 )
             }
         }
         }
     }
+}
+
+// Shared between the client's Профиль tab (index 4) and the courier's
+// Профиль tab (index 1) — same account/profile screen for every role.
+@Composable
+private fun ProfileTab(
+    profileRepository: ProfileRepository,
+    catalogRepository: CatalogRepository,
+    locationProvider: LocationProvider,
+    context: Context,
+    innerPadding: PaddingValues,
+    onLogoutClick: () -> Unit
+) {
+    val profileViewModel: ProfileViewModel = viewModel(
+        factory = ProfileViewModel.Factory(profileRepository, catalogRepository, locationProvider, context)
+    )
+    val uiState by profileViewModel.uiState.collectAsState()
+    val message by profileViewModel.message.collectAsState()
+    val isRefreshing by profileViewModel.isRefreshing.collectAsState()
+    val isAddingLocation by profileViewModel.addingLocation.collectAsState()
+    val isUpdatingProfile by profileViewModel.updatingProfile.collectAsState()
+    ProfileScreen(
+        uiState = uiState,
+        message = message,
+        isRefreshing = isRefreshing,
+        onRefresh = profileViewModel::refresh,
+        onConsumeMessage = profileViewModel::consumeMessage,
+        onDeleteLocation = profileViewModel::deleteLocation,
+        onRequestLocation = profileViewModel::addCurrentLocation,
+        isAddingLocation = isAddingLocation,
+        onLocationPermissionDenied = profileViewModel::locationPermissionDenied,
+        onLanguageSelect = profileViewModel::setLanguage,
+        onSaveProfile = profileViewModel::updateProfile,
+        isUpdatingProfile = isUpdatingProfile,
+        onSendSupportMessage = profileViewModel::sendSupportMessage,
+        onLogoutClick = onLogoutClick,
+        modifier = Modifier.padding(innerPadding)
+    )
 }

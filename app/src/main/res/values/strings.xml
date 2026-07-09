@@ -3,7 +3,10 @@
 
     <!-- Common -->
     <string name="common_back">Назад</string>
+    <string name="common_details">Подробнее</string>
     <string name="common_cancel">Отмена</string>
+    <string name="common_retry">Повторить</string>
+    <string name="home_role_load_error">Не удалось загрузить профиль</string>
     <string name="order_number">Заказ #%1$d</string>
     <string name="label_city">Город</string>
     <string name="label_address">Адрес</string>
@@ -126,6 +129,39 @@
     <string name="cart_total_label">Итого</string>
     <string name="cart_submit_button">Подтвердить заказ</string>
     <string name="cart_clear_button">Очистить корзину</string>
+
+    <!-- Courier -->
+    <string name="courier_orders_load_error">Не удалось загрузить заказы</string>
+    <string name="courier_availability_error">Не удалось изменить статус доступности</string>
+    <string name="courier_take_order_error">Не удалось взять заказ</string>
+    <string name="courier_online">В сети — принимаю заказы</string>
+    <string name="courier_offline">Не в сети — не получаю заказы</string>
+    <string name="courier_tab_available">Доступные</string>
+    <string name="courier_tab_history">История</string>
+    <string name="courier_no_history_orders">История пуста</string>
+    <string name="courier_section_available">Доступные заказы</string>
+    <string name="courier_section_active">Мои активные заказы</string>
+    <string name="courier_take_button">Взять</string>
+    <string name="courier_action_error">Не удалось выполнить действие</string>
+    <string name="courier_pickup_address_label">Точка получения</string>
+    <string name="courier_delivery_address_label">Адрес доставки</string>
+    <string name="courier_navigate_button">Навигация</string>
+    <string name="courier_call_button">Позвонить</string>
+    <string name="courier_distance_label">Расстояние: %1$s км</string>
+    <string name="courier_comment_label">Комментарий</string>
+    <string name="courier_payment_label">Оплата</string>
+    <string name="courier_payment_collected">Оплата получена</string>
+    <string name="courier_payment_pending">Оплата не получена</string>
+    <string name="courier_in_delivery_button">В пути</string>
+    <string name="courier_release_button">Вернуть заказ</string>
+    <string name="courier_collect_payment_button">Оплата получена</string>
+    <string name="courier_collect_payment_confirm">Подтвердите, что получили оплату наличными от клиента</string>
+    <string name="courier_waiting_client_confirmation">Ожидание подтверждения получения от клиента</string>
+    <string name="courier_order_delivered_note">Заказ доставлен ✅</string>
+    <string name="courier_order_cancelled_note">Заказ отменён</string>
+    <string name="courier_navigate_error">Не удалось открыть навигацию</string>
+    <string name="common_confirm">Подтвердить</string>
+    <string name="client_info_title">Клиент</string>
 
     <!-- Orders list -->
     <string name="orders_title">Мои заказы</string>

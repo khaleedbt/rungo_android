@@ -13,8 +13,15 @@ data class UserDto(
     @SerialName("city_name") val cityName: String = "",
     val role: String,
     val balance: String,
-    val lang: String = "ru"
+    val lang: String = "ru",
+    @SerialName("is_available") val isAvailable: Boolean = false
 )
+
+@Serializable
+data class CourierAvailabilityRequest(@SerialName("is_available") val isAvailable: Boolean)
+
+@Serializable
+data class CourierAvailabilityResponse(@SerialName("is_available") val isAvailable: Boolean)
 
 @Serializable
 data class UpdateProfileRequest(

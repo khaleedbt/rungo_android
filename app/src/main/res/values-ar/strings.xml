@@ -4,6 +4,11 @@
     <!-- Common -->
     <string name="common_back">رجوع</string>
     <string name="common_cancel">إلغاء</string>
+    <string name="common_confirm">تأكيد</string>
+    <string name="common_details">التفاصيل</string>
+    <string name="client_info_title">العميل</string>
+    <string name="common_retry">إعادة المحاولة</string>
+    <string name="home_role_load_error">تعذّر تحميل الملف الشخصي</string>
     <string name="order_number">طلب #%1$d</string>
     <string name="label_city">المدينة</string>
     <string name="label_address">العنوان</string>
@@ -126,6 +131,37 @@
     <string name="cart_total_label">المجموع</string>
     <string name="cart_submit_button">تأكيد الطلب</string>
     <string name="cart_clear_button">إفراغ السلة</string>
+
+    <!-- Courier -->
+    <string name="courier_orders_load_error">تعذّر تحميل الطلبات</string>
+    <string name="courier_availability_error">تعذّر تغيير حالة التوفر</string>
+    <string name="courier_take_order_error">تعذّر استلام الطلب</string>
+    <string name="courier_online">متصل — يستقبل الطلبات</string>
+    <string name="courier_offline">غير متصل — لا يستقبل الطلبات</string>
+    <string name="courier_tab_available">المتاحة</string>
+    <string name="courier_tab_history">السجل</string>
+    <string name="courier_no_history_orders">لا يوجد سجل بعد</string>
+    <string name="courier_section_available">الطلبات المتاحة</string>
+    <string name="courier_section_active">طلباتي النشطة</string>
+    <string name="courier_take_button">استلام</string>
+    <string name="courier_action_error">تعذّر تنفيذ الإجراء</string>
+    <string name="courier_pickup_address_label">نقطة الاستلام</string>
+    <string name="courier_delivery_address_label">عنوان التوصيل</string>
+    <string name="courier_navigate_button">الملاحة</string>
+    <string name="courier_call_button">اتصال</string>
+    <string name="courier_distance_label">المسافة: %1$s كم</string>
+    <string name="courier_comment_label">تعليق</string>
+    <string name="courier_payment_label">الدفع</string>
+    <string name="courier_payment_collected">تم استلام الدفع</string>
+    <string name="courier_payment_pending">الدفع لم يُستلم بعد</string>
+    <string name="courier_in_delivery_button">في الطريق</string>
+    <string name="courier_release_button">إرجاع الطلب</string>
+    <string name="courier_collect_payment_button">تم استلام الدفع</string>
+    <string name="courier_collect_payment_confirm">أكّد أنك استلمت الدفع نقدًا من العميل</string>
+    <string name="courier_waiting_client_confirmation">بانتظار تأكيد الاستلام من العميل</string>
+    <string name="courier_order_delivered_note">تم توصيل الطلب ✅</string>
+    <string name="courier_order_cancelled_note">تم إلغاء الطلب</string>
+    <string name="courier_navigate_error">تعذّر فتح الملاحة</string>
 
     <!-- Orders list -->
     <string name="orders_title">طلباتي</string>

@@ -1,6 +1,8 @@
 package dev.batipy.rungo.data.network
 
 import dev.batipy.rungo.data.network.dto.ConfirmDeliveryRequest
+import dev.batipy.rungo.data.network.dto.CourierAvailabilityRequest
+import dev.batipy.rungo.data.network.dto.CourierAvailabilityResponse
 import dev.batipy.rungo.data.network.dto.DeviceTokenRequest
 import dev.batipy.rungo.data.network.dto.EmptyRequestBody
 import dev.batipy.rungo.data.network.dto.LocationCreateRequest
@@ -10,6 +12,7 @@ import dev.batipy.rungo.data.network.dto.MerchantDetailDto
 import dev.batipy.rungo.data.network.dto.OrderCreateRequest
 import dev.batipy.rungo.data.network.dto.OrderCreateResponseDto
 import dev.batipy.rungo.data.network.dto.OrderDetailDto
+import dev.batipy.rungo.data.network.dto.OrderStatusRequest
 import dev.batipy.rungo.data.network.dto.PaginatedCitiesDto
 import dev.batipy.rungo.data.network.dto.ReviewCreateRequest
 import dev.batipy.rungo.data.network.dto.PaginatedLocationsDto
@@ -71,6 +74,24 @@ interface RunGoApi {
 
     @POST("api/v1/orders/{id}/review/")
     suspend fun submitReview(@Path("id") id: Int, @Body request: ReviewCreateRequest): Response<Void>
+
+    @GET("api/v1/courier/orders/")
+    suspend fun getCourierOrders(): PaginatedOrdersDto
+
+    @POST("api/v1/courier/orders/{id}/take/")
+    suspend fun takeCourierOrder(@Path("id") id: Int): OrderDetailDto
+
+    @POST("api/v1/courier/orders/{id}/release/")
+    suspend fun releaseCourierOrder(@Path("id") id: Int): OrderDetailDto
+
+    @PATCH("api/v1/courier/orders/{id}/status/")
+    suspend fun updateCourierOrderStatus(@Path("id") id: Int, @Body request: OrderStatusRequest): OrderDetailDto
+
+    @POST("api/v1/courier/orders/{id}/collect-payment/")
+    suspend fun collectPayment(@Path("id") id: Int): OrderDetailDto
+
+    @PATCH("api/v1/courier/availability/")
+    suspend fun setCourierAvailability(@Body request: CourierAvailabilityRequest): CourierAvailabilityResponse
 
     @GET("api/v1/cities/")
     suspend fun getCities(): PaginatedCitiesDto

@@ -145,6 +145,12 @@ class CartViewModel(
                 .onSuccess { orderId ->
                     cartRepository.clear()
                     _orderCreated.value = orderId
+                    // Reset the form (address/comment/submitting) for the next
+                    // order — otherwise this stale Ready state (submitting =
+                    // true forever) resurfaces the moment the cart is non-empty
+                    // again, showing the previous order's leftover input with
+                    // a permanently spinning submit button.
+                    load()
                 }
                 .onFailure {
                     _uiState.value = state.copy(submitting = false, error = context.getString(R.string.order_form_create_error))
