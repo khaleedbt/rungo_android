@@ -252,7 +252,7 @@ fun HomeScreen(
             BackHandler { selectedOrderId = null }
             val courierOrderDetailViewModel: CourierOrderDetailViewModel = viewModel(
                 key = "courier-order-detail-$orderId",
-                factory = CourierOrderDetailViewModel.Factory(orderId, ordersRepository, context)
+                factory = CourierOrderDetailViewModel.Factory(orderId, ordersRepository, orderFeedRepository, context)
             )
             val courierOrderDetailState by courierOrderDetailViewModel.uiState.collectAsState()
             val courierOrderDetailMessage by courierOrderDetailViewModel.message.collectAsState()

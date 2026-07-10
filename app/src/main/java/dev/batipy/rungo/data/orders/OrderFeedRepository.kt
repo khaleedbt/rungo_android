@@ -70,6 +70,22 @@ class OrderFeedRepository(
         socket = null
     }
 
+    /**
+     * Call whenever the app returns to the foreground. Android kills
+     * background sockets fairly aggressively (Doze/App Standby), so a status
+     * change that happens while the app is backgrounded can silently miss
+     * both the ping (no live connection to receive it on) and the connection
+     * itself (needs re-establishing). Forces a fresh reconnect and an
+     * immediate "assume something changed" ping so every screen catches up
+     * right away instead of waiting for the next real event.
+     */
+    fun onAppResumed() {
+        if (!wantsConnection) return
+        _updates.tryEmit(Unit)
+        socket?.close(1000, null)
+        openSocket()
+    }
+
     private fun openSocket() {
         val requestBuilder = Request.Builder().url("${WS_BASE_URL}ws/orders/feed/")
         tokenStore.currentTokens?.access?.let { token ->

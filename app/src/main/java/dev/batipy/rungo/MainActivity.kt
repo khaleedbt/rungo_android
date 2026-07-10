@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -23,6 +24,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.batipy.rungo.ui.home.HomeScreen
 import dev.batipy.rungo.ui.login.LoginScreen
@@ -69,6 +73,21 @@ class MainActivity : AppCompatActivity() {
                                 app.notificationRepository.registerCurrentDeviceToken()
                                 app.orderFeedRepository.connect()
                             }
+                        }
+
+                        // Android kills background sockets fairly aggressively, so a
+                        // status change that happens while the app is backgrounded can
+                        // be missed entirely — force a reconnect + refresh whenever the
+                        // app comes back to the foreground, on top of the live feed.
+                        val lifecycleOwner = LocalLifecycleOwner.current
+                        DisposableEffect(lifecycleOwner) {
+                            val observer = LifecycleEventObserver { _, event ->
+                                if (event == Lifecycle.Event.ON_RESUME) {
+                                    app.orderFeedRepository.onAppResumed()
+                                }
+                            }
+                            lifecycleOwner.lifecycle.addObserver(observer)
+                            onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
                         }
 
                         LaunchedEffect(Unit) {

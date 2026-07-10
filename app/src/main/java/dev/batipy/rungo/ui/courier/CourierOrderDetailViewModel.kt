@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.OrderDetailDto
+import dev.batipy.rungo.data.orders.OrderFeedRepository
 import dev.batipy.rungo.data.orders.OrdersRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +25,7 @@ sealed interface CourierOrderDetailUiState {
 class CourierOrderDetailViewModel(
     private val orderId: Int,
     private val ordersRepository: OrdersRepository,
+    orderFeedRepository: OrderFeedRepository,
     private val context: Context
 ) : ViewModel() {
 
@@ -38,10 +40,30 @@ class CourierOrderDetailViewModel(
     // a freshly created instance and one reused from the ViewModelStore.
     // Loading here too would fire a redundant getOrderDetail() on every open.
 
+    init {
+        // Live "an order changed" ping (see OrderFeedRepository) — e.g. the
+        // client confirming delivery — so this screen's status updates
+        // without the courier having to leave and re-open it.
+        viewModelScope.launch {
+            orderFeedRepository.updates.collect { refresh() }
+        }
+    }
+
     fun load() {
         viewModelScope.launch {
             _uiState.value = CourierOrderDetailUiState.Loading
             _uiState.value = fetch()
+        }
+    }
+
+    /** Quiet background refresh for the live feed ping — unlike load(), never
+     * shows a Loading flash, and skips entirely while an action is mid-flight
+     * so it can't stomp performingAction out from under it. */
+    fun refresh() {
+        if ((_uiState.value as? CourierOrderDetailUiState.Success)?.performingAction == true) return
+        viewModelScope.launch {
+            val order = ordersRepository.getOrderDetail(orderId).getOrNull() ?: return@launch
+            _uiState.value = CourierOrderDetailUiState.Success(order)
         }
     }
 
@@ -81,11 +103,12 @@ class CourierOrderDetailViewModel(
     class Factory(
         private val orderId: Int,
         private val ordersRepository: OrdersRepository,
+        private val orderFeedRepository: OrderFeedRepository,
         private val context: Context
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return CourierOrderDetailViewModel(orderId, ordersRepository, context) as T
+            return CourierOrderDetailViewModel(orderId, ordersRepository, orderFeedRepository, context) as T
         }
     }
 }
