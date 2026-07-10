@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.catalog.CatalogRepository
 import dev.batipy.rungo.data.network.dto.OrderDetailDto
+import dev.batipy.rungo.data.orders.OrderFeedRepository
 import dev.batipy.rungo.data.orders.OrdersRepository
 import dev.batipy.rungo.data.profile.ProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +36,7 @@ class OrderDetailViewModel(
     private val ordersRepository: OrdersRepository,
     private val profileRepository: ProfileRepository,
     private val catalogRepository: CatalogRepository,
+    orderFeedRepository: OrderFeedRepository,
     private val context: Context
 ) : ViewModel() {
 
@@ -49,6 +51,12 @@ class OrderDetailViewModel(
 
     init {
         load()
+        // Live "an order changed" ping (see OrderFeedRepository) — so the
+        // status stepper on this screen updates as the courier progresses the
+        // order, without pulling the screen down.
+        viewModelScope.launch {
+            orderFeedRepository.updates.collect { refresh() }
+        }
     }
 
     fun load() {
@@ -149,11 +157,12 @@ class OrderDetailViewModel(
         private val ordersRepository: OrdersRepository,
         private val profileRepository: ProfileRepository,
         private val catalogRepository: CatalogRepository,
+        private val orderFeedRepository: OrderFeedRepository,
         private val context: Context
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return OrderDetailViewModel(orderId, ordersRepository, profileRepository, catalogRepository, context) as T
+            return OrderDetailViewModel(orderId, ordersRepository, profileRepository, catalogRepository, orderFeedRepository, context) as T
         }
     }
 }

@@ -67,6 +67,7 @@ class MainActivity : AppCompatActivity() {
                         LaunchedEffect(loggedIn) {
                             if (loggedIn) {
                                 app.notificationRepository.registerCurrentDeviceToken()
+                                app.orderFeedRepository.connect()
                             }
                         }
 
@@ -87,6 +88,7 @@ class MainActivity : AppCompatActivity() {
                                         app.catalogRepository,
                                         app.ordersRepository,
                                         app.profileRepository,
+                                        app.orderFeedRepository,
                                         context
                                     )
                                 )
@@ -98,6 +100,7 @@ class MainActivity : AppCompatActivity() {
                                     locationProvider = app.locationProvider,
                                     cartRepository = app.cartRepository,
                                     chatRepository = app.chatRepository,
+                                    orderFeedRepository = app.orderFeedRepository,
                                     initialOrderId = pendingOrderId,
                                     onInitialOrderConsumed = { pendingOrderId = null },
                                     onLogoutClick = {
@@ -110,6 +113,7 @@ class MainActivity : AppCompatActivity() {
                                         // refetch on its own.
                                         viewModelStore.clear()
                                         app.cartRepository.clear()
+                                        app.orderFeedRepository.disconnect()
                                         app.applicationScope.launch {
                                             app.notificationRepository.deleteCurrentDeviceToken()
                                             app.authRepository.logout()

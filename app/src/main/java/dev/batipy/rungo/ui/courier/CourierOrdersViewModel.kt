@@ -5,18 +5,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.batipy.rungo.R
-import dev.batipy.rungo.data.chat.ChatRepository
 import dev.batipy.rungo.data.network.dto.OrderDto
+import dev.batipy.rungo.data.orders.OrderFeedRepository
 import dev.batipy.rungo.data.orders.OrdersRepository
 import dev.batipy.rungo.data.profile.ProfileRepository
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import okhttp3.Response
-import okhttp3.WebSocket
-import okhttp3.WebSocketListener
 
 // The courier/orders/ endpoint already scopes results to exactly these two
 // buckets server-side (confirmed+unassigned, or assigned to this courier), so
@@ -45,7 +41,7 @@ sealed interface CourierOrdersUiState {
 class CourierOrdersViewModel(
     private val ordersRepository: OrdersRepository,
     private val profileRepository: ProfileRepository,
-    private val chatRepository: ChatRepository,
+    orderFeedRepository: OrderFeedRepository,
     private val context: Context
 ) : ViewModel() {
 
@@ -58,41 +54,14 @@ class CourierOrdersViewModel(
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()
 
-    // Live "an assigned order changed" feed (see CourierFeedConsumer on the
-    // backend) — carries no payload, just triggers the same refresh() a
-    // manual pull-to-refresh would, so the list updates without the courier
-    // having to pull down themselves. Best-effort: if it drops, the courier
-    // still has pull-to-refresh as a fallback, so reconnects are silent and
-    // don't surface an error state.
-    private var feedSocket: WebSocket? = null
-
-    private val feedListener = object : WebSocketListener() {
-        override fun onMessage(webSocket: WebSocket, text: String) {
-            if (webSocket !== feedSocket) return
-            refresh()
-        }
-
-        override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-            if (webSocket !== feedSocket) return
-            if (code != 4401 && code != 4403) scheduleFeedReconnect()
-        }
-
-        override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-            if (webSocket !== feedSocket) return
-            val code = response?.code
-            if (code != 4401 && code != 4403) scheduleFeedReconnect()
-        }
-    }
-
     init {
         load()
-        feedSocket = chatRepository.connectCourierFeed(feedListener)
-    }
-
-    private fun scheduleFeedReconnect() {
+        // Live "an order changed" feed (see OrderFeedRepository/OrderFeedConsumer)
+        // — pings, no payload, just re-triggers the same refresh() a manual
+        // pull-to-refresh would, so the list updates without the courier having
+        // to pull down themselves.
         viewModelScope.launch {
-            delay(5000)
-            feedSocket = chatRepository.connectCourierFeed(feedListener)
+            orderFeedRepository.updates.collect { refresh() }
         }
     }
 
@@ -164,20 +133,15 @@ class CourierOrdersViewModel(
         _message.value = null
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        feedSocket?.close(1000, null)
-    }
-
     class Factory(
         private val ordersRepository: OrdersRepository,
         private val profileRepository: ProfileRepository,
-        private val chatRepository: ChatRepository,
+        private val orderFeedRepository: OrderFeedRepository,
         private val context: Context
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return CourierOrdersViewModel(ordersRepository, profileRepository, chatRepository, context) as T
+            return CourierOrdersViewModel(ordersRepository, profileRepository, orderFeedRepository, context) as T
         }
     }
 }

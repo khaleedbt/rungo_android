@@ -10,6 +10,7 @@ import dev.batipy.rungo.data.location.LocationProvider
 import dev.batipy.rungo.data.network.NetworkModule
 import dev.batipy.rungo.data.notifications.NotificationRepository
 import dev.batipy.rungo.data.notifications.createOrderNotificationChannel
+import dev.batipy.rungo.data.orders.OrderFeedRepository
 import dev.batipy.rungo.data.orders.OrdersRepository
 import dev.batipy.rungo.data.profile.ProfileRepository
 import kotlinx.coroutines.CoroutineScope
@@ -29,6 +30,7 @@ class RunGoApplication : Application() {
     val notificationRepository by lazy { NotificationRepository(api) }
     val cartRepository by lazy { CartRepository() }
     val chatRepository by lazy { ChatRepository(tokenStore) }
+    val orderFeedRepository by lazy { OrderFeedRepository(tokenStore, applicationScope) }
 
     override fun onCreate() {
         super.onCreate()

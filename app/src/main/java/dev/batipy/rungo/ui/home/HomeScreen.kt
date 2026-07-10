@@ -46,6 +46,7 @@ import dev.batipy.rungo.data.catalog.CatalogRepository
 import dev.batipy.rungo.data.chat.ChatRepository
 import dev.batipy.rungo.data.location.LocationProvider
 import dev.batipy.rungo.data.network.dto.ServiceDto
+import dev.batipy.rungo.data.orders.OrderFeedRepository
 import dev.batipy.rungo.data.orders.OrdersRepository
 import dev.batipy.rungo.data.profile.ProfileRepository
 import dev.batipy.rungo.ui.cart.CartScreen
@@ -99,6 +100,7 @@ fun HomeScreen(
     locationProvider: LocationProvider,
     cartRepository: CartRepository,
     chatRepository: ChatRepository,
+    orderFeedRepository: OrderFeedRepository,
     initialOrderId: Int? = null,
     onInitialOrderConsumed: () -> Unit = {},
     onLogoutClick: () -> Unit,
@@ -170,7 +172,7 @@ fun HomeScreen(
     // Hoisted (rather than created inside the `when` branch below) so the bottom
     // bar's onClick can trigger a refresh even when tapping a tab you're already on.
     val ordersViewModel: OrdersViewModel = viewModel(
-        factory = OrdersViewModel.Factory(ordersRepository, context)
+        factory = OrdersViewModel.Factory(ordersRepository, orderFeedRepository, context)
     )
     val cartItems by cartRepository.items.collectAsState()
     val cartCount = cartItems.sumOf { it.quantity }
@@ -279,7 +281,7 @@ fun HomeScreen(
             BackHandler { selectedOrderId = null }
             val orderDetailViewModel: OrderDetailViewModel = viewModel(
                 key = "order-detail-$orderId",
-                factory = OrderDetailViewModel.Factory(orderId, ordersRepository, profileRepository, catalogRepository, context)
+                factory = OrderDetailViewModel.Factory(orderId, ordersRepository, profileRepository, catalogRepository, orderFeedRepository, context)
             )
             val orderDetailState by orderDetailViewModel.uiState.collectAsState()
             val orderDetailMessage by orderDetailViewModel.message.collectAsState()
@@ -305,7 +307,7 @@ fun HomeScreen(
         when (selectedTab) {
             0 -> {
                 val courierOrdersViewModel: CourierOrdersViewModel = viewModel(
-                    factory = CourierOrdersViewModel.Factory(ordersRepository, profileRepository, chatRepository, context)
+                    factory = CourierOrdersViewModel.Factory(ordersRepository, profileRepository, orderFeedRepository, context)
                 )
                 val uiState by courierOrdersViewModel.uiState.collectAsState()
                 val isRefreshing by courierOrdersViewModel.isRefreshing.collectAsState()

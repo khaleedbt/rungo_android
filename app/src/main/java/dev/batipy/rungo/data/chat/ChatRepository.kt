@@ -25,14 +25,4 @@ class ChatRepository(private val tokenStore: TokenStore) {
         }
         return client.newWebSocket(requestBuilder.build(), listener)
     }
-
-    /** Live feed of "something about your assigned orders changed" pings for
-     * a courier's home screen — see CourierFeedConsumer on the backend. */
-    fun connectCourierFeed(listener: WebSocketListener): WebSocket {
-        val requestBuilder = Request.Builder().url("${WS_BASE_URL}ws/courier/orders/")
-        tokenStore.currentTokens?.access?.let { token ->
-            requestBuilder.header("Authorization", "Bearer $token")
-        }
-        return client.newWebSocket(requestBuilder.build(), listener)
-    }
 }

@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.OrderDto
+import dev.batipy.rungo.data.orders.OrderFeedRepository
 import dev.batipy.rungo.data.orders.OrdersRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,7 @@ sealed interface OrdersUiState {
 
 class OrdersViewModel(
     private val ordersRepository: OrdersRepository,
+    orderFeedRepository: OrderFeedRepository,
     private val context: Context
 ) : ViewModel() {
 
@@ -31,6 +33,12 @@ class OrdersViewModel(
 
     init {
         load()
+        // Live "an order changed" ping (see OrderFeedRepository) — re-runs the
+        // same refresh() a manual pull-to-refresh would, so a new order or a
+        // status change shows up without the client having to pull down.
+        viewModelScope.launch {
+            orderFeedRepository.updates.collect { refresh() }
+        }
     }
 
     fun load() {
@@ -55,11 +63,12 @@ class OrdersViewModel(
 
     class Factory(
         private val ordersRepository: OrdersRepository,
+        private val orderFeedRepository: OrderFeedRepository,
         private val context: Context
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return OrdersViewModel(ordersRepository, context) as T
+            return OrdersViewModel(ordersRepository, orderFeedRepository, context) as T
         }
     }
 }

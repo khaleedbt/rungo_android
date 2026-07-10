@@ -10,6 +10,7 @@ import dev.batipy.rungo.data.network.dto.ACTIVE_ORDER_STATUSES
 import dev.batipy.rungo.data.network.dto.MerchantDto
 import dev.batipy.rungo.data.network.dto.OrderDto
 import dev.batipy.rungo.data.network.dto.ServiceDto
+import dev.batipy.rungo.data.orders.OrderFeedRepository
 import dev.batipy.rungo.data.orders.OrdersRepository
 import dev.batipy.rungo.data.profile.ProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,6 +32,7 @@ class ServicesViewModel(
     private val catalogRepository: CatalogRepository,
     private val ordersRepository: OrdersRepository,
     private val profileRepository: ProfileRepository,
+    orderFeedRepository: OrderFeedRepository,
     private val context: Context
 ) : ViewModel() {
 
@@ -42,6 +44,12 @@ class ServicesViewModel(
 
     init {
         load()
+        // Live "an order changed" ping (see OrderFeedRepository) — so the
+        // active-order banner appears/updates as soon as a client places an
+        // order or its status changes, without pulling the home screen down.
+        viewModelScope.launch {
+            orderFeedRepository.updates.collect { refresh() }
+        }
     }
 
     fun load() {
@@ -78,11 +86,12 @@ class ServicesViewModel(
         private val catalogRepository: CatalogRepository,
         private val ordersRepository: OrdersRepository,
         private val profileRepository: ProfileRepository,
+        private val orderFeedRepository: OrderFeedRepository,
         private val context: Context
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return ServicesViewModel(catalogRepository, ordersRepository, profileRepository, context) as T
+            return ServicesViewModel(catalogRepository, ordersRepository, profileRepository, orderFeedRepository, context) as T
         }
     }
 }
