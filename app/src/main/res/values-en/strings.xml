@@ -92,6 +92,15 @@
     <string name="role_admin">Administrator</string>
     <string name="role_partner">Partner</string>
     <string name="profile_logout">Log out</string>
+
+    <!-- Chat -->
+    <string name="chat_open_button">Message</string>
+    <string name="chat_title">Chat for order #%1$d</string>
+    <string name="chat_input_placeholder">Message…</string>
+    <string name="chat_send_button">Send</string>
+    <string name="chat_send_error">Failed to send the message</string>
+    <string name="chat_unavailable_error">Chat is unavailable for this order</string>
+    <string name="chat_connection_error">Failed to connect to chat</string>
     <string name="profile_app_version">Version %1$s</string>
     <string name="profile_balance_label">Balance</string>
     <string name="profile_location_title">My location</string>

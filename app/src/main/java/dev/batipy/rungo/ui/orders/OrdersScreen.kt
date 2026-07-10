@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.OrderDto
+import dev.batipy.rungo.ui.common.StatusBadge
 import dev.batipy.rungo.ui.common.formatOrderAmount
 import dev.batipy.rungo.ui.theme.RunGoAccent
 import dev.batipy.rungo.ui.theme.RunGoField
@@ -142,14 +143,7 @@ private fun OrderCard(order: OrderDto, onClick: () -> Unit) {
                     color = RunGoTextPrimary,
                     style = MaterialTheme.typography.titleMedium
                 )
-                Surface(color = style.container, shape = RoundedCornerShape(50)) {
-                    Text(
-                        text = style.label,
-                        color = style.content,
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
-                }
+                StatusBadge(label = style.label, container = style.container, content = style.content)
             }
             if (order.cityName.isNotBlank()) {
                 Text(

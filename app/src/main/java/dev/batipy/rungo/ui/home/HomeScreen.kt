@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.ShoppingCart
 import android.content.Context
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -42,12 +43,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.cart.CartRepository
 import dev.batipy.rungo.data.catalog.CatalogRepository
+import dev.batipy.rungo.data.chat.ChatRepository
 import dev.batipy.rungo.data.location.LocationProvider
 import dev.batipy.rungo.data.network.dto.ServiceDto
 import dev.batipy.rungo.data.orders.OrdersRepository
 import dev.batipy.rungo.data.profile.ProfileRepository
 import dev.batipy.rungo.ui.cart.CartScreen
 import dev.batipy.rungo.ui.cart.CartViewModel
+import dev.batipy.rungo.ui.chat.ChatScreen
+import dev.batipy.rungo.ui.chat.ChatViewModel
 import dev.batipy.rungo.ui.courier.CourierOrderDetailScreen
 import dev.batipy.rungo.ui.courier.CourierOrderDetailViewModel
 import dev.batipy.rungo.ui.courier.CourierOrdersScreen
@@ -94,6 +98,7 @@ fun HomeScreen(
     profileRepository: ProfileRepository,
     locationProvider: LocationProvider,
     cartRepository: CartRepository,
+    chatRepository: ChatRepository,
     initialOrderId: Int? = null,
     onInitialOrderConsumed: () -> Unit = {},
     onLogoutClick: () -> Unit,
@@ -115,18 +120,25 @@ fun HomeScreen(
 
     // Determines which screen set to show — fetched once on entry rather than
     // stored globally, matching how every other screen independently pulls
-    // what it needs from ProfileRepository.
+    // what it needs from ProfileRepository. currentUserId rides along on the
+    // same call — needed to tell "my" chat bubbles apart from the other side's.
     var role by remember { mutableStateOf<String?>(null) }
+    var currentUserId by remember { mutableStateOf<Int?>(null) }
     var roleLoadFailed by remember { mutableStateOf(false) }
     var roleLoadAttempt by remember { mutableIntStateOf(0) }
     LaunchedEffect(roleLoadAttempt) {
-        val fetchedRole = profileRepository.getMe().getOrNull()?.role
-        if (fetchedRole != null) {
-            role = fetchedRole
+        val me = profileRepository.getMe().getOrNull()
+        if (me != null) {
+            role = me.role
+            currentUserId = me.id
         } else {
             roleLoadFailed = true
         }
     }
+
+    // Set when either the client or the courier taps "Написать" on an order's
+    // detail screen — overrides everything else, same as selectedOrderId.
+    var chatOrderId by rememberSaveable { mutableStateOf<Int?>(null) }
 
     if (role == null) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -194,8 +206,42 @@ fun HomeScreen(
             }
         }
     ) { innerPadding ->
+        val chatId = chatOrderId
+        if (chatId != null && currentUserId != null) {
+            BackHandler { chatOrderId = null }
+            val chatViewModel: ChatViewModel = viewModel(
+                key = "chat-$chatId",
+                factory = ChatViewModel.Factory(chatId, currentUserId!!, chatRepository, context)
+            )
+            val chatState by chatViewModel.uiState.collectAsState()
+            val chatMessage by chatViewModel.message.collectAsState()
+
+            // No forced reconnect-on-reentry here (unlike the order-detail
+            // ViewModels below) — the ViewModel's own init{} already starts
+            // connecting once, and the socket stays live in the background
+            // while this screen isn't shown, so re-opening the same chat
+            // just shows whatever's current. Calling connect() again here
+            // raced with that initial connect and closed the fresh socket
+            // out from under itself, which is what caused the "не удалось
+            // подключиться" flash right after tapping "Написать".
+
+            ChatScreen(
+                orderId = chatId,
+                uiState = chatState,
+                currentUserId = chatViewModel.currentUserId,
+                message = chatMessage,
+                onConsumeMessage = chatViewModel::consumeMessage,
+                onBack = { chatOrderId = null },
+                onSend = chatViewModel::sendMessage,
+                onRetry = chatViewModel::connect,
+                modifier = Modifier.padding(innerPadding)
+            )
+            return@Scaffold
+        }
+
         val orderId = selectedOrderId
         if (orderId != null && isCourier) {
+            BackHandler { selectedOrderId = null }
             val courierOrderDetailViewModel: CourierOrderDetailViewModel = viewModel(
                 key = "courier-order-detail-$orderId",
                 factory = CourierOrderDetailViewModel.Factory(orderId, ordersRepository, context)
@@ -220,9 +266,11 @@ fun HomeScreen(
                 onMarkInDelivery = courierOrderDetailViewModel::markInDelivery,
                 onReleaseOrder = courierOrderDetailViewModel::releaseOrder,
                 onCollectPayment = courierOrderDetailViewModel::collectPayment,
+                onOpenChat = { chatOrderId = orderId },
                 modifier = Modifier.padding(innerPadding)
             )
         } else if (orderId != null) {
+            BackHandler { selectedOrderId = null }
             val orderDetailViewModel: OrderDetailViewModel = viewModel(
                 key = "order-detail-$orderId",
                 factory = OrderDetailViewModel.Factory(orderId, ordersRepository, profileRepository, catalogRepository, context)
@@ -244,13 +292,14 @@ fun HomeScreen(
                 onSelectRating = orderDetailViewModel::selectReviewRating,
                 onReviewTextChange = orderDetailViewModel::updateReviewText,
                 onSubmitReview = orderDetailViewModel::submitReview,
+                onOpenChat = { chatOrderId = orderId },
                 modifier = Modifier.padding(innerPadding)
             )
         } else if (isCourier) {
         when (selectedTab) {
             0 -> {
                 val courierOrdersViewModel: CourierOrdersViewModel = viewModel(
-                    factory = CourierOrdersViewModel.Factory(ordersRepository, profileRepository, context)
+                    factory = CourierOrdersViewModel.Factory(ordersRepository, profileRepository, chatRepository, context)
                 )
                 val uiState by courierOrdersViewModel.uiState.collectAsState()
                 val isRefreshing by courierOrdersViewModel.isRefreshing.collectAsState()
@@ -289,6 +338,7 @@ fun HomeScreen(
                 val merchantId = selectedMerchantId
 
                 if (merchantId != null) {
+                    BackHandler { selectedMerchantId = null }
                     val merchantDetailViewModel: MerchantDetailViewModel = viewModel(
                         key = "merchant-$merchantId",
                         factory = MerchantDetailViewModel.Factory(merchantId, catalogRepository, cartRepository, context)
@@ -323,6 +373,7 @@ fun HomeScreen(
                         modifier = Modifier.padding(innerPadding)
                     )
                 } else {
+                    BackHandler { selectedService = null }
                     val createOrderViewModel: CreateOrderViewModel = viewModel(
                         key = "${service.id}-$orderFormToken",
                         factory = CreateOrderViewModel.Factory(
@@ -377,6 +428,7 @@ fun HomeScreen(
                         modifier = Modifier.padding(innerPadding)
                     )
                 } else {
+                    BackHandler { selectedMerchantId = null }
                     val merchantDetailViewModel: MerchantDetailViewModel = viewModel(
                         key = "merchant-$merchantId",
                         factory = MerchantDetailViewModel.Factory(merchantId, catalogRepository, cartRepository, context)

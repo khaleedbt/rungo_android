@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.OrderDto
+import dev.batipy.rungo.ui.common.StatusBadge
 import dev.batipy.rungo.ui.common.formatOrderAmount
 import dev.batipy.rungo.ui.theme.RunGoAccent
 import dev.batipy.rungo.ui.theme.RunGoField
@@ -366,15 +367,13 @@ private fun CourierOrderRow(order: OrderDto, onClick: () -> Unit) {
                     )
                 }
             }
-            Surface(color = style.container, shape = RoundedCornerShape(50)) {
-                Text(
-                    text = style.label,
-                    color = style.content,
-                    style = MaterialTheme.typography.labelSmall,
-                    maxLines = 1,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                )
-            }
+            StatusBadge(
+                label = style.label,
+                container = style.container,
+                content = style.content,
+                textStyle = MaterialTheme.typography.labelSmall,
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+            )
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,

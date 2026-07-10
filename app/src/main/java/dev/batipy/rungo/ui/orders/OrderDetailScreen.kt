@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Star
@@ -60,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.OrderDetailDto
 import dev.batipy.rungo.data.network.dto.ReviewDto
+import dev.batipy.rungo.ui.common.StatusBadge
 import dev.batipy.rungo.ui.common.formatOrderAmount
 import dev.batipy.rungo.ui.theme.RunGoAccent
 import dev.batipy.rungo.ui.theme.RunGoBackground
@@ -167,6 +169,7 @@ fun OrderDetailScreen(
     onSelectRating: (Int) -> Unit,
     onReviewTextChange: (String) -> Unit,
     onSubmitReview: () -> Unit,
+    onOpenChat: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -225,6 +228,35 @@ fun OrderDetailScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // Chat only makes sense once a courier is actually on the
+                    // job (in_progress/in_delivery) — before that there's no
+                    // one to write to, and it should disappear again once the
+                    // order is finished (backend closes the chat too).
+                    if (order.status == "in_progress" || order.status == "in_delivery") {
+                        item {
+                            Button(
+                                onClick = onOpenChat,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(52.dp),
+                                shape = MaterialTheme.shapes.large,
+                                colors = ButtonDefaults.buttonColors(containerColor = RunGoAccent)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Chat,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = stringResource(R.string.chat_open_button),
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+                        }
+                    }
                     if (order.status != "cancelled") {
                         item {
                             SectionCard(title = stringResource(R.string.section_delivery_status)) {
@@ -421,14 +453,7 @@ private fun HeaderBar(
             }
         }
         if (statusStyle != null) {
-            Surface(color = statusStyle.container, shape = RoundedCornerShape(50)) {
-                Text(
-                    text = statusStyle.label,
-                    color = statusStyle.content,
-                    style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                )
-            }
+            StatusBadge(label = statusStyle.label, container = statusStyle.container, content = statusStyle.content)
         }
     }
 }

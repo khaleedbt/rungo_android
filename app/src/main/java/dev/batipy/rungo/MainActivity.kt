@@ -97,6 +97,7 @@ class MainActivity : AppCompatActivity() {
                                     profileRepository = app.profileRepository,
                                     locationProvider = app.locationProvider,
                                     cartRepository = app.cartRepository,
+                                    chatRepository = app.chatRepository,
                                     initialOrderId = pendingOrderId,
                                     onInitialOrderConsumed = { pendingOrderId = null },
                                     onLogoutClick = {

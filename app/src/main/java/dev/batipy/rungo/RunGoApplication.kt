@@ -5,6 +5,7 @@ import dev.batipy.rungo.data.auth.AuthRepository
 import dev.batipy.rungo.data.auth.TokenStore
 import dev.batipy.rungo.data.cart.CartRepository
 import dev.batipy.rungo.data.catalog.CatalogRepository
+import dev.batipy.rungo.data.chat.ChatRepository
 import dev.batipy.rungo.data.location.LocationProvider
 import dev.batipy.rungo.data.network.NetworkModule
 import dev.batipy.rungo.data.notifications.NotificationRepository
@@ -18,7 +19,7 @@ class RunGoApplication : Application() {
 
     val applicationScope = CoroutineScope(SupervisorJob())
 
-    val tokenStore by lazy { TokenStore(this, applicationScope) }
+    val tokenStore by lazy { TokenStore(this) }
     private val api by lazy { NetworkModule.createApi(tokenStore) }
     val authRepository by lazy { AuthRepository(api, tokenStore, this) }
     val catalogRepository by lazy { CatalogRepository(api) }
@@ -27,6 +28,7 @@ class RunGoApplication : Application() {
     val locationProvider by lazy { LocationProvider(this) }
     val notificationRepository by lazy { NotificationRepository(api) }
     val cartRepository by lazy { CartRepository() }
+    val chatRepository by lazy { ChatRepository(tokenStore) }
 
     override fun onCreate() {
         super.onCreate()

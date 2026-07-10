@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -47,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.OrderDetailDto
+import dev.batipy.rungo.ui.common.StatusBadge
 import dev.batipy.rungo.ui.common.formatOrderAmount
 import dev.batipy.rungo.ui.theme.RunGoAccent
 import dev.batipy.rungo.ui.theme.RunGoField
@@ -83,6 +85,7 @@ fun CourierOrderDetailScreen(
     onMarkInDelivery: () -> Unit,
     onReleaseOrder: () -> Unit,
     onCollectPayment: () -> Unit,
+    onOpenChat: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -126,14 +129,7 @@ fun CourierOrderDetailScreen(
                 )
                 if (successState != null) {
                     val style = courierStatusStyle(successState.order.status)
-                    Surface(color = style.container, shape = RoundedCornerShape(50)) {
-                        Text(
-                            text = style.label,
-                            color = style.content,
-                            style = MaterialTheme.typography.labelMedium,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                        )
-                    }
+                    StatusBadge(label = style.label, container = style.container, content = style.content)
                 }
             }
 
@@ -157,7 +153,8 @@ fun CourierOrderDetailScreen(
                         onTakeOrder = onTakeOrder,
                         onMarkInDelivery = onMarkInDelivery,
                         onReleaseOrder = onReleaseOrder,
-                        onCollectPayment = onCollectPayment
+                        onCollectPayment = onCollectPayment,
+                        onOpenChat = onOpenChat
                     )
                 }
             }
@@ -177,7 +174,8 @@ private fun CourierOrderDetailContent(
     onTakeOrder: () -> Unit,
     onMarkInDelivery: () -> Unit,
     onReleaseOrder: () -> Unit,
-    onCollectPayment: () -> Unit
+    onCollectPayment: () -> Unit,
+    onOpenChat: () -> Unit
 ) {
     var showCollectPaymentConfirm by remember { mutableStateOf(false) }
     val noMapsMessage = stringResource(R.string.courier_navigate_error)
@@ -208,6 +206,33 @@ private fun CourierOrderDetailContent(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Same rule as the client side: only while a courier is actively
+            // on the job — before "confirmed" is taken, or after delivery.
+            if (order.status == "in_progress" || order.status == "in_delivery") {
+                item {
+                    Button(
+                        onClick = onOpenChat,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = MaterialTheme.shapes.large,
+                        colors = ButtonDefaults.buttonColors(containerColor = RunGoAccent)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Chat,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = stringResource(R.string.chat_open_button),
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                }
+            }
             if (!order.pickupAddress.isNullOrBlank()) {
                 item {
                     AddressCard(
