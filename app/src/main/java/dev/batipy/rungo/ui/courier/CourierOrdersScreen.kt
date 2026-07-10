@@ -371,6 +371,7 @@ private fun CourierOrderRow(order: OrderDto, onClick: () -> Unit) {
                 label = style.label,
                 container = style.container,
                 content = style.content,
+                pulse = order.status == "in_progress" || order.status == "in_delivery",
                 textStyle = MaterialTheme.typography.labelSmall,
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
             )

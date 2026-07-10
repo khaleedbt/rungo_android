@@ -22,7 +22,7 @@
             android:exported="true"
             android:launchMode="singleTop"
             android:label="@string/app_name"
-            android:windowSoftInputMode="adjustResize"
+            android:windowSoftInputMode="adjustNothing"
             android:theme="@style/Theme.RunGo">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

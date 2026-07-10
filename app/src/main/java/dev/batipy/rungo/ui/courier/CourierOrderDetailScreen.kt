@@ -129,7 +129,12 @@ fun CourierOrderDetailScreen(
                 )
                 if (successState != null) {
                     val style = courierStatusStyle(successState.order.status)
-                    StatusBadge(label = style.label, container = style.container, content = style.content)
+                    StatusBadge(
+                        label = style.label,
+                        container = style.container,
+                        content = style.content,
+                        pulse = successState.order.status == "in_progress" || successState.order.status == "in_delivery"
+                    )
                 }
             }
 

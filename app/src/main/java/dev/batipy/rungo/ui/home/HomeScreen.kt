@@ -140,6 +140,12 @@ fun HomeScreen(
     // detail screen — overrides everything else, same as selectedOrderId.
     var chatOrderId by rememberSaveable { mutableStateOf<Int?>(null) }
 
+    // Hoisted up here (rather than local state inside ShopScreen) so the
+    // grid/list choice survives navigating into a merchant and back, and
+    // switching tabs and back — it used to live inside ShopScreen itself and
+    // reset on every such round trip since that composable gets torn down.
+    var isShopGridView by rememberSaveable { mutableStateOf(false) }
+
     if (role == null) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             if (roleLoadFailed) {
@@ -423,6 +429,8 @@ fun HomeScreen(
                     ShopScreen(
                         uiState = uiState,
                         isRefreshing = isRefreshing,
+                        isGridView = isShopGridView,
+                        onToggleGridView = { isShopGridView = !isShopGridView },
                         onRefresh = shopViewModel::refresh,
                         onMerchantClick = { merchant -> selectedMerchantId = merchant.id },
                         modifier = Modifier.padding(innerPadding)

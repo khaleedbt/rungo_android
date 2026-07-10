@@ -31,10 +31,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,6 +53,8 @@ import dev.batipy.rungo.ui.theme.RunGoTextSecondary
 fun ShopScreen(
     uiState: ShopUiState,
     isRefreshing: Boolean = false,
+    isGridView: Boolean = false,
+    onToggleGridView: () -> Unit = {},
     onRefresh: () -> Unit = {},
     onMerchantClick: (MerchantDto) -> Unit = {},
     modifier: Modifier = Modifier
@@ -80,8 +78,6 @@ fun ShopScreen(
             }
 
             is ShopUiState.Success -> {
-                var isGridView by rememberSaveable { mutableStateOf(false) }
-
                 Column(modifier = Modifier.fillMaxSize()) {
                     Row(
                         modifier = Modifier
@@ -95,7 +91,7 @@ fun ShopScreen(
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
-                        IconButton(onClick = { isGridView = !isGridView }) {
+                        IconButton(onClick = onToggleGridView) {
                             Icon(
                                 imageVector = if (isGridView) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView,
                                 contentDescription = stringResource(

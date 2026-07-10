@@ -143,7 +143,12 @@ private fun OrderCard(order: OrderDto, onClick: () -> Unit) {
                     color = RunGoTextPrimary,
                     style = MaterialTheme.typography.titleMedium
                 )
-                StatusBadge(label = style.label, container = style.container, content = style.content)
+                StatusBadge(
+                    label = style.label,
+                    container = style.container,
+                    content = style.content,
+                    pulse = order.status == "in_progress" || order.status == "in_delivery"
+                )
             }
             if (order.cityName.isNotBlank()) {
                 Text(

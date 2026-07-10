@@ -198,6 +198,7 @@ fun OrderDetailScreen(
                     title = stringResource(R.string.order_number, order.id),
                     subtitle = formatDetailDate(order.createdAt),
                     statusStyle = statusPillStyle(order.status),
+                    statusPulse = order.status == "in_progress" || order.status == "in_delivery",
                     onBack = onBack
                 )
             }
@@ -413,6 +414,7 @@ private fun HeaderBar(
     title: String,
     subtitle: String?,
     statusStyle: StatusPillStyle?,
+    statusPulse: Boolean = false,
     onBack: () -> Unit
 ) {
     Row(
@@ -453,7 +455,12 @@ private fun HeaderBar(
             }
         }
         if (statusStyle != null) {
-            StatusBadge(label = statusStyle.label, container = statusStyle.container, content = statusStyle.content)
+            StatusBadge(
+                label = statusStyle.label,
+                container = statusStyle.container,
+                content = statusStyle.content,
+                pulse = statusPulse
+            )
         }
     }
 }
