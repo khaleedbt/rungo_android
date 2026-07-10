@@ -117,6 +117,8 @@
 
     <!-- Shop -->
     <string name="shop_title">المتجر</string>
+    <string name="shop_view_grid">شبكة</string>
+    <string name="shop_view_list">قائمة</string>
     <string name="shop_load_error">تعذّر تحميل المتاجر</string>
     <string name="shop_goods_total">المنتجات</string>
     <string name="shop_delivery_free">مجاني</string>

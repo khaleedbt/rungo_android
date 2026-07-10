@@ -117,6 +117,8 @@
 
     <!-- Shop -->
     <string name="shop_title">Shop</string>
+    <string name="shop_view_grid">Grid</string>
+    <string name="shop_view_list">List</string>
     <string name="shop_load_error">Failed to load shops</string>
     <string name="shop_goods_total">Items</string>
     <string name="shop_delivery_free">Free</string>

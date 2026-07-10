@@ -115,6 +115,8 @@
 
     <!-- Shop -->
     <string name="shop_title">Магазин</string>
+    <string name="shop_view_grid">Сетка</string>
+    <string name="shop_view_list">Список</string>
     <string name="shop_load_error">Не удалось загрузить магазины</string>
     <string name="shop_goods_total">Товары</string>
     <string name="shop_delivery_free">Бесплатно</string>
