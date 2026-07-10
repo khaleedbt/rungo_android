@@ -8,12 +8,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -93,7 +93,7 @@ fun ChatScreen(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize().imePadding()) {
+    Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier
@@ -144,7 +144,21 @@ fun ChatScreen(
                 }
 
                 is ChatUiState.Ready -> {
+                    val listState = rememberLazyListState()
+
+                    // reverseLayout puts the newest message (index 0) at the
+                    // bottom — but Compose doesn't auto-scroll there on its
+                    // own when a new item is prepended, whether it's mine
+                    // (just sent) or the other side's (just received), so
+                    // force it back into view each time the list grows.
+                    LaunchedEffect(uiState.messages.size) {
+                        if (uiState.messages.isNotEmpty()) {
+                            listState.scrollToItem(0)
+                        }
+                    }
+
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier.weight(1f),
                         reverseLayout = true,
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),

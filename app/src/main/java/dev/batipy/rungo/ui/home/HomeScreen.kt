@@ -103,6 +103,8 @@ fun HomeScreen(
     orderFeedRepository: OrderFeedRepository,
     initialOrderId: Int? = null,
     onInitialOrderConsumed: () -> Unit = {},
+    initialChatOrderId: Int? = null,
+    onInitialChatOrderConsumed: () -> Unit = {},
     onLogoutClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -124,10 +126,10 @@ fun HomeScreen(
     // stored globally, matching how every other screen independently pulls
     // what it needs from ProfileRepository. currentUserId rides along on the
     // same call — needed to tell "my" chat bubbles apart from the other side's.
-    var role by remember { mutableStateOf<String?>(null) }
-    var currentUserId by remember { mutableStateOf<Int?>(null) }
-    var roleLoadFailed by remember { mutableStateOf(false) }
-    var roleLoadAttempt by remember { mutableIntStateOf(0) }
+    var role by rememberSaveable { mutableStateOf<String?>(null) }
+    var currentUserId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var roleLoadFailed by rememberSaveable { mutableStateOf(false) }
+    var roleLoadAttempt by rememberSaveable { mutableIntStateOf(0) }
     LaunchedEffect(roleLoadAttempt) {
         val me = profileRepository.getMe().getOrNull()
         if (me != null) {
@@ -139,8 +141,16 @@ fun HomeScreen(
     }
 
     // Set when either the client or the courier taps "Написать" on an order's
-    // detail screen — overrides everything else, same as selectedOrderId.
+    // detail screen, or a tapped chat push notification (initialChatOrderId)
+    // — overrides everything else, same as selectedOrderId.
     var chatOrderId by rememberSaveable { mutableStateOf<Int?>(null) }
+
+    LaunchedEffect(initialChatOrderId) {
+        if (initialChatOrderId != null) {
+            chatOrderId = initialChatOrderId
+            onInitialChatOrderConsumed()
+        }
+    }
 
     // Hoisted up here (rather than local state inside ShopScreen) so the
     // grid/list choice survives navigating into a merchant and back, and

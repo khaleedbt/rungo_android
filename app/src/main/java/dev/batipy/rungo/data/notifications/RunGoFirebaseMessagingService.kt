@@ -28,10 +28,17 @@ class RunGoFirebaseMessagingService : FirebaseMessagingService() {
         val title = message.notification?.title ?: getString(R.string.app_name)
         val body = message.notification?.body ?: return
         val orderId = message.data["order_id"]?.toIntOrNull()
+        val isChatMessage = message.data["type"] == "chat"
 
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            if (orderId != null) putExtra(MainActivity.EXTRA_ORDER_ID, orderId)
+            if (orderId != null) {
+                // Chat pushes jump straight into that order's chat instead of
+                // landing on the order detail screen and making the user tap
+                // "Написать" themselves.
+                if (isChatMessage) putExtra(MainActivity.EXTRA_CHAT_ORDER_ID, orderId)
+                else putExtra(MainActivity.EXTRA_ORDER_ID, orderId)
+            }
         }
         val pendingIntent = PendingIntent.getActivity(
             this,

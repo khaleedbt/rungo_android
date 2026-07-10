@@ -15,6 +15,7 @@ import okhttp3.WebSocketListener
 import java.util.concurrent.TimeUnit
 
 private const val WS_BASE_URL = "wss://aquago.batipy.dev/"
+private const val RESUME_DEBOUNCE_MS = 20_000L
 
 /**
  * One persistent WS connection per logged-in session to `ws/orders/feed/`
@@ -39,7 +40,21 @@ class OrderFeedRepository(
     private var socket: WebSocket? = null
     private var wantsConnection = false
 
+    // Tracked so onAppResumed() can tell a genuinely-dropped connection from
+    // a socket that was open the whole time — ON_RESUME fires far more often
+    // than "the app was actually backgrounded" (a heads-up notification
+    // banner, a permission dialog, anything that briefly steals focus all
+    // trigger it too), and forcing a reconnect + full-app refresh on every
+    // one of those was flooding the API and tripping its rate limit.
+    @Volatile private var isConnected = false
+    private var lastResumeHandledAt = 0L
+
     private val listener = object : WebSocketListener() {
+        override fun onOpen(webSocket: WebSocket, response: Response) {
+            if (webSocket !== socket) return
+            isConnected = true
+        }
+
         override fun onMessage(webSocket: WebSocket, text: String) {
             if (webSocket !== socket) return
             _updates.tryEmit(Unit)
@@ -47,11 +62,13 @@ class OrderFeedRepository(
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
             if (webSocket !== socket) return
+            isConnected = false
             if (code != 4401) scheduleReconnect()
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             if (webSocket !== socket) return
+            isConnected = false
             if (response?.code != 4401) scheduleReconnect()
         }
     }
@@ -73,16 +90,22 @@ class OrderFeedRepository(
     /**
      * Call whenever the app returns to the foreground. Android kills
      * background sockets fairly aggressively (Doze/App Standby), so a status
-     * change that happens while the app is backgrounded can silently miss
-     * both the ping (no live connection to receive it on) and the connection
-     * itself (needs re-establishing). Forces a fresh reconnect and an
-     * immediate "assume something changed" ping so every screen catches up
-     * right away instead of waiting for the next real event.
+     * change that happens while the app was genuinely backgrounded for a
+     * while can silently miss both the ping (no live connection to receive
+     * it on) and the connection itself (needs re-establishing).
+     *
+     * Two guards keep this from firing on every trivial ON_RESUME (a
+     * notification banner, a permission dialog, anything that briefly steals
+     * focus also triggers it): skip entirely if the socket is still actually
+     * connected (nothing could have been missed), and debounce so rapid
+     * repeat resumes only trigger one reconnect + refresh, not one each.
      */
     fun onAppResumed() {
-        if (!wantsConnection) return
+        if (!wantsConnection || isConnected) return
+        val now = System.currentTimeMillis()
+        if (now - lastResumeHandledAt < RESUME_DEBOUNCE_MS) return
+        lastResumeHandledAt = now
         _updates.tryEmit(Unit)
-        socket?.close(1000, null)
         openSocket()
     }
 

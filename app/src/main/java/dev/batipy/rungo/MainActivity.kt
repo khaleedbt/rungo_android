@@ -20,6 +20,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -41,11 +42,13 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
 
     private var pendingOrderId by mutableStateOf<Int?>(null)
+    private var pendingChatOrderId by mutableStateOf<Int?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         pendingOrderId = extractOrderId(intent)
+        pendingChatOrderId = extractChatOrderId(intent)
 
         val app = application as RunGoApplication
 
@@ -54,7 +57,7 @@ class MainActivity : AppCompatActivity() {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Surface(modifier = Modifier.fillMaxSize()) {
                         val context = LocalContext.current.applicationContext
-                        var checkingSession by remember { mutableStateOf(true) }
+                        var checkingSession by rememberSaveable { mutableStateOf(true) }
                         var showRegister by remember { mutableStateOf(false) }
                         val tokens by app.tokenStore.tokens.collectAsState()
                         val loggedIn = tokens != null
@@ -122,6 +125,8 @@ class MainActivity : AppCompatActivity() {
                                     orderFeedRepository = app.orderFeedRepository,
                                     initialOrderId = pendingOrderId,
                                     onInitialOrderConsumed = { pendingOrderId = null },
+                                    initialChatOrderId = pendingChatOrderId,
+                                    onInitialChatOrderConsumed = { pendingChatOrderId = null },
                                     onLogoutClick = {
                                         showRegister = false
                                         // All screen ViewModels (Services/Orders/Profile/Shop/Cart/...)
@@ -187,12 +192,17 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         pendingOrderId = extractOrderId(intent)
+        pendingChatOrderId = extractChatOrderId(intent)
     }
 
     private fun extractOrderId(intent: Intent): Int? =
         intent.getIntExtra(EXTRA_ORDER_ID, -1).takeIf { it != -1 }
 
+    private fun extractChatOrderId(intent: Intent): Int? =
+        intent.getIntExtra(EXTRA_CHAT_ORDER_ID, -1).takeIf { it != -1 }
+
     companion object {
         const val EXTRA_ORDER_ID = "extra_order_id"
+        const val EXTRA_CHAT_ORDER_ID = "extra_chat_order_id"
     }
 }
