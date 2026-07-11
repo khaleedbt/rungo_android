@@ -190,8 +190,15 @@ fun HomeScreen(
     Scaffold(
         modifier = modifier,
         bottomBar = {
-            NavigationBar {
-                (if (isCourier) courierHomeTabs() else homeTabs()).forEachIndexed { index, tab ->
+            // Scaffold always reserves bottomBar's height in innerPadding even
+            // when this lambda renders nothing, so it has to be skipped
+            // entirely (not just left showing) while a full-screen overlay
+            // (chat, order/merchant detail) is up — otherwise that reserved
+            // space shows up as unexplained empty space at the bottom of the
+            // overlay, e.g. between the chat input and the keyboard.
+            if (chatOrderId == null && selectedOrderId == null) {
+                NavigationBar {
+                    (if (isCourier) courierHomeTabs() else homeTabs()).forEachIndexed { index, tab ->
                     NavigationBarItem(
                         selected = selectedTab == index && selectedOrderId == null,
                         onClick = {
@@ -220,6 +227,7 @@ fun HomeScreen(
                         },
                         label = { Text(tab.label) }
                     )
+                    }
                 }
             }
         }

@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -143,7 +144,14 @@ class MainActivity : AppCompatActivity() {
                                             app.authRepository.logout()
                                         }
                                     },
-                                    modifier = Modifier.padding(innerPadding)
+                                    // HomeScreen has its own nested Scaffold, which by
+                                    // default re-applies systemBars/displayCutout insets
+                                    // on top of what this outer Scaffold already
+                                    // consumed — consumeWindowInsets tells it those are
+                                    // already accounted for so it doesn't double them.
+                                    modifier = Modifier
+                                        .padding(innerPadding)
+                                        .consumeWindowInsets(innerPadding)
                                 )
                             } else if (showRegister) {
                                 val registerViewModel: RegisterViewModel = viewModel(
