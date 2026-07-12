@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.cart.CartRepository
+import dev.batipy.rungo.data.shop.ShopDisplayPrefs
 import dev.batipy.rungo.data.catalog.CatalogRepository
 import dev.batipy.rungo.data.chat.ChatRepository
 import dev.batipy.rungo.data.location.LocationProvider
@@ -156,7 +157,10 @@ fun HomeScreen(
     // grid/list choice survives navigating into a merchant and back, and
     // switching tabs and back — it used to live inside ShopScreen itself and
     // reset on every such round trip since that composable gets torn down.
-    var isShopGridView by rememberSaveable { mutableStateOf(false) }
+    // Backed by SharedPreferences (not just rememberSaveable) so it also
+    // survives fully closing and reopening the app, not just backgrounding.
+    val shopDisplayPrefs = remember { ShopDisplayPrefs(context) }
+    var isShopGridView by rememberSaveable { mutableStateOf(shopDisplayPrefs.isGridView) }
 
     if (role == null) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -450,7 +454,10 @@ fun HomeScreen(
                         uiState = uiState,
                         isRefreshing = isRefreshing,
                         isGridView = isShopGridView,
-                        onToggleGridView = { isShopGridView = !isShopGridView },
+                        onToggleGridView = {
+                            isShopGridView = !isShopGridView
+                            shopDisplayPrefs.isGridView = isShopGridView
+                        },
                         onRefresh = shopViewModel::refresh,
                         onMerchantClick = { merchant -> selectedMerchantId = merchant.id },
                         modifier = Modifier.padding(innerPadding)
