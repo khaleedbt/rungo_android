@@ -63,9 +63,12 @@ class CourierLocationService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        orderId = id
-        startForeground(NOTIFICATION_ID, buildNotification(id))
 
+        // Must check this BEFORE calling startForeground() — this service
+        // declares foregroundServiceType="location" in the manifest, and on
+        // Android 14+ calling startForeground() for a location-typed service
+        // without the permission already granted throws a SecurityException
+        // that crashes the whole app, not just this service.
         val hasPermission = ContextCompat.checkSelfPermission(
             this, Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
@@ -78,6 +81,8 @@ class CourierLocationService : Service() {
             return START_NOT_STICKY
         }
 
+        orderId = id
+        startForeground(NOTIFICATION_ID, buildNotification(id))
         startLocationUpdates()
         return START_REDELIVER_INTENT
     }

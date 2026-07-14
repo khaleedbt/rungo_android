@@ -260,22 +260,23 @@ fun OrderDetailScreen(
                             }
                         }
                         item {
-                            OutlinedButton(
+                            Button(
                                 onClick = onOpenTracking,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(52.dp),
-                                shape = MaterialTheme.shapes.large
+                                shape = MaterialTheme.shapes.large,
+                                colors = ButtonDefaults.buttonColors(containerColor = RunGoAccent)
                             ) {
                                 Icon(
                                     imageVector = Icons.Filled.Map,
                                     contentDescription = null,
-                                    tint = RunGoAccent,
+                                    tint = Color.White,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Text(
                                     text = stringResource(R.string.order_detail_track_button),
-                                    color = RunGoAccent,
+                                    color = Color.White,
                                     fontWeight = FontWeight.SemiBold,
                                     modifier = Modifier.padding(start = 8.dp)
                                 )

@@ -1,8 +1,12 @@
 package dev.batipy.rungo.ui.courier
 
+import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,6 +50,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.OrderDetailDto
 import dev.batipy.rungo.ui.common.StatusBadge
@@ -89,11 +94,32 @@ fun CourierOrderDetailScreen(
     modifier: Modifier = Modifier
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LaunchedEffect(message) {
         if (message != null) {
             snackbarHostState.showSnackbar(message)
             onConsumeMessage()
+        }
+    }
+
+    // CourierLocationService (started once the order is in_progress/in_delivery
+    // — see CourierOrderDetailViewModel) needs this granted before it can do
+    // anything; ask for it as soon as the courier is looking at a delivery
+    // that actually needs tracking, rather than waiting for them to stumble
+    // into it via the profile screen.
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { /* no-op either way — tracking just won't start if denied */ }
+    val trackedStatus = (uiState as? CourierOrderDetailUiState.Success)?.order?.status
+    LaunchedEffect(trackedStatus) {
+        if (trackedStatus == "in_progress" || trackedStatus == "in_delivery") {
+            val granted = ContextCompat.checkSelfPermission(
+                context, Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!granted) {
+                locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            }
         }
     }
 
