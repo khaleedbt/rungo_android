@@ -159,6 +159,10 @@ fun ProfileScreen(
             }
 
             is ProfileUiState.Success -> {
+                // Partner accounts don't have a client-facing balance, saved
+                // delivery locations, or a city (they're tied to a merchant,
+                // not a delivery address) — none of that applies to them.
+                val isPartner = uiState.user.role == "partner"
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
@@ -177,18 +181,21 @@ fun ProfileScreen(
                             user = uiState.user,
                             cities = uiState.cities,
                             isUpdating = isUpdatingProfile,
+                            showCityField = !isPartner,
                             onSave = onSaveProfile
                         )
                     }
-                    item { BalanceCard(uiState.user.balance) }
-                    item {
-                        LocationsCard(
-                            locations = uiState.locations,
-                            onDeleteLocation = onDeleteLocation,
-                            onRequestLocation = onRequestLocation,
-                            isAddingLocation = isAddingLocation,
-                            onPermissionDenied = onLocationPermissionDenied
-                        )
+                    if (!isPartner) {
+                        item { BalanceCard(uiState.user.balance) }
+                        item {
+                            LocationsCard(
+                                locations = uiState.locations,
+                                onDeleteLocation = onDeleteLocation,
+                                onRequestLocation = onRequestLocation,
+                                isAddingLocation = isAddingLocation,
+                                onPermissionDenied = onLocationPermissionDenied
+                            )
+                        }
                     }
                     item {
                         LanguageCard(
@@ -196,7 +203,9 @@ fun ProfileScreen(
                             onLanguageSelect = onLanguageSelect
                         )
                     }
-                    item { SupportRow(onSendSupportMessage) }
+                    if (!isPartner) {
+                        item { SupportRow(onSendSupportMessage) }
+                    }
                     item {
                         OutlinedButton(
                             onClick = onLogoutClick,
@@ -300,6 +309,7 @@ private fun EditProfileCard(
     user: UserDto,
     cities: List<CityDto>,
     isUpdating: Boolean,
+    showCityField: Boolean = true,
     onSave: (fullName: String, phone: String, email: String, cityId: Int?) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -353,18 +363,20 @@ private fun EditProfileCard(
                     value = email,
                     onValueChange = { email = it }
                 )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = stringResource(R.string.label_city).uppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = RunGoTextSecondary,
-                    modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
-                )
-                EditCityDropdown(
-                    cities = cities,
-                    selectedCityId = selectedCityId,
-                    onCitySelect = { selectedCityId = it }
-                )
+                if (showCityField) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = stringResource(R.string.label_city).uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = RunGoTextSecondary,
+                        modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
+                    )
+                    EditCityDropdown(
+                        cities = cities,
+                        selectedCityId = selectedCityId,
+                        onCitySelect = { selectedCityId = it }
+                    )
+                }
                 Spacer(modifier = Modifier.height(12.dp))
                 Button(
                     onClick = { onSave(fullName, phone, email, selectedCityId) },

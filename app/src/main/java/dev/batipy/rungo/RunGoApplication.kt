@@ -7,9 +7,11 @@ import dev.batipy.rungo.data.cart.CartRepository
 import dev.batipy.rungo.data.catalog.CatalogRepository
 import dev.batipy.rungo.data.chat.ChatRepository
 import dev.batipy.rungo.data.location.LocationProvider
+import dev.batipy.rungo.data.location.OrderLocationRepository
 import dev.batipy.rungo.data.network.NetworkModule
 import dev.batipy.rungo.data.notifications.NotificationRepository
 import dev.batipy.rungo.data.notifications.createOrderNotificationChannel
+import dev.batipy.rungo.data.notifications.createTrackingNotificationChannel
 import dev.batipy.rungo.data.orders.OrderFeedRepository
 import dev.batipy.rungo.data.orders.OrdersRepository
 import dev.batipy.rungo.data.profile.ProfileRepository
@@ -31,9 +33,11 @@ class RunGoApplication : Application() {
     val cartRepository by lazy { CartRepository() }
     val chatRepository by lazy { ChatRepository(tokenStore) }
     val orderFeedRepository by lazy { OrderFeedRepository(tokenStore, applicationScope) }
+    val orderLocationRepository by lazy { OrderLocationRepository(tokenStore) }
 
     override fun onCreate() {
         super.onCreate()
         createOrderNotificationChannel(this)
+        createTrackingNotificationChannel(this)
     }
 }

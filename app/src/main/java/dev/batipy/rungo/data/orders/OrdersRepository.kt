@@ -7,6 +7,7 @@ import dev.batipy.rungo.data.network.dto.EmptyRequestBody
 import dev.batipy.rungo.data.network.dto.OrderCreateRequest
 import dev.batipy.rungo.data.network.dto.OrderDetailDto
 import dev.batipy.rungo.data.network.dto.OrderDto
+import dev.batipy.rungo.data.network.dto.OrderLocationRequest
 import dev.batipy.rungo.data.network.dto.OrderStatusRequest
 import dev.batipy.rungo.data.network.dto.ReviewCreateRequest
 import retrofit2.HttpException
@@ -54,6 +55,10 @@ class OrdersRepository(private val api: RunGoApi) {
         runCatching { api.getCourierOrders().results }
             .onFailure { Log.e(TAG, "getCourierOrders failed", it) }
 
+    suspend fun getPartnerOrders(): Result<List<OrderDto>> =
+        runCatching { api.getPartnerOrders().results }
+            .onFailure { Log.e(TAG, "getPartnerOrders failed", it) }
+
     suspend fun takeCourierOrder(id: Int): Result<OrderDetailDto> =
         runCatching { api.takeCourierOrder(id) }
             .onFailure { Log.e(TAG, "takeCourierOrder failed", it) }
@@ -69,4 +74,15 @@ class OrdersRepository(private val api: RunGoApi) {
     suspend fun collectPayment(id: Int): Result<OrderDetailDto> =
         runCatching { api.collectPayment(id) }
             .onFailure { Log.e(TAG, "collectPayment failed", it) }
+
+    // No onFailure logging here — this fires every ~12s while delivering, a
+    // transient failure is normal (brief signal loss) and not worth spamming
+    // logcat over; the next tick just tries again.
+    suspend fun postCourierLocation(id: Int, latitude: Double, longitude: Double, accuracyM: Float?): Result<Unit> =
+        runCatching {
+            api.postCourierLocation(
+                id,
+                OrderLocationRequest(latitude.toString(), longitude.toString(), accuracyM)
+            ).throwIfUnsuccessful()
+        }
 }

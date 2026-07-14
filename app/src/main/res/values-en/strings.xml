@@ -174,6 +174,18 @@
     <string name="courier_order_cancelled_note">Order cancelled</string>
     <string name="courier_navigate_error">Failed to open navigation</string>
 
+    <!-- Partner -->
+    <string name="partner_orders_title">My Store</string>
+    <string name="partner_orders_load_error">Failed to load orders</string>
+    <string name="partner_stats_today">Today</string>
+    <string name="partner_stats_month">Month</string>
+    <string name="partner_stats_all_time">All time</string>
+    <string name="partner_stats_orders_count">orders: %1$d</string>
+    <string name="partner_tab_active">Active</string>
+    <string name="partner_no_active_orders">No active orders</string>
+    <string name="partner_no_courier_assigned">No courier assigned yet</string>
+    <string name="partner_courier_en_route">Courier is on the way to the client</string>
+
     <!-- Orders list -->
     <string name="orders_title">My orders</string>
     <string name="orders_empty">No orders yet</string>
@@ -218,4 +230,14 @@
     <string name="review_rating_required">Please pick a rating</string>
     <string name="review_submit_error">Failed to submit review</string>
     <string name="notification_channel_orders">Orders</string>
+
+    <!-- Live tracking -->
+    <string name="notification_channel_tracking">Delivery tracking</string>
+    <string name="tracking_notification_title">Delivering order #%1$d</string>
+    <string name="tracking_notification_text">Sharing your location with the client until the order is delivered</string>
+    <string name="order_detail_track_button">Track courier on map</string>
+    <string name="tracking_screen_title">Order #%1$d on the map</string>
+    <string name="tracking_waiting_for_courier">Waiting for the first point from the courier…</string>
+    <string name="tracking_destination_label">Delivery point</string>
+    <string name="tracking_courier_label">Courier</string>
 </resources>

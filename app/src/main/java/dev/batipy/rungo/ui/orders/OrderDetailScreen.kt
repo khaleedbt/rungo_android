@@ -29,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -170,6 +171,7 @@ fun OrderDetailScreen(
     onReviewTextChange: (String) -> Unit,
     onSubmitReview: () -> Unit,
     onOpenChat: () -> Unit,
+    onOpenTracking: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -252,6 +254,28 @@ fun OrderDetailScreen(
                                 Text(
                                     text = stringResource(R.string.chat_open_button),
                                     color = Color.White,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+                        }
+                        item {
+                            OutlinedButton(
+                                onClick = onOpenTracking,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(52.dp),
+                                shape = MaterialTheme.shapes.large
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Map,
+                                    contentDescription = null,
+                                    tint = RunGoAccent,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = stringResource(R.string.order_detail_track_button),
+                                    color = RunGoAccent,
                                     fontWeight = FontWeight.SemiBold,
                                     modifier = Modifier.padding(start = 8.dp)
                                 )

@@ -15,7 +15,8 @@ data class UserDto(
     val role: String,
     val balance: String,
     val lang: String = "ru",
-    @SerialName("is_available") val isAvailable: Boolean = false
+    @SerialName("is_available") val isAvailable: Boolean = false,
+    @SerialName("merchant_name") val merchantName: String? = null
 )
 
 @Serializable

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.batipy.rungo.R
+import dev.batipy.rungo.data.location.CourierLocationService
 import dev.batipy.rungo.data.network.dto.OrderDetailDto
 import dev.batipy.rungo.data.orders.OrderFeedRepository
 import dev.batipy.rungo.data.orders.OrdersRepository
@@ -52,7 +53,7 @@ class CourierOrderDetailViewModel(
     fun load() {
         viewModelScope.launch {
             _uiState.value = CourierOrderDetailUiState.Loading
-            _uiState.value = fetch()
+            applyState(fetch())
         }
     }
 
@@ -63,7 +64,22 @@ class CourierOrderDetailViewModel(
         if ((_uiState.value as? CourierOrderDetailUiState.Success)?.performingAction == true) return
         viewModelScope.launch {
             val order = ordersRepository.getOrderDetail(orderId).getOrNull() ?: return@launch
-            _uiState.value = CourierOrderDetailUiState.Success(order)
+            applyState(CourierOrderDetailUiState.Success(order))
+        }
+    }
+
+    /** Starts/stops the location-tracking foreground service to match the
+     * order's current status — in_progress/in_delivery means the client (and
+     * now this order) needs live GPS, anything else means it doesn't.
+     * Idempotent either way, safe to call on every state change. */
+    private fun applyState(state: CourierOrderDetailUiState) {
+        _uiState.value = state
+        val isTracking = state is CourierOrderDetailUiState.Success &&
+            state.order.status in setOf("in_progress", "in_delivery")
+        if (isTracking) {
+            CourierLocationService.start(context, orderId)
+        } else {
+            CourierLocationService.stop(context)
         }
     }
 
@@ -86,7 +102,7 @@ class CourierOrderDetailViewModel(
         _uiState.value = current.copy(performingAction = true)
         viewModelScope.launch {
             action()
-                .onSuccess { updated -> _uiState.value = CourierOrderDetailUiState.Success(updated) }
+                .onSuccess { updated -> applyState(CourierOrderDetailUiState.Success(updated)) }
                 .onFailure {
                     _uiState.value = (_uiState.value as? CourierOrderDetailUiState.Success)
                         ?.copy(performingAction = false)

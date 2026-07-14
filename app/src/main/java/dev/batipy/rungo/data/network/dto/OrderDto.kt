@@ -12,7 +12,25 @@ data class OrderDto(
     @SerialName("cod_total") val codTotal: String,
     val currency: String = "usd",
     @SerialName("service_name") val serviceName: String? = null,
-    @SerialName("delivery_address") val deliveryAddress: String? = null
+    @SerialName("delivery_address") val deliveryAddress: String? = null,
+    @SerialName("goods_amount") val goodsAmount: String? = null,
+    @SerialName("courier_username") val courierUsername: String? = null,
+    @SerialName("courier_full_name") val courierFullName: String? = null,
+    @SerialName("courier_phone") val courierPhone: String? = null,
+    @SerialName("courier_vehicle_type") val courierVehicleType: String? = null,
+    val items: List<OrderItemDto> = emptyList()
+) {
+    val courierDisplayName: String?
+        get() = courierFullName?.ifBlank { null } ?: courierUsername?.ifBlank { null }
+}
+
+@Serializable
+data class OrderItemDto(
+    val id: Int = 0,
+    @SerialName("product_name") val productName: String = "",
+    @SerialName("merchant_name") val merchantName: String = "",
+    val quantity: Int = 0,
+    val price: String = "0"
 )
 
 val ACTIVE_ORDER_STATUSES = setOf("new", "confirmed", "in_progress", "in_delivery")
@@ -97,4 +115,11 @@ data class ReviewCreateRequest(
 @Serializable
 data class ConfirmDeliveryRequest(
     @SerialName("payment_method") val paymentMethod: String
+)
+
+@Serializable
+data class OrderLocationRequest(
+    val latitude: String,
+    val longitude: String,
+    @SerialName("accuracy_m") val accuracyM: Float? = null
 )

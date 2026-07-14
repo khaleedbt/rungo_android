@@ -1,8 +1,18 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.google.services)
+}
+
+// Not committed (local.properties is gitignored) — each dev/CI machine needs
+// its own copy with MAPS_API_KEY set, restricted to this package + their own
+// debug/release signing SHA-1 in the Google Cloud Console.
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
 }
 
 android {
@@ -14,7 +24,9 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = 1
-        versionName = "2.6"
+        versionName = "2.6.1"
+
+        manifestPlaceholders["MAPS_API_KEY"] = localProperties.getProperty("MAPS_API_KEY", "")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -60,6 +72,8 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.play.services.location)
     implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.play.services.maps)
+    implementation(libs.maps.compose)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging.ktx)
     coreLibraryDesugaring(libs.android.desugar.jdk.libs)

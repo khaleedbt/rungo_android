@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Store
 import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
@@ -46,6 +47,7 @@ import dev.batipy.rungo.data.shop.ShopDisplayPrefs
 import dev.batipy.rungo.data.catalog.CatalogRepository
 import dev.batipy.rungo.data.chat.ChatRepository
 import dev.batipy.rungo.data.location.LocationProvider
+import dev.batipy.rungo.data.location.OrderLocationRepository
 import dev.batipy.rungo.data.network.dto.ServiceDto
 import dev.batipy.rungo.data.orders.OrderFeedRepository
 import dev.batipy.rungo.data.orders.OrdersRepository
@@ -62,6 +64,8 @@ import dev.batipy.rungo.ui.orders.OrderDetailScreen
 import dev.batipy.rungo.ui.orders.OrderDetailViewModel
 import dev.batipy.rungo.ui.orders.OrdersScreen
 import dev.batipy.rungo.ui.orders.OrdersViewModel
+import dev.batipy.rungo.ui.partner.PartnerOrdersScreen
+import dev.batipy.rungo.ui.partner.PartnerOrdersViewModel
 import dev.batipy.rungo.ui.profile.ProfileScreen
 import dev.batipy.rungo.ui.profile.ProfileViewModel
 import dev.batipy.rungo.ui.services.CreateOrderViewModel
@@ -70,6 +74,8 @@ import dev.batipy.rungo.ui.services.ServicesScreen
 import dev.batipy.rungo.ui.services.ServicesViewModel
 import dev.batipy.rungo.ui.shop.MerchantDetailScreen
 import dev.batipy.rungo.ui.shop.MerchantDetailViewModel
+import dev.batipy.rungo.ui.tracking.OrderTrackingScreen
+import dev.batipy.rungo.ui.tracking.OrderTrackingViewModel
 import dev.batipy.rungo.ui.shop.ShopScreen
 import dev.batipy.rungo.ui.shop.ShopViewModel
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
@@ -92,6 +98,13 @@ private fun courierHomeTabs(): List<HomeTab> = listOf(
     HomeTab(stringResource(R.string.nav_profile), Icons.Filled.Person)
 )
 
+// Partner (merchant) accounts just track orders containing their products and a profile.
+@Composable
+private fun partnerHomeTabs(): List<HomeTab> = listOf(
+    HomeTab(stringResource(R.string.partner_orders_title), Icons.Filled.Store),
+    HomeTab(stringResource(R.string.nav_profile), Icons.Filled.Person)
+)
+
 @Composable
 fun HomeScreen(
     servicesViewModel: ServicesViewModel,
@@ -102,6 +115,7 @@ fun HomeScreen(
     cartRepository: CartRepository,
     chatRepository: ChatRepository,
     orderFeedRepository: OrderFeedRepository,
+    orderLocationRepository: OrderLocationRepository,
     initialOrderId: Int? = null,
     onInitialOrderConsumed: () -> Unit = {},
     initialChatOrderId: Int? = null,
@@ -153,6 +167,10 @@ fun HomeScreen(
         }
     }
 
+    // Set when the client taps "Отследить курьера на карте" on an order's
+    // detail screen — same full-screen-overlay treatment as chatOrderId.
+    var trackingOrderId by rememberSaveable { mutableStateOf<Int?>(null) }
+
     // Hoisted up here (rather than local state inside ShopScreen) so the
     // grid/list choice survives navigating into a merchant and back, and
     // switching tabs and back — it used to live inside ShopScreen itself and
@@ -182,6 +200,7 @@ fun HomeScreen(
         return
     }
     val isCourier = role == "courier"
+    val isPartner = role == "partner"
 
     // Hoisted (rather than created inside the `when` branch below) so the bottom
     // bar's onClick can trigger a refresh even when tapping a tab you're already on.
@@ -200,9 +219,9 @@ fun HomeScreen(
             // (chat, order/merchant detail) is up — otherwise that reserved
             // space shows up as unexplained empty space at the bottom of the
             // overlay, e.g. between the chat input and the keyboard.
-            if (chatOrderId == null && selectedOrderId == null) {
+            if (chatOrderId == null && selectedOrderId == null && trackingOrderId == null) {
                 NavigationBar {
-                    (if (isCourier) courierHomeTabs() else homeTabs()).forEachIndexed { index, tab ->
+                    (if (isCourier) courierHomeTabs() else if (isPartner) partnerHomeTabs() else homeTabs()).forEachIndexed { index, tab ->
                     NavigationBarItem(
                         selected = selectedTab == index && selectedOrderId == null,
                         onClick = {
@@ -213,7 +232,7 @@ fun HomeScreen(
                             val isNavigatingHere = selectedTab != index || selectedOrderId != null
                             selectedTab = index
                             selectedOrderId = null
-                            if (isNavigatingHere && !isCourier) {
+                            if (isNavigatingHere && !isCourier && !isPartner) {
                                 when (index) {
                                     0 -> servicesViewModel.refresh()
                                     2 -> ordersViewModel.refresh()
@@ -264,6 +283,23 @@ fun HomeScreen(
                 onBack = { chatOrderId = null },
                 onSend = chatViewModel::sendMessage,
                 onRetry = chatViewModel::connect,
+                modifier = Modifier.padding(innerPadding)
+            )
+            return@Scaffold
+        }
+
+        val trackId = trackingOrderId
+        if (trackId != null) {
+            BackHandler { trackingOrderId = null }
+            val trackingViewModel: OrderTrackingViewModel = viewModel(
+                key = "tracking-$trackId",
+                factory = OrderTrackingViewModel.Factory(trackId, ordersRepository, orderLocationRepository, context)
+            )
+            val trackingState by trackingViewModel.uiState.collectAsState()
+            OrderTrackingScreen(
+                orderId = trackId,
+                uiState = trackingState,
+                onBack = { trackingOrderId = null },
                 modifier = Modifier.padding(innerPadding)
             )
             return@Scaffold
@@ -323,6 +359,7 @@ fun HomeScreen(
                 onReviewTextChange = orderDetailViewModel::updateReviewText,
                 onSubmitReview = orderDetailViewModel::submitReview,
                 onOpenChat = { chatOrderId = orderId },
+                onOpenTracking = { trackingOrderId = orderId },
                 modifier = Modifier.padding(innerPadding)
             )
         } else if (isCourier) {
@@ -340,6 +377,33 @@ fun HomeScreen(
                     onToggleAvailability = courierOrdersViewModel::toggleAvailability,
                     onTakeOrder = courierOrdersViewModel::takeOrder,
                     onOrderClick = { order -> selectedOrderId = order.id },
+                    modifier = Modifier.padding(innerPadding)
+                )
+            }
+
+            1 -> {
+                ProfileTab(
+                    profileRepository = profileRepository,
+                    catalogRepository = catalogRepository,
+                    locationProvider = locationProvider,
+                    context = context,
+                    innerPadding = innerPadding,
+                    onLogoutClick = onLogoutClick
+                )
+            }
+        }
+        } else if (isPartner) {
+        when (selectedTab) {
+            0 -> {
+                val partnerOrdersViewModel: PartnerOrdersViewModel = viewModel(
+                    factory = PartnerOrdersViewModel.Factory(ordersRepository, profileRepository, orderFeedRepository, context)
+                )
+                val uiState by partnerOrdersViewModel.uiState.collectAsState()
+                val isRefreshing by partnerOrdersViewModel.isRefreshing.collectAsState()
+                PartnerOrdersScreen(
+                    uiState = uiState,
+                    isRefreshing = isRefreshing,
+                    onRefresh = partnerOrdersViewModel::refresh,
                     modifier = Modifier.padding(innerPadding)
                 )
             }

@@ -124,6 +124,7 @@ class MainActivity : AppCompatActivity() {
                                     cartRepository = app.cartRepository,
                                     chatRepository = app.chatRepository,
                                     orderFeedRepository = app.orderFeedRepository,
+                                    orderLocationRepository = app.orderLocationRepository,
                                     initialOrderId = pendingOrderId,
                                     onInitialOrderConsumed = { pendingOrderId = null },
                                     initialChatOrderId = pendingChatOrderId,

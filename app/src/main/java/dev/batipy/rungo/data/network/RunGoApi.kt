@@ -12,6 +12,7 @@ import dev.batipy.rungo.data.network.dto.MerchantDetailDto
 import dev.batipy.rungo.data.network.dto.OrderCreateRequest
 import dev.batipy.rungo.data.network.dto.OrderCreateResponseDto
 import dev.batipy.rungo.data.network.dto.OrderDetailDto
+import dev.batipy.rungo.data.network.dto.OrderLocationRequest
 import dev.batipy.rungo.data.network.dto.OrderStatusRequest
 import dev.batipy.rungo.data.network.dto.PaginatedCitiesDto
 import dev.batipy.rungo.data.network.dto.ReviewCreateRequest
@@ -78,6 +79,9 @@ interface RunGoApi {
     @GET("api/v1/courier/orders/")
     suspend fun getCourierOrders(): PaginatedOrdersDto
 
+    @GET("api/v1/partner/orders/")
+    suspend fun getPartnerOrders(): PaginatedOrdersDto
+
     @POST("api/v1/courier/orders/{id}/take/")
     suspend fun takeCourierOrder(@Path("id") id: Int): OrderDetailDto
 
@@ -89,6 +93,9 @@ interface RunGoApi {
 
     @POST("api/v1/courier/orders/{id}/collect-payment/")
     suspend fun collectPayment(@Path("id") id: Int): OrderDetailDto
+
+    @POST("api/v1/courier/orders/{id}/location/")
+    suspend fun postCourierLocation(@Path("id") id: Int, @Body request: OrderLocationRequest): Response<Void>
 
     @PATCH("api/v1/courier/availability/")
     suspend fun setCourierAvailability(@Body request: CourierAvailabilityRequest): CourierAvailabilityResponse
