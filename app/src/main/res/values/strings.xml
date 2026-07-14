@@ -240,4 +240,5 @@
     <string name="tracking_waiting_for_courier">Ждём первую точку от курьера…</string>
     <string name="tracking_destination_label">Точка доставки</string>
     <string name="tracking_courier_label">Курьер</string>
+    <string name="tracking_courier_status">В пути к вам</string>
 </resources>

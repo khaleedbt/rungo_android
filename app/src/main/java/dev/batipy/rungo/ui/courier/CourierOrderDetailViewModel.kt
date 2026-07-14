@@ -1,6 +1,7 @@
 package dev.batipy.rungo.ui.courier
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -74,8 +75,9 @@ class CourierOrderDetailViewModel(
      * Idempotent either way, safe to call on every state change. */
     private fun applyState(state: CourierOrderDetailUiState) {
         _uiState.value = state
-        val isTracking = state is CourierOrderDetailUiState.Success &&
-            state.order.status in setOf("in_progress", "in_delivery")
+        val status = (state as? CourierOrderDetailUiState.Success)?.order?.status
+        val isTracking = status == "in_progress" || status == "in_delivery"
+        Log.i("CourierOrderDetailVM", "applyState: order $orderId status=$status tracking=$isTracking")
         if (isTracking) {
             CourierLocationService.start(context, orderId)
         } else {

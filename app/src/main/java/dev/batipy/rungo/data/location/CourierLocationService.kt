@@ -82,6 +82,7 @@ class CourierLocationService : Service() {
         }
 
         orderId = id
+        Log.i(TAG, "Starting foreground tracking for order $id")
         startForeground(NOTIFICATION_ID, buildNotification(id))
         startLocationUpdates()
         return START_REDELIVER_INTENT
@@ -94,17 +95,23 @@ class CourierLocationService : Service() {
         val cb = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
                 val location = result.lastLocation ?: return
+                Log.i(TAG, "Got location ${location.latitude},${location.longitude} for order $currentOrderId — posting")
                 val app = application as RunGoApplication
                 scope.launch {
                     app.ordersRepository.postCourierLocation(
                         currentOrderId, location.latitude, location.longitude, location.accuracy
-                    )
+                    ).onSuccess {
+                        Log.i(TAG, "Posted location for order $currentOrderId")
+                    }.onFailure {
+                        Log.w(TAG, "Failed to post location for order $currentOrderId", it)
+                    }
                 }
             }
         }
         callback = cb
         try {
             fusedClient.requestLocationUpdates(request, cb, Looper.getMainLooper())
+            Log.i(TAG, "requestLocationUpdates registered for order $currentOrderId")
         } catch (e: SecurityException) {
             Log.w(TAG, "requestLocationUpdates denied", e)
             stopSelf()
@@ -126,6 +133,7 @@ class CourierLocationService : Service() {
             .build()
 
     override fun onDestroy() {
+        Log.i(TAG, "Service destroyed (was tracking order $orderId)")
         super.onDestroy()
         stopLocationUpdates()
         scope.cancel()

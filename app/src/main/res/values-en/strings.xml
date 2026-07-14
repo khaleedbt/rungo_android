@@ -240,4 +240,5 @@
     <string name="tracking_waiting_for_courier">Waiting for the first point from the courier…</string>
     <string name="tracking_destination_label">Delivery point</string>
     <string name="tracking_courier_label">Courier</string>
+    <string name="tracking_courier_status">On the way to you</string>
 </resources>

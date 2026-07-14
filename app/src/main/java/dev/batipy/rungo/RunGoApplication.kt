@@ -32,7 +32,7 @@ class RunGoApplication : Application() {
     val notificationRepository by lazy { NotificationRepository(api) }
     val cartRepository by lazy { CartRepository() }
     val chatRepository by lazy { ChatRepository(tokenStore) }
-    val orderFeedRepository by lazy { OrderFeedRepository(tokenStore, applicationScope) }
+    val orderFeedRepository by lazy { OrderFeedRepository(tokenStore, authRepository, applicationScope) }
     val orderLocationRepository by lazy { OrderLocationRepository(tokenStore) }
 
     override fun onCreate() {

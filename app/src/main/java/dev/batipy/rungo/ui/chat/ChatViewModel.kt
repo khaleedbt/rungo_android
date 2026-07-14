@@ -3,7 +3,9 @@ package dev.batipy.rungo.ui.chat
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import dev.batipy.rungo.R
+import dev.batipy.rungo.data.auth.AuthRepository
 import dev.batipy.rungo.data.chat.ChatRepository
 import dev.batipy.rungo.data.network.dto.ChatFrame
 import dev.batipy.rungo.data.network.dto.ChatMessageDto
@@ -11,6 +13,7 @@ import dev.batipy.rungo.data.network.dto.ChatOutgoingMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import okhttp3.Response
 import okhttp3.WebSocket
@@ -28,6 +31,7 @@ class ChatViewModel(
     private val orderId: Int,
     val currentUserId: Int,
     private val chatRepository: ChatRepository,
+    private val authRepository: AuthRepository,
     private val context: Context
 ) : ViewModel() {
 
@@ -87,7 +91,17 @@ class ChatViewModel(
     }
 
     private fun handleDisconnect(code: Int) {
-        if (code == 4401 || code == 4403) {
+        // 4401 isn't necessarily "logged out" — it's the same code the
+        // server sends for a merely-expired access token, and this socket
+        // never goes through TokenAuthenticator's normal refresh-on-401 flow
+        // (it's a raw OkHttp WebSocket, not a Retrofit call). Try a refresh
+        // before giving up; 4403 (not allowed in this chat at all — wrong
+        // user, order closed) is never fixable by refreshing a token.
+        if (code == 4401) {
+            refreshAndReconnect()
+            return
+        }
+        if (code == 4403) {
             _uiState.value = ChatUiState.Error(closeReasonMessage(code))
             return
         }
@@ -96,6 +110,16 @@ class ChatViewModel(
             openSocket()
         } else {
             _uiState.value = ChatUiState.Error(closeReasonMessage(code))
+        }
+    }
+
+    private fun refreshAndReconnect() {
+        viewModelScope.launch {
+            if (authRepository.refreshAccessToken()) {
+                openSocket()
+            } else {
+                _uiState.value = ChatUiState.Error(closeReasonMessage(4401))
+            }
         }
     }
 
@@ -147,11 +171,12 @@ class ChatViewModel(
         private val orderId: Int,
         private val currentUserId: Int,
         private val chatRepository: ChatRepository,
+        private val authRepository: AuthRepository,
         private val context: Context
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return ChatViewModel(orderId, currentUserId, chatRepository, context) as T
+            return ChatViewModel(orderId, currentUserId, chatRepository, authRepository, context) as T
         }
     }
 }

@@ -12,6 +12,7 @@ import dev.batipy.rungo.data.network.dto.OrderStatusRequest
 import dev.batipy.rungo.data.network.dto.ReviewCreateRequest
 import retrofit2.HttpException
 import retrofit2.Response
+import java.util.Locale
 
 private const val TAG = "OrdersRepository"
 
@@ -80,9 +81,13 @@ class OrdersRepository(private val api: RunGoApi) {
     // logcat over; the next tick just tries again.
     suspend fun postCourierLocation(id: Int, latitude: Double, longitude: Double, accuracyM: Float?): Result<Unit> =
         runCatching {
-            api.postCourierLocation(
-                id,
-                OrderLocationRequest(latitude.toString(), longitude.toString(), accuracyM)
-            ).throwIfUnsuccessful()
+            // Double.toString() keeps full precision (often 7+ decimal
+            // digits for a GPS fix), but the backend's DecimalField only
+            // allows 6 — sending more than that fails validation with a 400
+            // on every single ping. Round explicitly instead of relying on
+            // however many digits the platform happens to print.
+            val lat = String.format(Locale.US, "%.6f", latitude)
+            val lng = String.format(Locale.US, "%.6f", longitude)
+            api.postCourierLocation(id, OrderLocationRequest(lat, lng, accuracyM)).throwIfUnsuccessful()
         }
 }

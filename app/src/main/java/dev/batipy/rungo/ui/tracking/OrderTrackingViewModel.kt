@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.batipy.rungo.R
+import dev.batipy.rungo.data.auth.AuthRepository
 import dev.batipy.rungo.data.location.CourierLocationFrame
 import dev.batipy.rungo.data.location.OrderLocationRepository
 import dev.batipy.rungo.data.orders.OrdersRepository
@@ -23,6 +24,8 @@ sealed interface OrderTrackingUiState {
     data class Success(
         val destinationLatitude: Double?,
         val destinationLongitude: Double?,
+        val pickupLatitude: Double?,
+        val pickupLongitude: Double?,
         val courierName: String?,
         val courierLatitude: Double? = null,
         val courierLongitude: Double? = null
@@ -33,6 +36,7 @@ class OrderTrackingViewModel(
     private val orderId: Int,
     private val ordersRepository: OrdersRepository,
     private val orderLocationRepository: OrderLocationRepository,
+    private val authRepository: AuthRepository,
     private val context: Context
 ) : ViewModel() {
 
@@ -58,13 +62,27 @@ class OrderTrackingViewModel(
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
             if (webSocket !== socket) return
-            if (code != 4401 && code != 4403) reconnect()
+            handleDisconnect(code)
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             if (webSocket !== socket) return
-            val code = response?.code
-            if (code != 4401 && code != 4403) reconnect()
+            handleDisconnect(response?.code)
+        }
+    }
+
+    // A tracking session can easily outlast the 15-minute access token, and
+    // this raw WebSocket never goes through TokenAuthenticator's normal
+    // refresh-on-401 flow — without this, live tracking would silently stop
+    // updating partway through a delivery. 4403 (not allowed to see this
+    // order at all) is never fixable by refreshing a token, so it's terminal.
+    private fun handleDisconnect(code: Int?) {
+        when (code) {
+            4401 -> viewModelScope.launch {
+                if (authRepository.refreshAccessToken()) connect()
+            }
+            4403 -> Unit
+            else -> reconnect()
         }
     }
 
@@ -80,6 +98,8 @@ class OrderTrackingViewModel(
                 OrderTrackingUiState.Success(
                     destinationLatitude = order.deliveryLatitude?.toDoubleOrNull(),
                     destinationLongitude = order.deliveryLongitude?.toDoubleOrNull(),
+                    pickupLatitude = order.pickupLatitude?.toDoubleOrNull(),
+                    pickupLongitude = order.pickupLongitude?.toDoubleOrNull(),
                     courierName = order.courierDisplayName
                 )
             } else {
@@ -114,11 +134,12 @@ class OrderTrackingViewModel(
         private val orderId: Int,
         private val ordersRepository: OrdersRepository,
         private val orderLocationRepository: OrderLocationRepository,
+        private val authRepository: AuthRepository,
         private val context: Context
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return OrderTrackingViewModel(orderId, ordersRepository, orderLocationRepository, context) as T
+            return OrderTrackingViewModel(orderId, ordersRepository, orderLocationRepository, authRepository, context) as T
         }
     }
 }

@@ -240,4 +240,5 @@
     <string name="tracking_waiting_for_courier">بانتظار أول نقطة من المندوب…</string>
     <string name="tracking_destination_label">نقطة التوصيل</string>
     <string name="tracking_courier_label">المندوب</string>
+    <string name="tracking_courier_status">في الطريق إليك</string>
 </resources>

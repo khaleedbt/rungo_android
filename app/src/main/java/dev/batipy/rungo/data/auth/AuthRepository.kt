@@ -5,6 +5,7 @@ import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.RunGoApi
 import dev.batipy.rungo.data.network.dto.LoginRequest
 import dev.batipy.rungo.data.network.dto.RegisterRequest
+import dev.batipy.rungo.data.network.dto.TokenRefreshRequest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -92,4 +93,28 @@ class AuthRepository(
     }
 
     suspend fun isLoggedIn(): Boolean = tokenStore.awaitInitialTokens() != null
+
+    /**
+     * Long-lived WebSocket connections (chat, order feed, live tracking)
+     * carry a bearer token set once at connect time and never go through
+     * TokenAuthenticator's automatic-refresh-on-401 — over a long enough
+     * session the 15-minute access token expires under them and every
+     * reconnect attempt gets rejected (WSREJECT / close code 4401) until the
+     * app is restarted. Call this before retrying such a connection so it
+     * reconnects with a fresh token instead of failing forever.
+     *
+     * Safe to call directly on [api]: api/v1/auth/refresh/ is in
+     * AuthInterceptor's NO_AUTH_PATHS, so this never attaches the (possibly
+     * already-expired) access token, and never touches TokenAuthenticator.
+     */
+    suspend fun refreshAccessToken(): Boolean {
+        val refresh = tokenStore.currentTokens?.refresh ?: return false
+        return try {
+            val response = api.refreshToken(TokenRefreshRequest(refresh))
+            tokenStore.updateAccessToken(response.access)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
 }

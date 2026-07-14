@@ -42,10 +42,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.batipy.rungo.R
+import dev.batipy.rungo.data.auth.AuthRepository
 import dev.batipy.rungo.data.cart.CartRepository
 import dev.batipy.rungo.data.shop.ShopDisplayPrefs
 import dev.batipy.rungo.data.catalog.CatalogRepository
 import dev.batipy.rungo.data.chat.ChatRepository
+import dev.batipy.rungo.data.location.CourierLocationService
 import dev.batipy.rungo.data.location.LocationProvider
 import dev.batipy.rungo.data.location.OrderLocationRepository
 import dev.batipy.rungo.data.network.dto.ServiceDto
@@ -116,6 +118,7 @@ fun HomeScreen(
     chatRepository: ChatRepository,
     orderFeedRepository: OrderFeedRepository,
     orderLocationRepository: OrderLocationRepository,
+    authRepository: AuthRepository,
     initialOrderId: Int? = null,
     onInitialOrderConsumed: () -> Unit = {},
     initialChatOrderId: Int? = null,
@@ -152,6 +155,23 @@ fun HomeScreen(
             currentUserId = me.id
         } else {
             roleLoadFailed = true
+        }
+    }
+
+    // CourierLocationService only gets (re)started from CourierOrderDetailViewModel,
+    // i.e. while the courier has that specific order's screen open — if the app
+    // process was killed mid-delivery (swiped away, phone restarted), the
+    // foreground service dies with it and nothing else restarts it. Covering
+    // that gap here: as soon as we know this is a courier, check for an order
+    // already in_progress/in_delivery and resume tracking without requiring
+    // them to open it again.
+    LaunchedEffect(role) {
+        if (role == "courier") {
+            val activeOrder = ordersRepository.getCourierOrders().getOrNull()
+                ?.firstOrNull { it.status == "in_progress" || it.status == "in_delivery" }
+            if (activeOrder != null) {
+                CourierLocationService.start(context, activeOrder.id)
+            }
         }
     }
 
@@ -260,7 +280,7 @@ fun HomeScreen(
             BackHandler { chatOrderId = null }
             val chatViewModel: ChatViewModel = viewModel(
                 key = "chat-$chatId",
-                factory = ChatViewModel.Factory(chatId, currentUserId!!, chatRepository, context)
+                factory = ChatViewModel.Factory(chatId, currentUserId!!, chatRepository, authRepository, context)
             )
             val chatState by chatViewModel.uiState.collectAsState()
             val chatMessage by chatViewModel.message.collectAsState()
@@ -293,7 +313,7 @@ fun HomeScreen(
             BackHandler { trackingOrderId = null }
             val trackingViewModel: OrderTrackingViewModel = viewModel(
                 key = "tracking-$trackId",
-                factory = OrderTrackingViewModel.Factory(trackId, ordersRepository, orderLocationRepository, context)
+                factory = OrderTrackingViewModel.Factory(trackId, ordersRepository, orderLocationRepository, authRepository, context)
             )
             val trackingState by trackingViewModel.uiState.collectAsState()
             OrderTrackingScreen(

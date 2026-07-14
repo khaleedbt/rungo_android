@@ -1,5 +1,6 @@
 package dev.batipy.rungo.data.orders
 
+import dev.batipy.rungo.data.auth.AuthRepository
 import dev.batipy.rungo.data.auth.TokenStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -28,6 +29,7 @@ private const val RESUME_DEBOUNCE_MS = 20_000L
  */
 class OrderFeedRepository(
     private val tokenStore: TokenStore,
+    private val authRepository: AuthRepository,
     private val applicationScope: CoroutineScope
 ) {
     private val client = OkHttpClient.Builder()
@@ -63,13 +65,13 @@ class OrderFeedRepository(
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
             if (webSocket !== socket) return
             isConnected = false
-            if (code != 4401) scheduleReconnect()
+            if (code == 4401) refreshAndReconnect() else scheduleReconnect()
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             if (webSocket !== socket) return
             isConnected = false
-            if (response?.code != 4401) scheduleReconnect()
+            if (response?.code == 4401) refreshAndReconnect() else scheduleReconnect()
         }
     }
 
@@ -121,6 +123,21 @@ class OrderFeedRepository(
         applicationScope.launch {
             delay(5000)
             if (wantsConnection) openSocket()
+        }
+    }
+
+    /**
+     * A 4401 close here doesn't necessarily mean "logged out" — it's the
+     * same code the server sends for a merely-expired access token, and this
+     * socket never goes through TokenAuthenticator's normal refresh-on-401
+     * flow. Refresh first and only give up if the refresh token itself is
+     * no longer valid (genuinely logged out).
+     */
+    private fun refreshAndReconnect() {
+        applicationScope.launch {
+            if (wantsConnection && authRepository.refreshAccessToken()) {
+                openSocket()
+            }
         }
     }
 }
