@@ -27,6 +27,7 @@ sealed interface OrderTrackingUiState {
         val pickupLatitude: Double?,
         val pickupLongitude: Double?,
         val courierName: String?,
+        val orderCreatedAt: String,
         val courierLatitude: Double? = null,
         val courierLongitude: Double? = null
     ) : OrderTrackingUiState
@@ -100,7 +101,8 @@ class OrderTrackingViewModel(
                     destinationLongitude = order.deliveryLongitude?.toDoubleOrNull(),
                     pickupLatitude = order.pickupLatitude?.toDoubleOrNull(),
                     pickupLongitude = order.pickupLongitude?.toDoubleOrNull(),
-                    courierName = order.courierDisplayName
+                    courierName = order.courierDisplayName,
+                    orderCreatedAt = order.createdAt
                 )
             } else {
                 OrderTrackingUiState.Error(context.getString(R.string.order_load_error))

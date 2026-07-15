@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.OrderDetailDto
 import dev.batipy.rungo.data.network.dto.ReviewDto
+import dev.batipy.rungo.ui.common.ElapsedTimeText
 import dev.batipy.rungo.ui.common.StatusBadge
 import dev.batipy.rungo.ui.common.formatOrderAmount
 import dev.batipy.rungo.ui.theme.RunGoAccent
@@ -196,11 +197,14 @@ fun OrderDetailScreen(
 
             is OrderDetailUiState.Success -> {
                 val order = uiState.order
+                val isTerminal = order.status == "delivered" || order.status == "cancelled"
                 HeaderBar(
                     title = stringResource(R.string.order_number, order.id),
                     subtitle = formatDetailDate(order.createdAt),
                     statusStyle = statusPillStyle(order.status),
                     statusPulse = order.status == "in_progress" || order.status == "in_delivery",
+                    elapsedStartIso = order.createdAt,
+                    elapsedEndIso = if (isTerminal) order.updatedAt else null,
                     onBack = onBack
                 )
             }
@@ -440,6 +444,8 @@ private fun HeaderBar(
     subtitle: String?,
     statusStyle: StatusPillStyle?,
     statusPulse: Boolean = false,
+    elapsedStartIso: String? = null,
+    elapsedEndIso: String? = null,
     onBack: () -> Unit
 ) {
     Row(
@@ -474,6 +480,14 @@ private fun HeaderBar(
             if (subtitle != null) {
                 Text(
                     text = subtitle,
+                    color = RunGoTextSecondary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            if (elapsedStartIso != null) {
+                ElapsedTimeText(
+                    startIso = elapsedStartIso,
+                    endIso = elapsedEndIso,
                     color = RunGoTextSecondary,
                     style = MaterialTheme.typography.bodyMedium
                 )

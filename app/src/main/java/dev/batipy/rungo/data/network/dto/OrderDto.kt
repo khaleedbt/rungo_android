@@ -72,6 +72,7 @@ data class OrderDetailDto(
     val id: Int,
     val status: String,
     @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("service_name") val serviceName: String? = null,
     @SerialName("city_name") val cityName: String? = null,
     @SerialName("pickup_address") val pickupAddress: String? = null,

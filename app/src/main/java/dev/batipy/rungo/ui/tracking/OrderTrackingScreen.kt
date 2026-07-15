@@ -37,6 +37,7 @@ import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberMarkerState
 import dev.batipy.rungo.R
+import dev.batipy.rungo.ui.common.ElapsedTimeText
 import dev.batipy.rungo.ui.theme.RunGoAccent
 import dev.batipy.rungo.ui.theme.RunGoField
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
@@ -206,6 +207,11 @@ fun OrderTrackingScreen(
                                         )
                                         Text(
                                             text = stringResource(R.string.tracking_courier_status),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = RunGoTextSecondary
+                                        )
+                                        ElapsedTimeText(
+                                            startIso = uiState.orderCreatedAt,
                                             style = MaterialTheme.typography.bodySmall,
                                             color = RunGoTextSecondary
                                         )

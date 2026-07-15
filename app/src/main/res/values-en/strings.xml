@@ -241,4 +241,6 @@
     <string name="tracking_destination_label">Delivery point</string>
     <string name="tracking_courier_label">Courier</string>
     <string name="tracking_courier_status">On the way to you</string>
+    <string name="elapsed_time_hours_minutes">%1$dh %2$dm</string>
+    <string name="elapsed_time_minutes">%1$dm</string>
 </resources>
