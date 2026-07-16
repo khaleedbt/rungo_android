@@ -45,9 +45,24 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Release keystore lives outside the repo history (gitignored, *.jks) —
+    // credentials come from local.properties same as MAPS_API_KEY. Without
+    // this, `assembleRelease` still "succeeds" but produces an unsigned APK
+    // that most devices refuse to install — fine for local debug testing,
+    // useless for actually handing the file to someone.
+    signingConfigs {
+        create("release") {
+            storeFile = file(localProperties.getProperty("RELEASE_STORE_FILE", "release-keystore.jks"))
+            storePassword = localProperties.getProperty("RELEASE_STORE_PASSWORD", "")
+            keyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS", "")
+            keyPassword = localProperties.getProperty("RELEASE_KEY_PASSWORD", "")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -62,6 +77,18 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+}
+
+// Names the actual output file "RunGo-2.8.<build>-<debug|release>.apk"
+// instead of the generic "app-debug.apk" — so the file itself is
+// identifiable (e.g. once shared/copied elsewhere) without installing it
+// or digging through package info first.
+androidComponents {
+    onVariants { variant ->
+        variant.outputs.forEach { output ->
+            output.outputFileName.set("RunGo-2.8.$buildNumber-${variant.name}.apk")
+        }
     }
 }
 
