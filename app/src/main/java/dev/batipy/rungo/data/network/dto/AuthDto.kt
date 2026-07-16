@@ -44,5 +44,11 @@ data class TokenRefreshRequest(
 
 @Serializable
 data class TokenRefreshResponse(
-    val access: String
+    val access: String,
+    // Present because the backend has ROTATE_REFRESH_TOKENS=True (see
+    // SIMPLE_JWT in core/settings/base.py) — every refresh call issues a new
+    // refresh token too, not just a new access token. Nullable defensively
+    // in case rotation is ever turned off server-side, in which case the
+    // caller should keep reusing the existing refresh token.
+    val refresh: String? = null
 )

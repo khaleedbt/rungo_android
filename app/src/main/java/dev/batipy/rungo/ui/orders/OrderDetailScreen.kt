@@ -38,6 +38,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -770,6 +771,7 @@ private fun PaymentMethodPicker(
             color = successColor,
             contentColor = Color.White,
             enabled = !confirming,
+            light = light,
             onClick = { onSelect("cash") }
         )
         Spacer(modifier = Modifier.height(10.dp))
@@ -778,6 +780,7 @@ private fun PaymentMethodPicker(
             color = accent,
             contentColor = onAccent,
             enabled = !confirming,
+            light = light,
             onClick = { onSelect("shamcash") }
         )
         Spacer(modifier = Modifier.height(10.dp))
@@ -790,6 +793,7 @@ private fun PaymentMethodPicker(
             color = BalanceColor,
             contentColor = Color.White,
             enabled = !confirming && balanceSufficient,
+            light = light,
             onClick = { onSelect("balance") }
         )
         if (!balanceSufficient) {
@@ -808,7 +812,13 @@ private fun PaymentMethodPicker(
                 .fillMaxWidth()
                 .height(48.dp),
             shape = MaterialTheme.shapes.large,
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = textSecondary)
+            // Same reasoning as PaymentMethodButton above — spell out the
+            // disabled content color instead of letting it fall back to one
+            // derived from the app's permanently-dark MaterialTheme.
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = textSecondary,
+                disabledContentColor = textSecondary.copy(alpha = 0.5f)
+            )
         ) {
             Text(stringResource(R.string.common_cancel))
         }
@@ -827,6 +837,7 @@ private fun PaymentMethodButton(
     color: Color,
     contentColor: Color = Color.White,
     enabled: Boolean,
+    light: Boolean = false,
     onClick: () -> Unit
 ) {
     Button(
@@ -836,9 +847,27 @@ private fun PaymentMethodButton(
             .fillMaxWidth()
             .height(48.dp),
         shape = MaterialTheme.shapes.large,
-        colors = ButtonDefaults.buttonColors(containerColor = color)
+        // Disabled colors need to be spelled out explicitly here — left to
+        // their Material3 defaults they're derived from MaterialTheme's
+        // colorScheme, which (per this app's light-theme-via-per-composable-
+        // overrides approach) stays permanently dark even on a light screen.
+        // That made a disabled button here render as a near-invisible pale
+        // container with barely-visible text on a light card — any color
+        // emoji in the label still showed (glyph color ignores text tint),
+        // which is what made it look like an empty white box with a stray
+        // 💰 floating in it instead of a legibly "disabled" button.
+        colors = if (light) {
+            ButtonDefaults.buttonColors(
+                containerColor = color,
+                contentColor = contentColor,
+                disabledContainerColor = RunGoLightSurfaceMuted,
+                disabledContentColor = RunGoLightTextSecondary
+            )
+        } else {
+            ButtonDefaults.buttonColors(containerColor = color, contentColor = contentColor)
+        }
     ) {
-        Text(label, fontWeight = FontWeight.SemiBold, color = contentColor)
+        Text(label, fontWeight = FontWeight.SemiBold, color = if (enabled) contentColor else LocalContentColor.current)
     }
 }
 

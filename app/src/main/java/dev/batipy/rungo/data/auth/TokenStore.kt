@@ -52,9 +52,15 @@ class TokenStore(private val context: Context) {
         _tokens.value = tokens
     }
 
-    suspend fun updateAccessToken(access: String) {
-        val refresh = _tokens.value?.refresh ?: return
-        saveTokens(TokenPair(access, refresh))
+    // `refresh` is only non-null when the backend rotated it (see
+    // ROTATE_REFRESH_TOKENS in SIMPLE_JWT settings) — the whole point of
+    // rotation is a sliding renewal window, so discarding the new refresh
+    // token and continuing to reuse the original one would mean every
+    // session hits a hard wall at the original refresh token's fixed
+    // lifetime (7 days) no matter how actively the app is used.
+    suspend fun updateAccessToken(access: String, refresh: String? = null) {
+        val currentRefresh = _tokens.value?.refresh ?: return
+        saveTokens(TokenPair(access, refresh ?: currentRefresh))
     }
 
     suspend fun clearTokens() {

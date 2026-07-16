@@ -1,5 +1,9 @@
 package dev.batipy.rungo.ui.cart
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,9 +35,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,10 +49,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.cart.CartItem
 import dev.batipy.rungo.data.network.dto.LocationDto
@@ -103,6 +112,11 @@ fun CartScreen(
     onCommentChange: (String) -> Unit,
     onCurrencySelect: (String) -> Unit,
     onSubmit: () -> Unit,
+    onRequestCurrentLocation: () -> Unit = {},
+    isAddingCurrentLocation: Boolean = false,
+    onCurrentLocationPermissionDenied: () -> Unit = {},
+    message: String? = null,
+    onConsumeMessage: () -> Unit = {},
     light: Boolean = false,
     modifier: Modifier = Modifier
 ) {
@@ -111,15 +125,24 @@ fun CartScreen(
         return
     }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(message) {
+        if (message != null) {
+            snackbarHostState.showSnackbar(message)
+            onConsumeMessage()
+        }
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
     when (uiState) {
         is CartUiState.Loading -> {
-            Box(modifier = modifier.fillMaxSize().background(if (light) RunGoLightBackground else Color.Unspecified), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.fillMaxSize().background(if (light) RunGoLightBackground else Color.Unspecified), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
 
         is CartUiState.Error -> {
-            Box(modifier = modifier.fillMaxSize().background(if (light) RunGoLightBackground else Color.Unspecified), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.fillMaxSize().background(if (light) RunGoLightBackground else Color.Unspecified), contentAlignment = Alignment.Center) {
                 Text(text = uiState.message, color = if (light) RunGoLightTextSecondary else RunGoTextSecondary)
             }
         }
@@ -137,10 +160,18 @@ fun CartScreen(
                 onCommentChange = onCommentChange,
                 onCurrencySelect = onCurrencySelect,
                 onSubmit = onSubmit,
+                onRequestCurrentLocation = onRequestCurrentLocation,
+                isAddingCurrentLocation = isAddingCurrentLocation,
+                onCurrentLocationPermissionDenied = onCurrentLocationPermissionDenied,
                 light = light,
-                modifier = modifier
+                modifier = Modifier
             )
         }
+    }
+    SnackbarHost(
+        hostState = snackbarHostState,
+        modifier = Modifier.align(Alignment.BottomCenter)
+    )
     }
 }
 
@@ -157,9 +188,16 @@ private fun CartForm(
     onCommentChange: (String) -> Unit,
     onCurrencySelect: (String) -> Unit,
     onSubmit: () -> Unit,
+    onRequestCurrentLocation: () -> Unit = {},
+    isAddingCurrentLocation: Boolean = false,
+    onCurrentLocationPermissionDenied: () -> Unit = {},
     light: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted -> if (granted) onRequestCurrentLocation() else onCurrentLocationPermissionDenied() }
     val accent = if (light) RunGoBrandOrange else RunGoAccent
     val onAccent = if (light) RunGoOnBrandOrange else Color.White
     val accentText = if (light) RunGoLightAccentText else RunGoAccent
@@ -248,6 +286,26 @@ private fun CartForm(
             SectionCard(title = stringResource(R.string.section_delivery_address), light = light) {
                 Column {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // Placed first — capturing where you're standing right
+                        // now is usually the fastest way to fill this field.
+                        item {
+                            AddressChip(
+                                label = stringResource(R.string.use_current_location_chip),
+                                selected = false,
+                                loading = isAddingCurrentLocation,
+                                onClick = {
+                                    val hasPermission = ContextCompat.checkSelfPermission(
+                                        context, Manifest.permission.ACCESS_FINE_LOCATION
+                                    ) == PackageManager.PERMISSION_GRANTED
+                                    if (hasPermission) {
+                                        onRequestCurrentLocation()
+                                    } else {
+                                        permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                                    }
+                                },
+                                light = light
+                            )
+                        }
                         items(uiState.locations) { location ->
                             AddressChip(
                                 label = "📍 " + location.label.ifBlank { stringResource(R.string.location_label) },
@@ -488,21 +546,31 @@ private fun SectionCard(title: String, light: Boolean = false, content: @Composa
 }
 
 @Composable
-private fun AddressChip(label: String, selected: Boolean, onClick: () -> Unit, light: Boolean = false) {
+private fun AddressChip(label: String, selected: Boolean, onClick: () -> Unit, loading: Boolean = false, light: Boolean = false) {
     val accent = if (light) RunGoBrandOrange else RunGoAccent
     val accentText = if (light) RunGoLightAccentText else RunGoAccent
     Surface(
-        modifier = Modifier.clickable(onClick = onClick),
+        modifier = Modifier.clickable(enabled = !loading, onClick = onClick),
         color = if (selected) accent else if (light) RunGoLightSurfaceMuted else RunGoBackground,
         shape = RoundedCornerShape(12.dp)
     ) {
-        Text(
-            text = label,
-            color = if (selected) { if (light) RunGoOnBrandOrange else Color.White } else accentText,
-            fontWeight = FontWeight.SemiBold,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
-        )
+        if (loading) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                    .size(18.dp),
+                color = accentText,
+                strokeWidth = 2.dp
+            )
+        } else {
+            Text(
+                text = label,
+                color = if (selected) { if (light) RunGoOnBrandOrange else Color.White } else accentText,
+                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+            )
+        }
     }
 }
 

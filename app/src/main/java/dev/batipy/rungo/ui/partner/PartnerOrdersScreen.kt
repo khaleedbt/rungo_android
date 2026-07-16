@@ -13,12 +13,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +50,7 @@ import dev.batipy.rungo.ui.theme.RunGoBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoLightAccentText
 import dev.batipy.rungo.ui.theme.RunGoLightBackground
 import dev.batipy.rungo.ui.theme.RunGoLightField
+import dev.batipy.rungo.ui.theme.RunGoLightSurfaceMuted
 import dev.batipy.rungo.ui.theme.RunGoLightTextPrimary
 import dev.batipy.rungo.ui.theme.RunGoLightTextSecondary
 import dev.batipy.rungo.ui.theme.RunGoOnBrandOrange
@@ -235,12 +240,14 @@ private fun PartnerTabSelector(selectedTab: Int, activeCount: Int, onSelect: (In
 @Composable
 private fun PartnerOrderCard(order: OrderDto, showCourierBlock: Boolean) {
     val style = partnerStatusStyle(order.status)
+    val hasAddress = !order.deliveryAddress.isNullOrBlank()
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = RunGoLightField,
         shape = RoundedCornerShape(16.dp)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            // Section 1 — identity: which order, at what status.
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -250,6 +257,7 @@ private fun PartnerOrderCard(order: OrderDto, showCourierBlock: Boolean) {
                     text = stringResource(R.string.order_number, order.id),
                     color = RunGoLightTextPrimary,
                     fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f)
                 )
                 StatusBadge(
@@ -261,40 +269,98 @@ private fun PartnerOrderCard(order: OrderDto, showCourierBlock: Boolean) {
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                 )
             }
-            Text(
-                text = formatPartnerOrderDate(order.createdAt),
-                color = RunGoLightTextSecondary,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 2.dp)
-            )
-            if (!order.deliveryAddress.isNullOrBlank()) {
-                Text(
-                    text = order.deliveryAddress,
-                    color = RunGoLightTextSecondary,
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
-            }
-            if (order.items.isNotEmpty()) {
-                Column(modifier = Modifier.padding(top = 8.dp)) {
-                    order.items.forEach { item ->
+
+            // Section 2 — when and where, each on its own line with an icon
+            // rather than run together as plain text.
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(top = 10.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.Schedule,
+                        contentDescription = null,
+                        tint = RunGoLightTextSecondary,
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Text(
+                        text = formatPartnerOrderDate(order.createdAt),
+                        color = RunGoLightTextSecondary,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 6.dp)
+                    )
+                }
+                if (hasAddress) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.LocationOn,
+                            contentDescription = null,
+                            tint = RunGoLightTextSecondary,
+                            modifier = Modifier.size(15.dp)
+                        )
                         Text(
-                            text = "${item.productName} ×${item.quantity}",
-                            color = RunGoLightTextPrimary,
-                            style = MaterialTheme.typography.bodySmall
+                            text = order.deliveryAddress!!,
+                            color = RunGoLightTextSecondary,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(start = 6.dp)
                         )
                     }
                 }
             }
+
+            // Section 3 — the goods themselves, set apart in their own muted
+            // block so they don't visually run into the date/address above.
+            if (order.items.isNotEmpty()) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(top = 12.dp, bottom = 12.dp),
+                    color = RunGoLightSurfaceMuted
+                )
+                Surface(color = RunGoLightSurfaceMuted, shape = RoundedCornerShape(10.dp)) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 8.dp)
+                    ) {
+                        order.items.forEach { item ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = item.productName,
+                                    color = RunGoLightTextPrimary,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false)
+                                )
+                                Text(
+                                    text = "×${item.quantity}",
+                                    color = RunGoLightTextSecondary,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Section 4 — the bottom line: what the partner is owed.
             val goods = order.goodsAmount?.toDoubleOrNull()
             if (goods != null && goods > 0) {
                 Text(
                     text = formatMoney(goods),
                     color = RunGoLightAccentText,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 8.dp)
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp),
+                    textAlign = TextAlign.End
                 )
             }
             if (showCourierBlock) {

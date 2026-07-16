@@ -111,7 +111,7 @@ class AuthRepository(
         val refresh = tokenStore.currentTokens?.refresh ?: return false
         return try {
             val response = api.refreshToken(TokenRefreshRequest(refresh))
-            tokenStore.updateAccessToken(response.access)
+            tokenStore.updateAccessToken(response.access, response.refresh)
             true
         } catch (e: Exception) {
             false

@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.catalog.CatalogRepository
+import dev.batipy.rungo.data.location.LocationProvider
 import dev.batipy.rungo.data.network.dto.LocationDto
 import dev.batipy.rungo.data.network.dto.OrderCreateRequest
 import dev.batipy.rungo.data.orders.OrdersRepository
@@ -22,8 +23,12 @@ sealed interface CreateOrderUiState {
         val locations: List<LocationDto>,
         val exchangeRates: Map<String, Double> = emptyMap(),
         val selectedCityId: Int? = null,
-        // Only used for "delivery" (A→B) services — the pickup side of the trip.
-        val selectedPickupLocationId: Int? = null,
+        // Only used for "delivery" (A→B) services — the pickup side of the
+        // trip. Always free text, never picked from the client's own saved
+        // locations: point A is typically someone else's address (a shop, a
+        // friend's place), not the client's home/work — offering the same
+        // "my saved addresses" chips here as for drop-off just invited
+        // picking the same address for both ends by habit.
         val manualPickupAddress: String = "",
         // For "visit" services this is the client's own address; for "delivery"
         // services it's the drop-off address.
@@ -32,7 +37,10 @@ sealed interface CreateOrderUiState {
         val comment: String = "",
         val currency: String = "usd",
         val submitting: Boolean = false,
-        val error: String? = null
+        val error: String? = null,
+        // Transient, snackbar-style — distinct from `error` so it doesn't get
+        // rendered with the persistent validation-error styling.
+        val message: String? = null
     ) : CreateOrderUiState
 }
 
@@ -40,6 +48,7 @@ class CreateOrderViewModel(
     private val catalogRepository: CatalogRepository,
     private val profileRepository: ProfileRepository,
     private val ordersRepository: OrdersRepository,
+    private val locationProvider: LocationProvider,
     private val context: Context
 ) : ViewModel() {
 
@@ -48,6 +57,9 @@ class CreateOrderViewModel(
 
     private val _orderCreated = MutableStateFlow(false)
     val orderCreated: StateFlow<Boolean> = _orderCreated.asStateFlow()
+
+    private val _addingCurrentLocation = MutableStateFlow(false)
+    val addingCurrentLocation: StateFlow<Boolean> = _addingCurrentLocation.asStateFlow()
 
     init {
         load()
@@ -77,14 +89,6 @@ class CreateOrderViewModel(
         }
     }
 
-    fun selectPickupLocation(locationId: Int) = updateReady {
-        it.copy(selectedPickupLocationId = locationId, manualPickupAddress = "")
-    }
-
-    fun selectPickupManualEntry() = updateReady {
-        it.copy(selectedPickupLocationId = null)
-    }
-
     fun updatePickupManualAddress(text: String) = updateReady { it.copy(manualPickupAddress = text) }
 
     fun selectLocation(locationId: Int) = updateReady {
@@ -96,6 +100,47 @@ class CreateOrderViewModel(
     }
 
     fun updateManualAddress(text: String) = updateReady { it.copy(manualAddress = text) }
+
+    // Captures the device's current GPS position, saves it as a new
+    // ClientLocation on the client's profile (same as the "Добавить текущую
+    // геолокацию" button on the Profile screen — ProfileViewModel.addCurrentLocation),
+    // and immediately selects it — as the drop-off address for "delivery"
+    // services, or as the client's own address for "visit" services (both
+    // just write into the same selectedLocationId/manualAddress pair).
+    fun addCurrentLocation() {
+        val current = _uiState.value as? CreateOrderUiState.Ready ?: return
+        _addingCurrentLocation.value = true
+        viewModelScope.launch {
+            val coords = locationProvider.getCurrentLocation()
+            if (coords == null) {
+                _addingCurrentLocation.value = false
+                updateReady { it.copy(error = context.getString(R.string.profile_location_request_error)) }
+                return@launch
+            }
+            val (latitude, longitude) = coords
+            profileRepository.createLocation(latitude, longitude)
+                .onSuccess { newLocation ->
+                    updateReady {
+                        it.copy(
+                            locations = it.locations + newLocation,
+                            selectedLocationId = newLocation.id,
+                            manualAddress = "",
+                            message = context.getString(R.string.current_location_saved_hint)
+                        )
+                    }
+                }
+                .onFailure {
+                    updateReady { state -> state.copy(error = context.getString(R.string.profile_location_request_error)) }
+                }
+            _addingCurrentLocation.value = false
+        }
+    }
+
+    fun locationPermissionDenied() = updateReady {
+        it.copy(error = context.getString(R.string.profile_location_permission_denied))
+    }
+
+    fun consumeMessage() = updateReady { it.copy(message = null) }
 
     fun updateComment(text: String) = updateReady { it.copy(comment = text) }
 
@@ -110,13 +155,7 @@ class CreateOrderViewModel(
             ?: state.manualAddress
 
         val isDelivery = serviceKind == "delivery"
-        val pickupLocation = state.locations.find { it.id == state.selectedPickupLocationId }
-        val pickupAddress = if (isDelivery) {
-            pickupLocation?.label?.ifBlank { "${pickupLocation.latitude}, ${pickupLocation.longitude}" }
-                ?: state.manualPickupAddress
-        } else {
-            ""
-        }
+        val pickupAddress = if (isDelivery) state.manualPickupAddress else ""
 
         if (cityId == null) {
             _uiState.value = state.copy(error = context.getString(R.string.order_form_city_required))
@@ -133,8 +172,8 @@ class CreateOrderViewModel(
                 service = serviceId,
                 city = cityId,
                 pickupAddress = pickupAddress,
-                pickupLatitude = if (isDelivery) pickupLocation?.latitude else null,
-                pickupLongitude = if (isDelivery) pickupLocation?.longitude else null,
+                pickupLatitude = null,
+                pickupLongitude = null,
                 deliveryAddress = dropoffAddress,
                 deliveryLatitude = dropoffLocation?.latitude,
                 deliveryLongitude = dropoffLocation?.longitude,
@@ -158,11 +197,12 @@ class CreateOrderViewModel(
         private val catalogRepository: CatalogRepository,
         private val profileRepository: ProfileRepository,
         private val ordersRepository: OrdersRepository,
+        private val locationProvider: LocationProvider,
         private val context: Context
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return CreateOrderViewModel(catalogRepository, profileRepository, ordersRepository, context) as T
+            return CreateOrderViewModel(catalogRepository, profileRepository, ordersRepository, locationProvider, context) as T
         }
     }
 }

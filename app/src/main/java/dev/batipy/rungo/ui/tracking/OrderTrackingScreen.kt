@@ -1,5 +1,7 @@
 package dev.batipy.rungo.ui.tracking
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -22,8 +24,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -48,6 +56,9 @@ import dev.batipy.rungo.ui.theme.RunGoLightTextSecondary
 import dev.batipy.rungo.ui.theme.RunGoOnBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
 
 // Some orders (mainly store/shop ones with a free-text address) don't carry
 // delivery coordinates at all, and the courier hasn't pinged yet right when
@@ -56,6 +67,32 @@ import dev.batipy.rungo.ui.theme.RunGoTextSecondary
 // is a reasonable center of the service area to fall back to so there's
 // always *something* real on screen while waiting for a better point.
 private val FallbackRegionCenter = LatLng(35.9306, 36.6339)
+
+// Great-circle bearing from one point to the next, 0°=North, clockwise —
+// standard compass convention. Used to rotate the courier marker so it
+// visually points the way it's moving instead of sitting at a fixed angle
+// while only its position updates.
+private fun bearingDegrees(from: LatLng, to: LatLng): Float {
+    val lat1 = Math.toRadians(from.latitude)
+    val lat2 = Math.toRadians(to.latitude)
+    val dLon = Math.toRadians(to.longitude - from.longitude)
+    val y = sin(dLon) * cos(lat2)
+    val x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon)
+    return ((Math.toDegrees(atan2(y, x)) + 360) % 360).toFloat()
+}
+
+// Shortest angular step from one heading to another, always in (-180, 180] —
+// added to an accumulating (unbounded) target angle so animateFloatAsState
+// always spins the marker the short way, instead of occasionally whipping
+// through 350° of rotation when the bearing crosses the 0°/360° seam.
+private fun shortestDelta(fromDegrees: Float, toDegrees: Float): Float {
+    val from = ((fromDegrees % 360f) + 360f) % 360f
+    val to = ((toDegrees % 360f) + 360f) % 360f
+    var delta = to - from
+    if (delta > 180f) delta -= 360f
+    if (delta < -180f) delta += 360f
+    return delta
+}
 
 @Composable
 fun OrderTrackingScreen(
@@ -122,6 +159,30 @@ fun OrderTrackingScreen(
                     LatLng(uiState.courierLatitude, uiState.courierLongitude)
                 } else null
 
+                // Tracks the courier's previous ping so each new one can be
+                // turned into a direction of travel — a single position alone
+                // has no heading. courierHeadingTarget accumulates (rather
+                // than resetting to the raw 0-360° bearing each time) so the
+                // animation below always takes the shortest path to it.
+                var previousCourierPosition by remember { mutableStateOf<LatLng?>(null) }
+                var courierHeadingTarget by remember { mutableFloatStateOf(0f) }
+                LaunchedEffect(courierPosition) {
+                    val previous = previousCourierPosition
+                    val current = courierPosition
+                    if (previous != null && current != null &&
+                        (previous.latitude != current.latitude || previous.longitude != current.longitude)
+                    ) {
+                        val bearing = bearingDegrees(previous, current)
+                        courierHeadingTarget += shortestDelta(courierHeadingTarget, bearing)
+                    }
+                    previousCourierPosition = current
+                }
+                val animatedCourierHeading by animateFloatAsState(
+                    targetValue = courierHeadingTarget,
+                    animationSpec = tween(600),
+                    label = "courierHeading"
+                )
+
                 val cameraPositionState = rememberCameraPositionState()
 
                 LaunchedEffect(courierPosition, destination, pickup) {
@@ -168,6 +229,12 @@ fun OrderTrackingScreen(
                                         modifier = Modifier
                                             .padding(8.dp)
                                             .size(22.dp)
+                                            // Only the glyph rotates, not the
+                                            // circular badge around it — a
+                                            // circle looks identical at any
+                                            // angle, so this is the part that
+                                            // needs to visibly turn.
+                                            .rotate(animatedCourierHeading)
                                     )
                                 }
                             }

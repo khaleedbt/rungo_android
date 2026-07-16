@@ -80,6 +80,7 @@
     <string name="city_dropdown_placeholder">اختر المدينة</string>
     <string name="location_label">الموقع</string>
     <string name="manual_entry_chip">✏️ يدوياً</string>
+    <string name="use_current_location_chip">📍 موقعي الحالي</string>
     <string name="service_fee_label">رسوم الخدمة</string>
     <string name="cod_note">الدفع نقداً للمندوب عند الاستلام</string>
     <string name="create_order_button">إنشاء الطلب</string>
@@ -115,6 +116,7 @@
     <string name="profile_delete_location_error">تعذّر حذف الموقع</string>
     <string name="profile_location_permission_denied">يلزم إذن الموقع لإضافة نقطة</string>
     <string name="profile_location_request_error">تعذّر إرسال الطلب</string>
+    <string name="current_location_saved_hint">تم حفظ الموقع واختياره. يمكنك حذفه من ملفك الشخصي، في قسم «موقعي»</string>
     <string name="profile_language_change_error">تعذّر تغيير اللغة</string>
     <string name="profile_support_sent">تم إرسال الرسالة إلى المشغّل</string>
     <string name="profile_support_error">تعذّر إرسال الرسالة</string>

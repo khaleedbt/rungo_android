@@ -78,6 +78,7 @@
     <string name="city_dropdown_placeholder">Выберите город</string>
     <string name="location_label">Локация</string>
     <string name="manual_entry_chip">✏️ Вручную</string>
+    <string name="use_current_location_chip">📍 Моё место</string>
     <string name="service_fee_label">Стоимость услуги</string>
     <string name="cod_note">Оплата наличными курьеру при получении</string>
     <string name="create_order_button">Создать заказ</string>
@@ -113,6 +114,7 @@
     <string name="profile_delete_location_error">Не удалось удалить локацию</string>
     <string name="profile_location_permission_denied">Нужен доступ к геолокации, чтобы добавить точку</string>
     <string name="profile_location_request_error">Не удалось отправить запрос</string>
+    <string name="current_location_saved_hint">Локация сохранена и выбрана. Удалить её можно в профиле, в разделе «Моя геолокация»</string>
     <string name="profile_language_change_error">Не удалось сменить язык</string>
     <string name="profile_support_sent">Сообщение отправлено оператору</string>
     <string name="profile_support_error">Не удалось отправить сообщение</string>

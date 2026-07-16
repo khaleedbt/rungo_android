@@ -1,5 +1,9 @@
 package dev.batipy.rungo.ui.services
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,9 +31,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,10 +44,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.LocationDto
 import dev.batipy.rungo.data.network.dto.ServiceDto
@@ -99,8 +108,6 @@ fun ServiceOrderScreen(
     service: ServiceDto,
     uiState: CreateOrderUiState,
     onBack: () -> Unit,
-    onPickupLocationSelect: (Int) -> Unit,
-    onPickupManualEntrySelect: () -> Unit,
     onPickupManualAddressChange: (String) -> Unit,
     onLocationSelect: (Int) -> Unit,
     onManualEntrySelect: () -> Unit,
@@ -108,6 +115,11 @@ fun ServiceOrderScreen(
     onCommentChange: (String) -> Unit,
     onCurrencySelect: (String) -> Unit,
     onSubmit: () -> Unit,
+    onRequestCurrentLocation: () -> Unit = {},
+    isAddingCurrentLocation: Boolean = false,
+    onCurrentLocationPermissionDenied: () -> Unit = {},
+    message: String? = null,
+    onConsumeMessage: () -> Unit = {},
     light: Boolean = false,
     modifier: Modifier = Modifier
 ) {
@@ -118,7 +130,17 @@ fun ServiceOrderScreen(
     val textPrimary = if (light) RunGoLightTextPrimary else RunGoTextPrimary
     val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
     val errorColor = if (light) ErrorColorLight else ErrorColor
-    Column(modifier = modifier.fillMaxSize().background(if (light) RunGoLightBackground else Color.Unspecified)) {
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(message) {
+        if (message != null) {
+            snackbarHostState.showSnackbar(message)
+            onConsumeMessage()
+        }
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().background(if (light) RunGoLightBackground else Color.Unspecified)) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -172,15 +194,20 @@ fun ServiceOrderScreen(
                     if (isDelivery) {
                         item {
                             SectionCard(title = stringResource(R.string.section_pickup_address), light = light) {
-                                AddressPicker(
-                                    locations = uiState.locations,
-                                    selectedLocationId = uiState.selectedPickupLocationId,
-                                    manualAddress = uiState.manualPickupAddress,
-                                    placeholder = stringResource(R.string.pickup_placeholder),
-                                    onLocationSelect = onPickupLocationSelect,
-                                    onManualEntrySelect = onPickupManualEntrySelect,
-                                    onManualAddressChange = onPickupManualAddressChange,
-                                    light = light
+                                // Free text only, deliberately no "pick from my
+                                // saved addresses" chips here — point A is usually
+                                // someone else's address (a shop, a friend's
+                                // place), not the client's own home/work, so
+                                // offering the same saved-location chips as the
+                                // drop-off field just invited picking the same
+                                // address for both ends of the trip.
+                                OutlinedTextField(
+                                    value = uiState.manualPickupAddress,
+                                    onValueChange = onPickupManualAddressChange,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    placeholder = { Text(stringResource(R.string.pickup_placeholder), color = if (light) textSecondary else RunGoPlaceholder) },
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = fieldColors(light)
                                 )
                             }
                         }
@@ -194,6 +221,9 @@ fun ServiceOrderScreen(
                                     onLocationSelect = onLocationSelect,
                                     onManualEntrySelect = onManualEntrySelect,
                                     onManualAddressChange = onManualAddressChange,
+                                    onRequestCurrentLocation = onRequestCurrentLocation,
+                                    isAddingCurrentLocation = isAddingCurrentLocation,
+                                    onCurrentLocationPermissionDenied = onCurrentLocationPermissionDenied,
                                     light = light
                                 )
                             }
@@ -209,6 +239,9 @@ fun ServiceOrderScreen(
                                     onLocationSelect = onLocationSelect,
                                     onManualEntrySelect = onManualEntrySelect,
                                     onManualAddressChange = onManualAddressChange,
+                                    onRequestCurrentLocation = onRequestCurrentLocation,
+                                    isAddingCurrentLocation = isAddingCurrentLocation,
+                                    onCurrentLocationPermissionDenied = onCurrentLocationPermissionDenied,
                                     light = light
                                 )
                             }
@@ -319,6 +352,11 @@ fun ServiceOrderScreen(
             }
         }
     }
+    SnackbarHost(
+        hostState = snackbarHostState,
+        modifier = Modifier.align(Alignment.BottomCenter)
+    )
+    }
 }
 
 @Composable
@@ -350,10 +388,41 @@ private fun AddressPicker(
     onLocationSelect: (Int) -> Unit,
     onManualEntrySelect: () -> Unit,
     onManualAddressChange: (String) -> Unit,
+    onRequestCurrentLocation: (() -> Unit)? = null,
+    isAddingCurrentLocation: Boolean = false,
+    onCurrentLocationPermissionDenied: () -> Unit = {},
     light: Boolean = false
 ) {
+    val context = LocalContext.current
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted -> if (granted) onRequestCurrentLocation?.invoke() else onCurrentLocationPermissionDenied() }
+
     Column {
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Placed first — capturing where you're standing right now is
+            // usually the fastest way to fill this field, faster than
+            // scanning through saved addresses.
+            if (onRequestCurrentLocation != null) {
+                item {
+                    AddressChip(
+                        label = stringResource(R.string.use_current_location_chip),
+                        selected = false,
+                        loading = isAddingCurrentLocation,
+                        onClick = {
+                            val hasPermission = ContextCompat.checkSelfPermission(
+                                context, Manifest.permission.ACCESS_FINE_LOCATION
+                            ) == PackageManager.PERMISSION_GRANTED
+                            if (hasPermission) {
+                                onRequestCurrentLocation()
+                            } else {
+                                permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                            }
+                        },
+                        light = light
+                    )
+                }
+            }
             items(locations) { location ->
                 AddressChip(
                     label = "📍 " + location.label.ifBlank { stringResource(R.string.location_label) },
@@ -387,21 +456,31 @@ private fun AddressPicker(
 }
 
 @Composable
-private fun AddressChip(label: String, selected: Boolean, onClick: () -> Unit, light: Boolean = false) {
+private fun AddressChip(label: String, selected: Boolean, onClick: () -> Unit, loading: Boolean = false, light: Boolean = false) {
     val accent = if (light) RunGoBrandOrange else RunGoAccent
     val accentText = if (light) RunGoLightAccentText else RunGoAccent
     Surface(
-        modifier = Modifier.clickable(onClick = onClick),
+        modifier = Modifier.clickable(enabled = !loading, onClick = onClick),
         color = if (selected) accent else if (light) RunGoLightSurfaceMuted else RunGoBackground,
         shape = RoundedCornerShape(12.dp)
     ) {
-        Text(
-            text = label,
-            color = if (selected) { if (light) RunGoOnBrandOrange else Color.White } else accentText,
-            fontWeight = FontWeight.SemiBold,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
-        )
+        if (loading) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+                    .size(18.dp),
+                color = accentText,
+                strokeWidth = 2.dp
+            )
+        } else {
+            Text(
+                text = label,
+                color = if (selected) { if (light) RunGoOnBrandOrange else Color.White } else accentText,
+                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+            )
+        }
     }
 }
 

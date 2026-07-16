@@ -5,6 +5,13 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -140,7 +147,26 @@ class MainActivity : AppCompatActivity() {
                         }
 
                         if (!checkingSession) {
-                            if (loggedIn) {
+                            val authKey = if (loggedIn) "home" else if (showRegister) "register" else "login"
+                            AnimatedContent(
+                                targetState = authKey,
+                                transitionSpec = {
+                                    if (targetState == "home" || initialState == "home") {
+                                        // Logging in/out swaps the whole app shell —
+                                        // a plain crossfade reads better than a slide
+                                        // for a change this total.
+                                        fadeIn(animationSpec = tween(280)) togetherWith fadeOut(animationSpec = tween(200))
+                                    } else {
+                                        // Login <-> Register is a lateral swap between
+                                        // two peer screens — slide accordingly.
+                                        val forward = targetState == "register"
+                                        (slideInHorizontally(animationSpec = tween(220), initialOffsetX = { if (forward) it else -it }) + fadeIn(animationSpec = tween(220))) togetherWith
+                                            (slideOutHorizontally(animationSpec = tween(220), targetOffsetX = { if (forward) -it else it }) + fadeOut(animationSpec = tween(180)))
+                                    }
+                                },
+                                label = "authContent"
+                            ) { key ->
+                            if (key == "home") {
                                 val servicesViewModel: ServicesViewModel = viewModel(
                                     factory = ServicesViewModel.Factory(
                                         app.catalogRepository,
@@ -190,7 +216,7 @@ class MainActivity : AppCompatActivity() {
                                         .padding(innerPadding)
                                         .consumeWindowInsets(innerPadding)
                                 )
-                            } else if (showRegister) {
+                            } else if (key == "register") {
                                 val registerViewModel: RegisterViewModel = viewModel(
                                     factory = RegisterViewModel.Factory(
                                         app.authRepository,
@@ -225,6 +251,7 @@ class MainActivity : AppCompatActivity() {
                                     onRegisterClick = { showRegister = true },
                                     modifier = Modifier.padding(innerPadding)
                                 )
+                            }
                             }
                         }
                     }

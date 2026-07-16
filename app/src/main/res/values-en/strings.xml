@@ -80,6 +80,7 @@
     <string name="city_dropdown_placeholder">Select city</string>
     <string name="location_label">Location</string>
     <string name="manual_entry_chip">✏️ Manual</string>
+    <string name="use_current_location_chip">📍 My location</string>
     <string name="service_fee_label">Service fee</string>
     <string name="cod_note">Cash on delivery — pay the courier upon receipt</string>
     <string name="create_order_button">Create order</string>
@@ -115,6 +116,7 @@
     <string name="profile_delete_location_error">Failed to delete location</string>
     <string name="profile_location_permission_denied">Location access is needed to add a point</string>
     <string name="profile_location_request_error">Failed to send request</string>
+    <string name="current_location_saved_hint">Location saved and selected. You can delete it in your profile, under "My locations"</string>
     <string name="profile_language_change_error">Failed to change language</string>
     <string name="profile_support_sent">Message sent to the operator</string>
     <string name="profile_support_error">Failed to send message</string>

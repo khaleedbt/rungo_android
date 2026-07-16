@@ -8,6 +8,8 @@ import okhttp3.Authenticator
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.Route
+import retrofit2.HttpException
+import java.io.IOException
 
 private const val TAG = "TokenAuthenticator"
 private const val MAX_RETRIES = 2
@@ -27,14 +29,31 @@ class TokenAuthenticator(
 
         return runBlocking {
             try {
-                val newAccess = refreshApi.refreshToken(TokenRefreshRequest(refreshToken)).access
-                tokenStore.updateAccessToken(newAccess)
+                val refreshResponse = refreshApi.refreshToken(TokenRefreshRequest(refreshToken))
+                val newAccess = refreshResponse.access
+                tokenStore.updateAccessToken(newAccess, refreshResponse.refresh)
                 response.request.newBuilder()
                     .header("Authorization", "Bearer $newAccess")
                     .build()
-            } catch (e: Exception) {
-                Log.e(TAG, "Token refresh failed, logging out", e)
+            } catch (e: HttpException) {
+                // The backend itself rejected the refresh token (expired,
+                // revoked) — this session really is over.
+                Log.e(TAG, "Refresh token rejected (${e.code()}), logging out", e)
                 tokenStore.clearTokens()
+                null
+            } catch (e: IOException) {
+                // A network blip during the refresh call (timeout, dropped
+                // connection, no signal) — not a real session failure. Logging
+                // the user out over this hits couriers with weak signal
+                // hardest; just fail this one request and let the next
+                // network call retry the refresh normally.
+                Log.w(TAG, "Token refresh failed due to a network error, not logging out", e)
+                null
+            } catch (e: Exception) {
+                // Anything else unexpected — same conservative treatment,
+                // since we can't confirm the refresh token was actually
+                // rejected rather than something transient going wrong.
+                Log.e(TAG, "Token refresh failed unexpectedly, not logging out", e)
                 null
             }
         }

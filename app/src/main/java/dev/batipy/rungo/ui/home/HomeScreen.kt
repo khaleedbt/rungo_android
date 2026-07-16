@@ -1,5 +1,12 @@
 package dev.batipy.rungo.ui.home
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.Menu
@@ -60,6 +67,7 @@ import dev.batipy.rungo.data.orders.OrderFeedRepository
 import dev.batipy.rungo.data.orders.OrdersRepository
 import dev.batipy.rungo.data.profile.ProfileRepository
 import dev.batipy.rungo.ui.cart.CartScreen
+import dev.batipy.rungo.ui.cart.CartUiState
 import dev.batipy.rungo.ui.cart.CartViewModel
 import dev.batipy.rungo.ui.chat.ChatScreen
 import dev.batipy.rungo.ui.chat.ChatViewModel
@@ -75,6 +83,7 @@ import dev.batipy.rungo.ui.partner.PartnerOrdersScreen
 import dev.batipy.rungo.ui.partner.PartnerOrdersViewModel
 import dev.batipy.rungo.ui.profile.ProfileScreen
 import dev.batipy.rungo.ui.profile.ProfileViewModel
+import dev.batipy.rungo.ui.services.CreateOrderUiState
 import dev.batipy.rungo.ui.services.CreateOrderViewModel
 import dev.batipy.rungo.ui.services.ServiceOrderScreen
 import dev.batipy.rungo.ui.services.ServicesScreen
@@ -116,6 +125,35 @@ private fun partnerHomeTabs(): List<HomeTab> = listOf(
     HomeTab(stringResource(R.string.partner_orders_title), Icons.Filled.Store),
     HomeTab(stringResource(R.string.nav_profile), Icons.Filled.Person)
 )
+
+// Snapshot of "what's on screen" for the outer AnimatedContent below — the id
+// rides along on the target/initial state itself rather than being re-read
+// from live (chatOrderId/trackingOrderId/selectedOrderId) state inside the
+// content lambda. Reading the live state there would go null the instant the
+// user navigates back (before the exit animation finishes), leaving the
+// outgoing screen blank mid-transition instead of showing what it had.
+private sealed class HomeContent {
+    data class Chat(val orderId: Int, val currentUserId: Int) : HomeContent()
+    data class Tracking(val orderId: Int) : HomeContent()
+    data class CourierDetail(val orderId: Int) : HomeContent()
+    data class ClientDetail(val orderId: Int) : HomeContent()
+    data object Tabs : HomeContent()
+}
+
+// Same snapshot-the-target-state approach as HomeContent above, for the
+// Услуги tab's own internal drill-down (catalog → merchant, or catalog →
+// order form) — this one nests inside HomeContent.Tabs.
+private sealed class ServicesTabContent {
+    data class Merchant(val merchantId: Int) : ServicesTabContent()
+    data class Order(val service: ServiceDto, val formToken: Int) : ServicesTabContent()
+    data object Catalog : ServicesTabContent()
+}
+
+// Same idea for the Магазин tab's merchant drill-down.
+private sealed class ShopTabContent {
+    data class Merchant(val merchantId: Int) : ShopTabContent()
+    data object Catalog : ShopTabContent()
+}
 
 @Composable
 fun HomeScreen(
@@ -316,118 +354,166 @@ fun HomeScreen(
             }
         }
     ) { innerPadding ->
-        val chatId = chatOrderId
-        if (chatId != null && currentUserId != null) {
+        val homeContent: HomeContent = when {
+            chatOrderId != null && currentUserId != null -> HomeContent.Chat(chatOrderId!!, currentUserId!!)
+            trackingOrderId != null -> HomeContent.Tracking(trackingOrderId!!)
+            selectedOrderId != null && isCourier -> HomeContent.CourierDetail(selectedOrderId!!)
+            selectedOrderId != null -> HomeContent.ClientDetail(selectedOrderId!!)
+            else -> HomeContent.Tabs
+        }
+
+        if (chatOrderId != null && currentUserId != null) {
             BackHandler { chatOrderId = null }
-            val chatViewModel: ChatViewModel = viewModel(
-                key = "chat-$chatId",
-                factory = ChatViewModel.Factory(chatId, currentUserId!!, chatRepository, authRepository, context)
-            )
-            val chatState by chatViewModel.uiState.collectAsState()
-            val chatMessage by chatViewModel.message.collectAsState()
-
-            // No forced reconnect-on-reentry here (unlike the order-detail
-            // ViewModels below) — the ViewModel's own init{} already starts
-            // connecting once, and the socket stays live in the background
-            // while this screen isn't shown, so re-opening the same chat
-            // just shows whatever's current. Calling connect() again here
-            // raced with that initial connect and closed the fresh socket
-            // out from under itself, which is what caused the "не удалось
-            // подключиться" flash right after tapping "Написать".
-
-            ChatScreen(
-                orderId = chatId,
-                uiState = chatState,
-                currentUserId = chatViewModel.currentUserId,
-                message = chatMessage,
-                onConsumeMessage = chatViewModel::consumeMessage,
-                onBack = { chatOrderId = null },
-                onSend = chatViewModel::sendMessage,
-                onRetry = chatViewModel::connect,
-                light = isLight,
-                modifier = Modifier.padding(innerPadding)
-            )
-            return@Scaffold
-        }
-
-        val trackId = trackingOrderId
-        if (trackId != null) {
+        } else if (trackingOrderId != null) {
             BackHandler { trackingOrderId = null }
-            val trackingViewModel: OrderTrackingViewModel = viewModel(
-                key = "tracking-$trackId",
-                factory = OrderTrackingViewModel.Factory(trackId, ordersRepository, orderLocationRepository, authRepository, context)
-            )
-            val trackingState by trackingViewModel.uiState.collectAsState()
-            OrderTrackingScreen(
-                orderId = trackId,
-                uiState = trackingState,
-                onBack = { trackingOrderId = null },
-                light = isLight,
-                modifier = Modifier.padding(innerPadding)
-            )
-            return@Scaffold
+        } else if (selectedOrderId != null) {
+            BackHandler { selectedOrderId = null }
         }
 
-        val orderId = selectedOrderId
-        if (orderId != null && isCourier) {
-            BackHandler { selectedOrderId = null }
-            val courierOrderDetailViewModel: CourierOrderDetailViewModel = viewModel(
-                key = "courier-order-detail-$orderId",
-                factory = CourierOrderDetailViewModel.Factory(orderId, ordersRepository, orderFeedRepository, context)
-            )
-            val courierOrderDetailState by courierOrderDetailViewModel.uiState.collectAsState()
-            val courierOrderDetailMessage by courierOrderDetailViewModel.message.collectAsState()
+        AnimatedContent(
+            targetState = homeContent,
+            transitionSpec = {
+                // Drilling into a detail/chat/tracking screen slides in from
+                // the right over the list beneath it; backing out of one
+                // slides back out to the right — a directional "push", not a
+                // flat crossfade, so forward/back reads as forward/back.
+                val enteringDetail = targetState !is HomeContent.Tabs && initialState is HomeContent.Tabs
+                val leavingDetail = targetState is HomeContent.Tabs && initialState !is HomeContent.Tabs
+                when {
+                    enteringDetail -> (slideInHorizontally(animationSpec = tween(260), initialOffsetX = { it }) + fadeIn(animationSpec = tween(220))) togetherWith
+                        fadeOut(animationSpec = tween(140))
+                    leavingDetail -> fadeIn(animationSpec = tween(180)) togetherWith
+                        (slideOutHorizontally(animationSpec = tween(220), targetOffsetX = { it }) + fadeOut(animationSpec = tween(180)))
+                    else -> fadeIn(animationSpec = tween(200)) togetherWith fadeOut(animationSpec = tween(150))
+                }
+            },
+            label = "homeContent"
+        ) { content ->
+        when (content) {
+            is HomeContent.Chat -> {
+                val chatId = content.orderId
+                val chatViewModel: ChatViewModel = viewModel(
+                    key = "chat-$chatId",
+                    factory = ChatViewModel.Factory(chatId, content.currentUserId, chatRepository, authRepository, context)
+                )
+                val chatState by chatViewModel.uiState.collectAsState()
+                val chatMessage by chatViewModel.message.collectAsState()
 
-            // The ViewModel is cached in the Activity's ViewModelStore by order
-            // id, so re-opening the same order's detail (e.g. after taking it
-            // from the list) would otherwise keep showing the stale snapshot
-            // from the first visit instead of re-fetching current status.
-            LaunchedEffect(orderId) {
-                courierOrderDetailViewModel.load()
+                // No forced reconnect-on-reentry here (unlike the order-detail
+                // ViewModels below) — the ViewModel's own init{} already starts
+                // connecting once, and the socket stays live in the background
+                // while this screen isn't shown, so re-opening the same chat
+                // just shows whatever's current. Calling connect() again here
+                // raced with that initial connect and closed the fresh socket
+                // out from under itself, which is what caused the "не удалось
+                // подключиться" flash right after tapping "Написать".
+
+                ChatScreen(
+                    orderId = chatId,
+                    uiState = chatState,
+                    currentUserId = chatViewModel.currentUserId,
+                    message = chatMessage,
+                    onConsumeMessage = chatViewModel::consumeMessage,
+                    onBack = { chatOrderId = null },
+                    onSend = chatViewModel::sendMessage,
+                    onRetry = chatViewModel::connect,
+                    light = isLight,
+                    modifier = Modifier.padding(innerPadding)
+                )
             }
 
-            CourierOrderDetailScreen(
-                uiState = courierOrderDetailState,
-                message = courierOrderDetailMessage,
-                onConsumeMessage = courierOrderDetailViewModel::consumeMessage,
-                onBack = { selectedOrderId = null },
-                onTakeOrder = courierOrderDetailViewModel::takeOrder,
-                onMarkInDelivery = courierOrderDetailViewModel::markInDelivery,
-                onReleaseOrder = courierOrderDetailViewModel::releaseOrder,
-                onCollectPayment = courierOrderDetailViewModel::collectPayment,
-                onOpenChat = { chatOrderId = orderId },
-                modifier = Modifier.padding(innerPadding)
-            )
-        } else if (orderId != null) {
-            BackHandler { selectedOrderId = null }
-            val orderDetailViewModel: OrderDetailViewModel = viewModel(
-                key = "order-detail-$orderId",
-                factory = OrderDetailViewModel.Factory(orderId, ordersRepository, profileRepository, catalogRepository, orderFeedRepository, context)
-            )
-            val orderDetailState by orderDetailViewModel.uiState.collectAsState()
-            val orderDetailMessage by orderDetailViewModel.message.collectAsState()
-            val orderDetailRefreshing by orderDetailViewModel.isRefreshing.collectAsState()
-            OrderDetailScreen(
-                uiState = orderDetailState,
-                message = orderDetailMessage,
-                isRefreshing = orderDetailRefreshing,
-                onRefresh = orderDetailViewModel::refresh,
-                onConsumeMessage = orderDetailViewModel::consumeMessage,
-                onBack = { selectedOrderId = null },
-                onCancelOrder = orderDetailViewModel::cancelOrder,
-                onRequestConfirmDelivery = orderDetailViewModel::requestConfirmDelivery,
-                onCancelConfirmDelivery = orderDetailViewModel::cancelConfirmDelivery,
-                onConfirmDelivery = orderDetailViewModel::confirmDelivery,
-                onSelectRating = orderDetailViewModel::selectReviewRating,
-                onReviewTextChange = orderDetailViewModel::updateReviewText,
-                onSubmitReview = orderDetailViewModel::submitReview,
-                onOpenChat = { chatOrderId = orderId },
-                onOpenTracking = { trackingOrderId = orderId },
-                light = isLight,
-                modifier = Modifier.padding(innerPadding)
-            )
-        } else if (isCourier) {
-        when (selectedTab) {
+            is HomeContent.Tracking -> {
+                val trackId = content.orderId
+                val trackingViewModel: OrderTrackingViewModel = viewModel(
+                    key = "tracking-$trackId",
+                    factory = OrderTrackingViewModel.Factory(trackId, ordersRepository, orderLocationRepository, authRepository, context)
+                )
+                val trackingState by trackingViewModel.uiState.collectAsState()
+                OrderTrackingScreen(
+                    orderId = trackId,
+                    uiState = trackingState,
+                    onBack = { trackingOrderId = null },
+                    light = isLight,
+                    modifier = Modifier.padding(innerPadding)
+                )
+            }
+
+            is HomeContent.CourierDetail -> {
+                val orderId = content.orderId
+                val courierOrderDetailViewModel: CourierOrderDetailViewModel = viewModel(
+                    key = "courier-order-detail-$orderId",
+                    factory = CourierOrderDetailViewModel.Factory(orderId, ordersRepository, orderFeedRepository, context)
+                )
+                val courierOrderDetailState by courierOrderDetailViewModel.uiState.collectAsState()
+                val courierOrderDetailMessage by courierOrderDetailViewModel.message.collectAsState()
+
+                // The ViewModel is cached in the Activity's ViewModelStore by order
+                // id, so re-opening the same order's detail (e.g. after taking it
+                // from the list) would otherwise keep showing the stale snapshot
+                // from the first visit instead of re-fetching current status.
+                LaunchedEffect(orderId) {
+                    courierOrderDetailViewModel.load()
+                }
+
+                CourierOrderDetailScreen(
+                    uiState = courierOrderDetailState,
+                    message = courierOrderDetailMessage,
+                    onConsumeMessage = courierOrderDetailViewModel::consumeMessage,
+                    onBack = { selectedOrderId = null },
+                    onTakeOrder = courierOrderDetailViewModel::takeOrder,
+                    onMarkInDelivery = courierOrderDetailViewModel::markInDelivery,
+                    onReleaseOrder = courierOrderDetailViewModel::releaseOrder,
+                    onCollectPayment = courierOrderDetailViewModel::collectPayment,
+                    onOpenChat = { chatOrderId = orderId },
+                    modifier = Modifier.padding(innerPadding)
+                )
+            }
+
+            is HomeContent.ClientDetail -> {
+                val orderId = content.orderId
+                val orderDetailViewModel: OrderDetailViewModel = viewModel(
+                    key = "order-detail-$orderId",
+                    factory = OrderDetailViewModel.Factory(orderId, ordersRepository, profileRepository, catalogRepository, orderFeedRepository, context)
+                )
+                val orderDetailState by orderDetailViewModel.uiState.collectAsState()
+                val orderDetailMessage by orderDetailViewModel.message.collectAsState()
+                val orderDetailRefreshing by orderDetailViewModel.isRefreshing.collectAsState()
+                OrderDetailScreen(
+                    uiState = orderDetailState,
+                    message = orderDetailMessage,
+                    isRefreshing = orderDetailRefreshing,
+                    onRefresh = orderDetailViewModel::refresh,
+                    onConsumeMessage = orderDetailViewModel::consumeMessage,
+                    onBack = { selectedOrderId = null },
+                    onCancelOrder = orderDetailViewModel::cancelOrder,
+                    onRequestConfirmDelivery = orderDetailViewModel::requestConfirmDelivery,
+                    onCancelConfirmDelivery = orderDetailViewModel::cancelConfirmDelivery,
+                    onConfirmDelivery = orderDetailViewModel::confirmDelivery,
+                    onSelectRating = orderDetailViewModel::selectReviewRating,
+                    onReviewTextChange = orderDetailViewModel::updateReviewText,
+                    onSubmitReview = orderDetailViewModel::submitReview,
+                    onOpenChat = { chatOrderId = orderId },
+                    onOpenTracking = { trackingOrderId = orderId },
+                    light = isLight,
+                    modifier = Modifier.padding(innerPadding)
+                )
+            }
+
+            HomeContent.Tabs -> {
+        AnimatedContent(
+            targetState = selectedTab,
+            transitionSpec = {
+                // Bottom-tab switches are lateral, not forward/back — a
+                // quick directional nudge plus crossfade reads as "moved
+                // sideways" without the heavier forward-navigation feel above.
+                val forward = targetState > initialState
+                (slideInHorizontally(animationSpec = tween(200), initialOffsetX = { if (forward) it / 6 else -it / 6 }) + fadeIn(animationSpec = tween(200))) togetherWith
+                    fadeOut(animationSpec = tween(120))
+            },
+            label = "tabContent"
+        ) { tab ->
+        if (isCourier) {
+        when (tab) {
             0 -> {
                 val courierOrdersViewModel: CourierOrdersViewModel = viewModel(
                     factory = CourierOrdersViewModel.Factory(ordersRepository, profileRepository, orderFeedRepository, context)
@@ -458,7 +544,7 @@ fun HomeScreen(
             }
         }
         } else if (isPartner) {
-        when (selectedTab) {
+        when (tab) {
             0 -> {
                 val partnerOrdersViewModel: PartnerOrdersViewModel = viewModel(
                     factory = PartnerOrdersViewModel.Factory(ordersRepository, profileRepository, orderFeedRepository, context)
@@ -486,7 +572,7 @@ fun HomeScreen(
             }
         }
         } else {
-        when (selectedTab) {
+        when (tab) {
             0 -> {
                 var selectedService by remember { mutableStateOf<ServiceDto?>(null) }
                 // Bumped every time a service is opened so re-opening the same
@@ -497,126 +583,189 @@ fun HomeScreen(
                 val service = selectedService
                 val merchantId = selectedMerchantId
 
+                val servicesTabContent: ServicesTabContent = when {
+                    merchantId != null -> ServicesTabContent.Merchant(merchantId)
+                    service != null -> ServicesTabContent.Order(service, orderFormToken)
+                    else -> ServicesTabContent.Catalog
+                }
                 if (merchantId != null) {
                     BackHandler { selectedMerchantId = null }
-                    val merchantDetailViewModel: MerchantDetailViewModel = viewModel(
-                        key = "merchant-$merchantId",
-                        factory = MerchantDetailViewModel.Factory(merchantId, catalogRepository, cartRepository, context)
-                    )
-                    val merchantUiState by merchantDetailViewModel.uiState.collectAsState()
-                    val merchantCartItems by merchantDetailViewModel.cartItems.collectAsState()
-                    MerchantDetailScreen(
-                        uiState = merchantUiState,
-                        cartItems = merchantCartItems,
-                        onBack = { selectedMerchantId = null },
-                        onAddToCart = merchantDetailViewModel::addToCart,
-                        onUpdateQuantity = merchantDetailViewModel::updateQuantity,
-                        onGoToCart = {
-                            selectedMerchantId = null
-                            selectedTab = 3
-                        },
-                        light = isLight,
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                } else if (service == null) {
-                    val uiState by servicesViewModel.uiState.collectAsState()
-                    val isRefreshing by servicesViewModel.isRefreshing.collectAsState()
-                    ServicesScreen(
-                        uiState = uiState,
-                        isRefreshing = isRefreshing,
-                        onRefresh = servicesViewModel::refresh,
-                        onServiceClick = {
-                            selectedService = it
-                            orderFormToken++
-                        },
-                        onActiveOrderClick = { order -> selectedOrderId = order.id },
-                        onMerchantClick = { merchant -> selectedMerchantId = merchant.id },
-                        light = isLight,
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                } else {
+                } else if (service != null) {
                     BackHandler { selectedService = null }
-                    val createOrderViewModel: CreateOrderViewModel = viewModel(
-                        key = "${service.id}-$orderFormToken",
-                        factory = CreateOrderViewModel.Factory(
-                            catalogRepository = catalogRepository,
-                            profileRepository = profileRepository,
-                            ordersRepository = ordersRepository,
-                            context = context
-                        )
-                    )
-                    val orderUiState by createOrderViewModel.uiState.collectAsState()
-                    val orderCreated by createOrderViewModel.orderCreated.collectAsState()
+                }
 
-                    LaunchedEffect(orderCreated) {
-                        if (orderCreated) {
-                            selectedService = null
+                AnimatedContent(
+                    targetState = servicesTabContent,
+                    transitionSpec = {
+                        val enteringDetail = targetState !is ServicesTabContent.Catalog && initialState is ServicesTabContent.Catalog
+                        val leavingDetail = targetState is ServicesTabContent.Catalog && initialState !is ServicesTabContent.Catalog
+                        when {
+                            enteringDetail -> (slideInHorizontally(animationSpec = tween(260), initialOffsetX = { it }) + fadeIn(animationSpec = tween(220))) togetherWith
+                                fadeOut(animationSpec = tween(140))
+                            leavingDetail -> fadeIn(animationSpec = tween(180)) togetherWith
+                                (slideOutHorizontally(animationSpec = tween(220), targetOffsetX = { it }) + fadeOut(animationSpec = tween(180)))
+                            else -> fadeIn(animationSpec = tween(200)) togetherWith fadeOut(animationSpec = tween(150))
                         }
+                    },
+                    label = "servicesTabContent"
+                ) { content ->
+                when (content) {
+                    is ServicesTabContent.Merchant -> {
+                        val mId = content.merchantId
+                        val merchantDetailViewModel: MerchantDetailViewModel = viewModel(
+                            key = "merchant-$mId",
+                            factory = MerchantDetailViewModel.Factory(mId, catalogRepository, cartRepository, context)
+                        )
+                        val merchantUiState by merchantDetailViewModel.uiState.collectAsState()
+                        val merchantCartItems by merchantDetailViewModel.cartItems.collectAsState()
+                        MerchantDetailScreen(
+                            uiState = merchantUiState,
+                            cartItems = merchantCartItems,
+                            onBack = { selectedMerchantId = null },
+                            onAddToCart = merchantDetailViewModel::addToCart,
+                            onUpdateQuantity = merchantDetailViewModel::updateQuantity,
+                            onGoToCart = {
+                                selectedMerchantId = null
+                                selectedTab = 3
+                            },
+                            light = isLight,
+                            modifier = Modifier.padding(innerPadding)
+                        )
                     }
 
-                    ServiceOrderScreen(
-                        service = service,
-                        uiState = orderUiState,
-                        onBack = { selectedService = null },
-                        onPickupLocationSelect = createOrderViewModel::selectPickupLocation,
-                        onPickupManualEntrySelect = createOrderViewModel::selectPickupManualEntry,
-                        onPickupManualAddressChange = createOrderViewModel::updatePickupManualAddress,
-                        onLocationSelect = createOrderViewModel::selectLocation,
-                        onManualEntrySelect = createOrderViewModel::selectManualEntry,
-                        onManualAddressChange = createOrderViewModel::updateManualAddress,
-                        onCommentChange = createOrderViewModel::updateComment,
-                        onCurrencySelect = createOrderViewModel::selectCurrency,
-                        onSubmit = { createOrderViewModel.submit(service.id, service.kind) },
-                        light = isLight,
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    is ServicesTabContent.Order -> {
+                        val svc = content.service
+                        val createOrderViewModel: CreateOrderViewModel = viewModel(
+                            key = "${svc.id}-${content.formToken}",
+                            factory = CreateOrderViewModel.Factory(
+                                catalogRepository = catalogRepository,
+                                profileRepository = profileRepository,
+                                ordersRepository = ordersRepository,
+                                locationProvider = locationProvider,
+                                context = context
+                            )
+                        )
+                        val orderUiState by createOrderViewModel.uiState.collectAsState()
+                        val orderCreated by createOrderViewModel.orderCreated.collectAsState()
+                        val addingCurrentLocation by createOrderViewModel.addingCurrentLocation.collectAsState()
+
+                        LaunchedEffect(orderCreated) {
+                            if (orderCreated) {
+                                selectedService = null
+                            }
+                        }
+
+                        ServiceOrderScreen(
+                            service = svc,
+                            uiState = orderUiState,
+                            onBack = { selectedService = null },
+                            onPickupManualAddressChange = createOrderViewModel::updatePickupManualAddress,
+                            onLocationSelect = createOrderViewModel::selectLocation,
+                            onManualEntrySelect = createOrderViewModel::selectManualEntry,
+                            onManualAddressChange = createOrderViewModel::updateManualAddress,
+                            onCommentChange = createOrderViewModel::updateComment,
+                            onCurrencySelect = createOrderViewModel::selectCurrency,
+                            onSubmit = { createOrderViewModel.submit(svc.id, svc.kind) },
+                            onRequestCurrentLocation = createOrderViewModel::addCurrentLocation,
+                            isAddingCurrentLocation = addingCurrentLocation,
+                            onCurrentLocationPermissionDenied = createOrderViewModel::locationPermissionDenied,
+                            message = (orderUiState as? CreateOrderUiState.Ready)?.message,
+                            onConsumeMessage = createOrderViewModel::consumeMessage,
+                            light = isLight,
+                            modifier = Modifier.padding(innerPadding)
+                        )
+                    }
+
+                    ServicesTabContent.Catalog -> {
+                        val uiState by servicesViewModel.uiState.collectAsState()
+                        val isRefreshing by servicesViewModel.isRefreshing.collectAsState()
+                        ServicesScreen(
+                            uiState = uiState,
+                            isRefreshing = isRefreshing,
+                            onRefresh = servicesViewModel::refresh,
+                            onServiceClick = {
+                                selectedService = it
+                                orderFormToken++
+                            },
+                            onActiveOrderClick = { order -> selectedOrderId = order.id },
+                            onMerchantClick = { merchant -> selectedMerchantId = merchant.id },
+                            light = isLight,
+                            modifier = Modifier.padding(innerPadding)
+                        )
+                    }
+                }
                 }
             }
 
             1 -> {
                 var selectedMerchantId by remember { mutableStateOf<Int?>(null) }
                 val merchantId = selectedMerchantId
-
-                if (merchantId == null) {
-                    val shopViewModel: ShopViewModel = viewModel(
-                        factory = ShopViewModel.Factory(catalogRepository, profileRepository, context)
-                    )
-                    val uiState by shopViewModel.uiState.collectAsState()
-                    val isRefreshing by shopViewModel.isRefreshing.collectAsState()
-                    ShopScreen(
-                        uiState = uiState,
-                        isRefreshing = isRefreshing,
-                        isGridView = isShopGridView,
-                        onToggleGridView = {
-                            isShopGridView = !isShopGridView
-                            shopDisplayPrefs.isGridView = isShopGridView
-                        },
-                        onRefresh = shopViewModel::refresh,
-                        onMerchantClick = { merchant -> selectedMerchantId = merchant.id },
-                        light = isLight,
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                } else {
+                val shopTabContent: ShopTabContent =
+                    if (merchantId != null) ShopTabContent.Merchant(merchantId) else ShopTabContent.Catalog
+                if (merchantId != null) {
                     BackHandler { selectedMerchantId = null }
-                    val merchantDetailViewModel: MerchantDetailViewModel = viewModel(
-                        key = "merchant-$merchantId",
-                        factory = MerchantDetailViewModel.Factory(merchantId, catalogRepository, cartRepository, context)
-                    )
-                    val uiState by merchantDetailViewModel.uiState.collectAsState()
-                    val merchantCartItems by merchantDetailViewModel.cartItems.collectAsState()
-                    MerchantDetailScreen(
-                        uiState = uiState,
-                        cartItems = merchantCartItems,
-                        onBack = { selectedMerchantId = null },
-                        onAddToCart = merchantDetailViewModel::addToCart,
-                        onUpdateQuantity = merchantDetailViewModel::updateQuantity,
-                        onGoToCart = {
-                            selectedMerchantId = null
-                            selectedTab = 3
-                        },
-                        light = isLight,
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                }
+
+                AnimatedContent(
+                    targetState = shopTabContent,
+                    transitionSpec = {
+                        val enteringDetail = targetState !is ShopTabContent.Catalog && initialState is ShopTabContent.Catalog
+                        val leavingDetail = targetState is ShopTabContent.Catalog && initialState !is ShopTabContent.Catalog
+                        when {
+                            enteringDetail -> (slideInHorizontally(animationSpec = tween(260), initialOffsetX = { it }) + fadeIn(animationSpec = tween(220))) togetherWith
+                                fadeOut(animationSpec = tween(140))
+                            leavingDetail -> fadeIn(animationSpec = tween(180)) togetherWith
+                                (slideOutHorizontally(animationSpec = tween(220), targetOffsetX = { it }) + fadeOut(animationSpec = tween(180)))
+                            else -> fadeIn(animationSpec = tween(200)) togetherWith fadeOut(animationSpec = tween(150))
+                        }
+                    },
+                    label = "shopTabContent"
+                ) { content ->
+                when (content) {
+                    ShopTabContent.Catalog -> {
+                        val shopViewModel: ShopViewModel = viewModel(
+                            factory = ShopViewModel.Factory(catalogRepository, profileRepository, context)
+                        )
+                        val uiState by shopViewModel.uiState.collectAsState()
+                        val isRefreshing by shopViewModel.isRefreshing.collectAsState()
+                        ShopScreen(
+                            uiState = uiState,
+                            isRefreshing = isRefreshing,
+                            isGridView = isShopGridView,
+                            onToggleGridView = {
+                                isShopGridView = !isShopGridView
+                                shopDisplayPrefs.isGridView = isShopGridView
+                            },
+                            onRefresh = shopViewModel::refresh,
+                            onMerchantClick = { merchant -> selectedMerchantId = merchant.id },
+                            light = isLight,
+                            modifier = Modifier.padding(innerPadding)
+                        )
+                    }
+
+                    is ShopTabContent.Merchant -> {
+                        val mId = content.merchantId
+                        val merchantDetailViewModel: MerchantDetailViewModel = viewModel(
+                            key = "merchant-$mId",
+                            factory = MerchantDetailViewModel.Factory(mId, catalogRepository, cartRepository, context)
+                        )
+                        val uiState by merchantDetailViewModel.uiState.collectAsState()
+                        val merchantCartItems by merchantDetailViewModel.cartItems.collectAsState()
+                        MerchantDetailScreen(
+                            uiState = uiState,
+                            cartItems = merchantCartItems,
+                            onBack = { selectedMerchantId = null },
+                            onAddToCart = merchantDetailViewModel::addToCart,
+                            onUpdateQuantity = merchantDetailViewModel::updateQuantity,
+                            onGoToCart = {
+                                selectedMerchantId = null
+                                selectedTab = 3
+                            },
+                            light = isLight,
+                            modifier = Modifier.padding(innerPadding)
+                        )
+                    }
+                }
                 }
             }
 
@@ -635,10 +784,11 @@ fun HomeScreen(
 
             3 -> {
                 val cartViewModel: CartViewModel = viewModel(
-                    factory = CartViewModel.Factory(cartRepository, catalogRepository, ordersRepository, profileRepository, context)
+                    factory = CartViewModel.Factory(cartRepository, catalogRepository, ordersRepository, profileRepository, locationProvider, context)
                 )
                 val uiState by cartViewModel.uiState.collectAsState()
                 val orderCreated by cartViewModel.orderCreated.collectAsState()
+                val addingCurrentLocation by cartViewModel.addingCurrentLocation.collectAsState()
 
                 // This branch is torn down and rebuilt each time the user leaves
                 // and returns to the Cart tab, so this fires on every re-entry —
@@ -668,6 +818,11 @@ fun HomeScreen(
                     onCommentChange = cartViewModel::updateComment,
                     onCurrencySelect = cartViewModel::selectCurrency,
                     onSubmit = cartViewModel::submit,
+                    onRequestCurrentLocation = cartViewModel::addCurrentLocation,
+                    isAddingCurrentLocation = addingCurrentLocation,
+                    onCurrentLocationPermissionDenied = cartViewModel::locationPermissionDenied,
+                    message = (uiState as? CartUiState.Ready)?.message,
+                    onConsumeMessage = cartViewModel::consumeMessage,
                     light = isLight,
                     modifier = Modifier.padding(innerPadding)
                 )
@@ -683,6 +838,10 @@ fun HomeScreen(
                     onLogoutClick = onLogoutClick,
                     light = true
                 )
+            }
+        }
+        }
+        }
             }
         }
         }

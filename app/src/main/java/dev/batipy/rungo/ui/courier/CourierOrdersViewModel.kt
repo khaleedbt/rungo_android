@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.batipy.rungo.R
+import dev.batipy.rungo.data.location.CourierLocationService
 import dev.batipy.rungo.data.network.dto.OrderDto
 import dev.batipy.rungo.data.orders.OrderFeedRepository
 import dev.batipy.rungo.data.orders.OrdersRepository
@@ -120,7 +121,16 @@ class CourierOrdersViewModel(
         _uiState.value = current.copy(takingOrderIds = current.takingOrderIds + orderId)
         viewModelScope.launch {
             ordersRepository.takeCourierOrder(orderId)
-                .onSuccess { load() }
+                .onSuccess {
+                    // Taking an order moves it straight to "in_progress"
+                    // server-side (CourierOrderTakeView), which means it now
+                    // needs live GPS — but this courier may never open that
+                    // order's own detail screen (CourierOrderDetailViewModel
+                    // is what normally starts the tracking service), so start
+                    // it right here instead of leaving tracking to chance.
+                    CourierLocationService.start(context, orderId)
+                    load()
+                }
                 .onFailure {
                     val latest = _uiState.value as? CourierOrdersUiState.Success
                     _uiState.value = latest?.copy(takingOrderIds = latest.takingOrderIds - orderId) ?: _uiState.value

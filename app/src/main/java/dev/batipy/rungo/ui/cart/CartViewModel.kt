@@ -8,6 +8,7 @@ import dev.batipy.rungo.R
 import dev.batipy.rungo.data.cart.CartItem
 import dev.batipy.rungo.data.cart.CartRepository
 import dev.batipy.rungo.data.catalog.CatalogRepository
+import dev.batipy.rungo.data.location.LocationProvider
 import dev.batipy.rungo.data.network.dto.LocationDto
 import dev.batipy.rungo.data.network.dto.OrderCreateRequest
 import dev.batipy.rungo.data.network.dto.OrderItemRequest
@@ -30,7 +31,10 @@ sealed interface CartUiState {
         val comment: String = "",
         val currency: String = "usd",
         val submitting: Boolean = false,
-        val error: String? = null
+        val error: String? = null,
+        // Transient, snackbar-style — distinct from `error` so it doesn't get
+        // rendered with the persistent validation-error styling.
+        val message: String? = null
     ) : CartUiState
 }
 
@@ -39,6 +43,7 @@ class CartViewModel(
     private val catalogRepository: CatalogRepository,
     private val ordersRepository: OrdersRepository,
     private val profileRepository: ProfileRepository,
+    private val locationProvider: LocationProvider,
     private val context: Context
 ) : ViewModel() {
 
@@ -49,6 +54,9 @@ class CartViewModel(
 
     private val _orderCreated = MutableStateFlow<Int?>(null)
     val orderCreated: StateFlow<Int?> = _orderCreated.asStateFlow()
+
+    private val _addingCurrentLocation = MutableStateFlow(false)
+    val addingCurrentLocation: StateFlow<Boolean> = _addingCurrentLocation.asStateFlow()
 
     init {
         load()
@@ -100,6 +108,44 @@ class CartViewModel(
     fun selectManualEntry() = updateReady { it.copy(selectedLocationId = null) }
 
     fun updateManualAddress(text: String) = updateReady { it.copy(manualAddress = text) }
+
+    // Same pattern as CreateOrderViewModel.addCurrentLocation — captures the
+    // device's current GPS position, saves it as a new ClientLocation on the
+    // client's profile, and immediately selects it as the delivery address.
+    fun addCurrentLocation() {
+        val current = _uiState.value as? CartUiState.Ready ?: return
+        _addingCurrentLocation.value = true
+        viewModelScope.launch {
+            val coords = locationProvider.getCurrentLocation()
+            if (coords == null) {
+                _addingCurrentLocation.value = false
+                updateReady { it.copy(error = context.getString(R.string.profile_location_request_error)) }
+                return@launch
+            }
+            val (latitude, longitude) = coords
+            profileRepository.createLocation(latitude, longitude)
+                .onSuccess { newLocation ->
+                    updateReady {
+                        it.copy(
+                            locations = it.locations + newLocation,
+                            selectedLocationId = newLocation.id,
+                            manualAddress = "",
+                            message = context.getString(R.string.current_location_saved_hint)
+                        )
+                    }
+                }
+                .onFailure {
+                    updateReady { state -> state.copy(error = context.getString(R.string.profile_location_request_error)) }
+                }
+            _addingCurrentLocation.value = false
+        }
+    }
+
+    fun locationPermissionDenied() = updateReady {
+        it.copy(error = context.getString(R.string.profile_location_permission_denied))
+    }
+
+    fun consumeMessage() = updateReady { it.copy(message = null) }
 
     fun updateComment(text: String) = updateReady { it.copy(comment = text) }
 
@@ -172,11 +218,12 @@ class CartViewModel(
         private val catalogRepository: CatalogRepository,
         private val ordersRepository: OrdersRepository,
         private val profileRepository: ProfileRepository,
+        private val locationProvider: LocationProvider,
         private val context: Context
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return CartViewModel(cartRepository, catalogRepository, ordersRepository, profileRepository, context) as T
+            return CartViewModel(cartRepository, catalogRepository, ordersRepository, profileRepository, locationProvider, context) as T
         }
     }
 }
