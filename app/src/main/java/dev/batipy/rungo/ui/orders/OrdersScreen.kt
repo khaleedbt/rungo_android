@@ -1,5 +1,6 @@
 package dev.batipy.rungo.ui.orders
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,6 +37,11 @@ import dev.batipy.rungo.ui.common.StatusBadge
 import dev.batipy.rungo.ui.common.formatOrderAmount
 import dev.batipy.rungo.ui.theme.RunGoAccent
 import dev.batipy.rungo.ui.theme.RunGoField
+import dev.batipy.rungo.ui.theme.RunGoLightAccentText
+import dev.batipy.rungo.ui.theme.RunGoLightBackground
+import dev.batipy.rungo.ui.theme.RunGoLightField
+import dev.batipy.rungo.ui.theme.RunGoLightTextPrimary
+import dev.batipy.rungo.ui.theme.RunGoLightTextSecondary
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
 import java.time.OffsetDateTime
@@ -49,7 +55,15 @@ private fun orderDateFormatter(): DateTimeFormatter =
 private data class StatusStyle(val label: String, val container: Color, val content: Color)
 
 @Composable
-private fun statusStyle(status: String): StatusStyle = when (status) {
+private fun statusStyle(status: String, light: Boolean = false): StatusStyle = if (light) when (status) {
+    "new" -> StatusStyle(stringResource(R.string.orders_list_status_new), Color(0xFFEDEAE3), Color(0xFF4A4438))
+    "confirmed" -> StatusStyle(stringResource(R.string.orders_list_status_confirmed), Color(0xFFE4ECFB), Color(0xFF2E4A73))
+    "in_progress" -> StatusStyle(stringResource(R.string.orders_list_status_in_progress), Color(0xFFFFF0C7), Color(0xFF7A5416))
+    "in_delivery" -> StatusStyle(stringResource(R.string.orders_list_status_in_delivery), Color(0xFFFFF0C7), Color(0xFF7A5416))
+    "delivered" -> StatusStyle(stringResource(R.string.orders_list_status_delivered), Color(0xFFCFF7D9), Color(0xFF1B7A3A))
+    "cancelled" -> StatusStyle(stringResource(R.string.orders_list_status_cancelled), Color(0xFFFBE1DE), Color(0xFFB3261E))
+    else -> StatusStyle(status, RunGoLightField, RunGoLightTextSecondary)
+} else when (status) {
     "new" -> StatusStyle(stringResource(R.string.orders_list_status_new), Color(0xFF3A4657), Color(0xFFD7E3F5))
     "confirmed" -> StatusStyle(stringResource(R.string.orders_list_status_confirmed), Color(0xFF2E4A73), Color(0xFFBFD9FF))
     "in_progress" -> StatusStyle(stringResource(R.string.orders_list_status_in_progress), Color(0xFF6B5420), Color(0xFFFFE1A6))
@@ -72,12 +86,13 @@ fun OrdersScreen(
     isRefreshing: Boolean = false,
     onRefresh: () -> Unit = {},
     onOrderClick: (OrderDto) -> Unit = {},
+    light: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     PullToRefreshBox(
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize().background(if (light) RunGoLightBackground else Color.Unspecified)
     ) {
         when (uiState) {
             is OrdersUiState.Loading -> {
@@ -88,14 +103,14 @@ fun OrdersScreen(
 
             is OrdersUiState.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = uiState.message, color = RunGoTextSecondary)
+                    Text(text = uiState.message, color = if (light) RunGoLightTextSecondary else RunGoTextSecondary)
                 }
             }
 
             is OrdersUiState.Success -> {
                 if (uiState.orders.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = stringResource(R.string.orders_empty), color = RunGoTextSecondary)
+                        Text(text = stringResource(R.string.orders_empty), color = if (light) RunGoLightTextSecondary else RunGoTextSecondary)
                     }
                 } else {
                     LazyColumn(
@@ -107,11 +122,12 @@ fun OrdersScreen(
                             Text(
                                 text = stringResource(R.string.orders_title),
                                 style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                color = if (light) RunGoLightTextPrimary else Color.Unspecified
                             )
                         }
                         items(uiState.orders) { order ->
-                            OrderCard(order, onClick = { onOrderClick(order) })
+                            OrderCard(order, onClick = { onOrderClick(order) }, light = light)
                         }
                     }
                 }
@@ -121,14 +137,16 @@ fun OrdersScreen(
 }
 
 @Composable
-private fun OrderCard(order: OrderDto, onClick: () -> Unit) {
-    val style = statusStyle(order.status)
+private fun OrderCard(order: OrderDto, onClick: () -> Unit, light: Boolean = false) {
+    val style = statusStyle(order.status, light)
+    val textPrimary = if (light) RunGoLightTextPrimary else RunGoTextPrimary
+    val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        color = RunGoField,
+        color = if (light) RunGoLightField else RunGoField,
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -140,7 +158,7 @@ private fun OrderCard(order: OrderDto, onClick: () -> Unit) {
                 Text(
                     text = stringResource(R.string.order_number, order.id),
                     fontWeight = FontWeight.Bold,
-                    color = RunGoTextPrimary,
+                    color = textPrimary,
                     style = MaterialTheme.typography.titleMedium
                 )
                 StatusBadge(
@@ -154,7 +172,7 @@ private fun OrderCard(order: OrderDto, onClick: () -> Unit) {
                 Text(
                     text = order.cityName,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = RunGoTextSecondary,
+                    color = textSecondary,
                     modifier = Modifier.padding(top = 2.dp)
                 )
             }
@@ -168,19 +186,19 @@ private fun OrderCard(order: OrderDto, onClick: () -> Unit) {
                     Icon(
                         imageVector = Icons.Filled.DateRange,
                         contentDescription = null,
-                        tint = RunGoTextSecondary,
+                        tint = textSecondary,
                         modifier = Modifier.size(18.dp)
                     )
                     Text(
                         text = formatOrderDate(order.createdAt),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = RunGoTextSecondary,
+                        color = textSecondary,
                         modifier = Modifier.padding(start = 6.dp)
                     )
                 }
                 Text(
                     text = formatOrderAmount(order.codTotal, order.currency),
-                    color = RunGoAccent,
+                    color = if (light) RunGoLightAccentText else RunGoAccent,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleMedium
                 )

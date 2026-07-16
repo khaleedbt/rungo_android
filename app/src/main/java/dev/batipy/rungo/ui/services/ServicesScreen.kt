@@ -46,7 +46,14 @@ import dev.batipy.rungo.ui.common.localizedName
 import dev.batipy.rungo.ui.theme.RunGoAccent
 import dev.batipy.rungo.ui.theme.RunGoAccentLight
 import dev.batipy.rungo.ui.theme.RunGoBackground
+import dev.batipy.rungo.ui.theme.RunGoBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoField
+import dev.batipy.rungo.ui.theme.RunGoLightAccentText
+import dev.batipy.rungo.ui.theme.RunGoLightBackground
+import dev.batipy.rungo.ui.theme.RunGoLightField
+import dev.batipy.rungo.ui.theme.RunGoLightTextPrimary
+import dev.batipy.rungo.ui.theme.RunGoLightTextSecondary
+import dev.batipy.rungo.ui.theme.RunGoOnBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
 
@@ -78,12 +85,13 @@ fun ServicesScreen(
     onServiceClick: (ServiceDto) -> Unit = {},
     onActiveOrderClick: (OrderDto) -> Unit = {},
     onMerchantClick: (MerchantDto) -> Unit = {},
+    light: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     PullToRefreshBox(
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize().background(if (light) RunGoLightBackground else Color.Unspecified)
     ) {
         when (uiState) {
             is ServicesUiState.Loading -> {
@@ -94,7 +102,7 @@ fun ServicesScreen(
 
             is ServicesUiState.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = uiState.message, color = RunGoTextSecondary)
+                    Text(text = uiState.message, color = if (light) RunGoLightTextSecondary else RunGoTextSecondary)
                 }
             }
 
@@ -108,27 +116,28 @@ fun ServicesScreen(
                         Text(
                             text = stringResource(R.string.services_title),
                             style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = if (light) RunGoLightTextPrimary else Color.Unspecified
                         )
                     }
                     items(uiState.activeOrders, key = { it.id }) { order ->
-                        ActiveOrderCard(order, onClick = { onActiveOrderClick(order) })
+                        ActiveOrderCard(order, onClick = { onActiveOrderClick(order) }, light = light)
                     }
                     items(uiState.services) { service ->
-                        ServiceCard(service, onClick = { onServiceClick(service) })
+                        ServiceCard(service, onClick = { onServiceClick(service) }, light = light)
                     }
                     if (uiState.merchants.isNotEmpty()) {
                         item {
                             Text(
                                 text = stringResource(R.string.services_partners_header),
                                 style = MaterialTheme.typography.labelMedium,
-                                color = RunGoTextSecondary,
+                                color = if (light) RunGoLightTextSecondary else RunGoTextSecondary,
                                 modifier = Modifier.padding(top = 8.dp)
                             )
                         }
                     }
                     items(uiState.merchants) { merchant ->
-                        MerchantCard(merchant, onClick = { onMerchantClick(merchant) })
+                        MerchantCard(merchant, onClick = { onMerchantClick(merchant) }, light = light)
                     }
                 }
             }
@@ -137,12 +146,16 @@ fun ServicesScreen(
 }
 
 @Composable
-private fun ActiveOrderCard(order: OrderDto, onClick: () -> Unit) {
+private fun ActiveOrderCard(order: OrderDto, onClick: () -> Unit, light: Boolean = false) {
+    val accent = if (light) RunGoBrandOrange else RunGoAccent
+    val accentText = if (light) RunGoLightAccentText else RunGoAccent
+    val textPrimary = if (light) RunGoLightTextPrimary else RunGoTextPrimary
+    val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        color = RunGoField,
+        color = if (light) RunGoLightField else RunGoField,
         shape = RoundedCornerShape(16.dp)
     ) {
         Row(
@@ -154,7 +167,7 @@ private fun ActiveOrderCard(order: OrderDto, onClick: () -> Unit) {
                     .width(4.dp)
                     .height(36.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(RunGoAccent)
+                    .background(accent)
             )
             Column(
                 modifier = Modifier
@@ -164,14 +177,14 @@ private fun ActiveOrderCard(order: OrderDto, onClick: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = stringResource(R.string.order_number, order.id),
-                        color = RunGoTextPrimary,
+                        color = textPrimary,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodyMedium
                     )
                     if (!order.serviceName.isNullOrBlank()) {
                         Text(
                             text = " · " + order.serviceName,
-                            color = RunGoAccent,
+                            color = accentText,
                             style = MaterialTheme.typography.bodyMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -181,7 +194,7 @@ private fun ActiveOrderCard(order: OrderDto, onClick: () -> Unit) {
                 if (!order.deliveryAddress.isNullOrBlank()) {
                     Text(
                         text = order.deliveryAddress,
-                        color = RunGoTextSecondary,
+                        color = textSecondary,
                         style = MaterialTheme.typography.bodySmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -201,7 +214,7 @@ private fun ActiveOrderCard(order: OrderDto, onClick: () -> Unit) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = RunGoTextSecondary,
+                tint = textSecondary,
                 modifier = Modifier.padding(start = 4.dp)
             )
         }
@@ -209,19 +222,20 @@ private fun ActiveOrderCard(order: OrderDto, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ServiceCard(service: ServiceDto, onClick: () -> Unit) {
+private fun ServiceCard(service: ServiceDto, onClick: () -> Unit, light: Boolean = false) {
     CatalogCard(
         imageUrl = service.image,
         title = service.localizedName,
         description = service.localizedDescription,
         badge = kindLabel(service.kind),
         price = stringResource(R.string.services_price_from, service.baseFareUsd),
-        onClick = onClick
+        onClick = onClick,
+        light = light
     )
 }
 
 @Composable
-private fun MerchantCard(merchant: MerchantDto, onClick: () -> Unit) {
+private fun MerchantCard(merchant: MerchantDto, onClick: () -> Unit, light: Boolean = false) {
     CatalogCard(
         imageUrl = merchant.logo,
         title = merchant.name,
@@ -229,7 +243,8 @@ private fun MerchantCard(merchant: MerchantDto, onClick: () -> Unit) {
         badge = null,
         price = stringResource(R.string.services_delivery_price, merchant.deliveryFeeUsd),
         bordered = true,
-        onClick = onClick
+        onClick = onClick,
+        light = light
     )
 }
 
@@ -241,13 +256,23 @@ private fun CatalogCard(
     badge: String?,
     price: String,
     bordered: Boolean = false,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    light: Boolean = false
 ) {
+    val accent = if (light) RunGoBrandOrange else RunGoAccent
+    val accentText = if (light) RunGoLightAccentText else RunGoAccent
+    val textPrimary = if (light) RunGoLightTextPrimary else RunGoTextPrimary
+    val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
+    // The "kind" badge is meant to read as the opposite tone from the body
+    // text — inverted (dark chip + light text) in both themes, not just a
+    // straight color swap.
+    val badgeBg = if (light) RunGoLightTextPrimary else RunGoTextPrimary
+    val badgeText = if (light) RunGoLightBackground else RunGoBackground
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        color = RunGoField,
+        color = if (light) RunGoLightField else RunGoField,
         border = if (bordered) BorderStroke(1.5.dp, RunGoAccentLight.copy(alpha = 0.55f)) else null,
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -269,12 +294,12 @@ private fun CatalogCard(
                     modifier = Modifier
                         .size(56.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(RunGoAccent),
+                        .background(accent),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = title.take(1).uppercase(),
-                        color = Color.White,
+                        color = if (light) RunGoOnBrandOrange else Color.White,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -284,12 +309,12 @@ private fun CatalogCard(
                     .weight(1f)
                     .padding(horizontal = 12.dp)
             ) {
-                Text(text = title, fontWeight = FontWeight.Bold, color = RunGoTextPrimary)
+                Text(text = title, fontWeight = FontWeight.Bold, color = textPrimary)
                 if (description.isNotBlank()) {
                     Text(
                         text = description,
                         style = MaterialTheme.typography.bodySmall,
-                        color = RunGoTextSecondary,
+                        color = textSecondary,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -301,12 +326,12 @@ private fun CatalogCard(
                 ) {
                     if (badge != null) {
                         Surface(
-                            color = RunGoTextPrimary,
+                            color = badgeBg,
                             shape = RoundedCornerShape(50)
                         ) {
                             Text(
                                 text = badge,
-                                color = RunGoBackground,
+                                color = badgeText,
                                 style = MaterialTheme.typography.labelSmall,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                             )
@@ -314,7 +339,7 @@ private fun CatalogCard(
                     }
                     Text(
                         text = price,
-                        color = RunGoAccent,
+                        color = accentText,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -323,7 +348,7 @@ private fun CatalogCard(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = RunGoTextSecondary
+                tint = textSecondary
             )
         }
     }

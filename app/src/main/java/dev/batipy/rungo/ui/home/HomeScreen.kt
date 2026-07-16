@@ -22,10 +22,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -36,11 +39,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import dev.batipy.rungo.LocalSetLightSystemBars
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.auth.AuthRepository
 import dev.batipy.rungo.data.cart.CartRepository
@@ -80,6 +85,11 @@ import dev.batipy.rungo.ui.tracking.OrderTrackingScreen
 import dev.batipy.rungo.ui.tracking.OrderTrackingViewModel
 import dev.batipy.rungo.ui.shop.ShopScreen
 import dev.batipy.rungo.ui.shop.ShopViewModel
+import dev.batipy.rungo.ui.theme.RunGoBrandOrange
+import dev.batipy.rungo.ui.theme.RunGoLightAccentText
+import dev.batipy.rungo.ui.theme.RunGoLightField
+import dev.batipy.rungo.ui.theme.RunGoLightTextSecondary
+import dev.batipy.rungo.ui.theme.RunGoOnBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
 
 private data class HomeTab(val label: String, val icon: ImageVector)
@@ -221,6 +231,18 @@ fun HomeScreen(
     }
     val isCourier = role == "courier"
     val isPartner = role == "partner"
+    // Light-theme rollout: every logged-in role (client, courier, partner) is
+    // light now. Centralized here rather than in each leaf screen — those
+    // still take their own `light` param for content colors, but the system
+    // status/nav bar appearance only needs setting once for the whole
+    // logged-in session, not on every screen transition (which was causing a
+    // brief dark flash before).
+    val isLight = true
+    val setLightSystemBars = LocalSetLightSystemBars.current
+    DisposableEffect(isLight) {
+        setLightSystemBars(isLight)
+        onDispose { }
+    }
 
     // Hoisted (rather than created inside the `when` branch below) so the bottom
     // bar's onClick can trigger a refresh even when tapping a tab you're already on.
@@ -240,7 +262,15 @@ fun HomeScreen(
             // space shows up as unexplained empty space at the bottom of the
             // overlay, e.g. between the chat input and the keyboard.
             if (chatOrderId == null && selectedOrderId == null && trackingOrderId == null) {
-                NavigationBar {
+                NavigationBar(
+                    // Light-theme rollout — every role's screens are light
+                    // now, so the nav bar follows; a shadow (rather than
+                    // relying on tonalElevation, which needs the theme's own
+                    // surface color to have any visible effect) is what
+                    // actually separates a white bar from a white/light body.
+                    modifier = if (isLight) Modifier.shadow(elevation = 12.dp) else Modifier,
+                    containerColor = if (isLight) RunGoLightField else NavigationBarDefaults.containerColor
+                ) {
                     (if (isCourier) courierHomeTabs() else if (isPartner) partnerHomeTabs() else homeTabs()).forEachIndexed { index, tab ->
                     NavigationBarItem(
                         selected = selectedTab == index && selectedOrderId == null,
@@ -268,7 +298,18 @@ fun HomeScreen(
                                 Icon(tab.icon, contentDescription = tab.label)
                             }
                         },
-                        label = { Text(tab.label) }
+                        label = { Text(tab.label) },
+                        colors = if (isLight) {
+                            NavigationBarItemDefaults.colors(
+                                selectedIconColor = RunGoOnBrandOrange,
+                                selectedTextColor = RunGoLightAccentText,
+                                indicatorColor = RunGoBrandOrange,
+                                unselectedIconColor = RunGoLightTextSecondary,
+                                unselectedTextColor = RunGoLightTextSecondary
+                            )
+                        } else {
+                            NavigationBarItemDefaults.colors()
+                        }
                     )
                     }
                 }
@@ -303,6 +344,7 @@ fun HomeScreen(
                 onBack = { chatOrderId = null },
                 onSend = chatViewModel::sendMessage,
                 onRetry = chatViewModel::connect,
+                light = isLight,
                 modifier = Modifier.padding(innerPadding)
             )
             return@Scaffold
@@ -320,6 +362,7 @@ fun HomeScreen(
                 orderId = trackId,
                 uiState = trackingState,
                 onBack = { trackingOrderId = null },
+                light = isLight,
                 modifier = Modifier.padding(innerPadding)
             )
             return@Scaffold
@@ -380,6 +423,7 @@ fun HomeScreen(
                 onSubmitReview = orderDetailViewModel::submitReview,
                 onOpenChat = { chatOrderId = orderId },
                 onOpenTracking = { trackingOrderId = orderId },
+                light = isLight,
                 modifier = Modifier.padding(innerPadding)
             )
         } else if (isCourier) {
@@ -408,7 +452,8 @@ fun HomeScreen(
                     locationProvider = locationProvider,
                     context = context,
                     innerPadding = innerPadding,
-                    onLogoutClick = onLogoutClick
+                    onLogoutClick = onLogoutClick,
+                    light = true
                 )
             }
         }
@@ -435,7 +480,8 @@ fun HomeScreen(
                     locationProvider = locationProvider,
                     context = context,
                     innerPadding = innerPadding,
-                    onLogoutClick = onLogoutClick
+                    onLogoutClick = onLogoutClick,
+                    light = true
                 )
             }
         }
@@ -469,6 +515,7 @@ fun HomeScreen(
                             selectedMerchantId = null
                             selectedTab = 3
                         },
+                        light = isLight,
                         modifier = Modifier.padding(innerPadding)
                     )
                 } else if (service == null) {
@@ -484,6 +531,7 @@ fun HomeScreen(
                         },
                         onActiveOrderClick = { order -> selectedOrderId = order.id },
                         onMerchantClick = { merchant -> selectedMerchantId = merchant.id },
+                        light = isLight,
                         modifier = Modifier.padding(innerPadding)
                     )
                 } else {
@@ -519,6 +567,7 @@ fun HomeScreen(
                         onCommentChange = createOrderViewModel::updateComment,
                         onCurrencySelect = createOrderViewModel::selectCurrency,
                         onSubmit = { createOrderViewModel.submit(service.id, service.kind) },
+                        light = isLight,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -544,6 +593,7 @@ fun HomeScreen(
                         },
                         onRefresh = shopViewModel::refresh,
                         onMerchantClick = { merchant -> selectedMerchantId = merchant.id },
+                        light = isLight,
                         modifier = Modifier.padding(innerPadding)
                     )
                 } else {
@@ -564,6 +614,7 @@ fun HomeScreen(
                             selectedMerchantId = null
                             selectedTab = 3
                         },
+                        light = isLight,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -577,6 +628,7 @@ fun HomeScreen(
                     isRefreshing = isRefreshing,
                     onRefresh = ordersViewModel::refresh,
                     onOrderClick = { order -> selectedOrderId = order.id },
+                    light = isLight,
                     modifier = Modifier.padding(innerPadding)
                 )
             }
@@ -616,6 +668,7 @@ fun HomeScreen(
                     onCommentChange = cartViewModel::updateComment,
                     onCurrencySelect = cartViewModel::selectCurrency,
                     onSubmit = cartViewModel::submit,
+                    light = isLight,
                     modifier = Modifier.padding(innerPadding)
                 )
             }
@@ -627,7 +680,8 @@ fun HomeScreen(
                     locationProvider = locationProvider,
                     context = context,
                     innerPadding = innerPadding,
-                    onLogoutClick = onLogoutClick
+                    onLogoutClick = onLogoutClick,
+                    light = true
                 )
             }
         }
@@ -644,7 +698,8 @@ private fun ProfileTab(
     locationProvider: LocationProvider,
     context: Context,
     innerPadding: PaddingValues,
-    onLogoutClick: () -> Unit
+    onLogoutClick: () -> Unit,
+    light: Boolean = false
 ) {
     val profileViewModel: ProfileViewModel = viewModel(
         factory = ProfileViewModel.Factory(profileRepository, catalogRepository, locationProvider, context)
@@ -669,6 +724,7 @@ private fun ProfileTab(
         isUpdatingProfile = isUpdatingProfile,
         onSendSupportMessage = profileViewModel::sendSupportMessage,
         onLogoutClick = onLogoutClick,
+        light = light,
         modifier = Modifier.padding(innerPadding)
     )
 }

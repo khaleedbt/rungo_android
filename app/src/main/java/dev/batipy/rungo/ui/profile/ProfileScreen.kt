@@ -77,11 +77,25 @@ import dev.batipy.rungo.data.network.dto.LocationDto
 import dev.batipy.rungo.data.network.dto.UserDto
 import dev.batipy.rungo.ui.theme.RunGoAccent
 import dev.batipy.rungo.ui.theme.RunGoBackground
+import dev.batipy.rungo.ui.theme.RunGoBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoField
+import dev.batipy.rungo.ui.theme.RunGoLightAccentText
+import dev.batipy.rungo.ui.theme.RunGoLightBackground
+import dev.batipy.rungo.ui.theme.RunGoLightField
+import dev.batipy.rungo.ui.theme.RunGoLightSurfaceMuted
+import dev.batipy.rungo.ui.theme.RunGoLightTextPrimary
+import dev.batipy.rungo.ui.theme.RunGoLightTextSecondary
+import dev.batipy.rungo.ui.theme.RunGoOnBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
 
+// Light-theme trial (see MainActivity.LocalSetLightSystemBars and the note in
+// Color.kt) — every section below takes a `light: Boolean` and picks its own
+// pair of tokens rather than swapping a shared color scheme, same reasoning
+// as the other two courier screens: a container tuned for a dark screen
+// (dark fill + light text/icon) has to flip, not just lighten.
 private val ErrorColor = Color(0xFFFF6B6B)
+private val ErrorColorLight = Color(0xFFB3261E)
 
 @Composable
 private fun roleLabel(role: String) = when (role) {
@@ -118,6 +132,7 @@ fun ProfileScreen(
     isUpdatingProfile: Boolean = false,
     onSendSupportMessage: (String) -> Unit,
     onLogoutClick: () -> Unit,
+    light: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -129,7 +144,7 @@ fun ProfileScreen(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize().background(if (light) RunGoLightBackground else Color.Unspecified)) {
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = onRefresh,
@@ -143,14 +158,15 @@ fun ProfileScreen(
             }
 
             is ProfileUiState.Error -> {
+                val errorColor = if (light) ErrorColorLight else ErrorColor
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = uiState.message, color = RunGoTextSecondary)
+                        Text(text = uiState.message, color = if (light) RunGoLightTextSecondary else RunGoTextSecondary)
                         Spacer(modifier = Modifier.height(16.dp))
                         OutlinedButton(
                             onClick = onLogoutClick,
-                            border = BorderStroke(1.dp, ErrorColor),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorColor)
+                            border = BorderStroke(1.dp, errorColor),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = errorColor)
                         ) {
                             Text(stringResource(R.string.profile_logout))
                         }
@@ -163,6 +179,13 @@ fun ProfileScreen(
                 // delivery locations, or a city (they're tied to a merchant,
                 // not a delivery address) — none of that applies to them.
                 val isPartner = uiState.user.role == "partner"
+                // Saved delivery addresses only ever make sense for a client
+                // placing orders — a courier account shouldn't see this even
+                // if the same person used to order as a client before, since
+                // any locations saved back then are still tied to their old
+                // role, not relevant to delivering.
+                val showLocations = uiState.user.role == "client"
+                val errorColor = if (light) ErrorColorLight else ErrorColor
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
@@ -172,46 +195,52 @@ fun ProfileScreen(
                         Text(
                             text = stringResource(R.string.profile_title),
                             style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = if (light) RunGoLightTextPrimary else RunGoTextPrimary
                         )
                     }
-                    item { UserCard(uiState.user) }
+                    item { UserCard(uiState.user, light) }
                     item {
                         EditProfileCard(
                             user = uiState.user,
                             cities = uiState.cities,
                             isUpdating = isUpdatingProfile,
                             showCityField = !isPartner,
-                            onSave = onSaveProfile
+                            onSave = onSaveProfile,
+                            light = light
                         )
                     }
                     if (!isPartner) {
-                        item { BalanceCard(uiState.user.balance) }
+                        item { BalanceCard(uiState.user.balance, light) }
+                    }
+                    if (showLocations) {
                         item {
                             LocationsCard(
                                 locations = uiState.locations,
                                 onDeleteLocation = onDeleteLocation,
                                 onRequestLocation = onRequestLocation,
                                 isAddingLocation = isAddingLocation,
-                                onPermissionDenied = onLocationPermissionDenied
+                                onPermissionDenied = onLocationPermissionDenied,
+                                light = light
                             )
                         }
                     }
                     item {
                         LanguageCard(
                             selectedLang = uiState.user.lang,
-                            onLanguageSelect = onLanguageSelect
+                            onLanguageSelect = onLanguageSelect,
+                            light = light
                         )
                     }
                     if (!isPartner) {
-                        item { SupportRow(onSendSupportMessage) }
+                        item { SupportRow(onSendSupportMessage, light) }
                     }
                     item {
                         OutlinedButton(
                             onClick = onLogoutClick,
                             modifier = Modifier.fillMaxWidth(),
-                            border = BorderStroke(1.dp, ErrorColor),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorColor)
+                            border = BorderStroke(1.dp, errorColor),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = errorColor)
                         ) {
                             Text(stringResource(R.string.profile_logout))
                         }
@@ -220,7 +249,7 @@ fun ProfileScreen(
                         Text(
                             text = stringResource(R.string.profile_app_version, BuildConfig.VERSION_NAME),
                             style = MaterialTheme.typography.labelSmall,
-                            color = RunGoTextSecondary,
+                            color = if (light) RunGoLightTextSecondary else RunGoTextSecondary,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -238,10 +267,11 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun UserCard(user: UserDto) {
+private fun UserCard(user: UserDto, light: Boolean = false) {
+    val accentText = if (light) RunGoLightAccentText else RunGoAccent
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = RunGoField,
+        color = if (light) RunGoLightField else RunGoField,
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -264,17 +294,17 @@ private fun UserCard(user: UserDto) {
                     Text(
                         text = user.fullName.ifBlank { user.username },
                         fontWeight = FontWeight.Bold,
-                        color = RunGoTextPrimary,
+                        color = if (light) RunGoLightTextPrimary else RunGoTextPrimary,
                         style = MaterialTheme.typography.titleMedium
                     )
                     Surface(
-                        color = RunGoAccent.copy(alpha = 0.15f),
+                        color = accentText.copy(alpha = 0.15f),
                         shape = RoundedCornerShape(50),
                         modifier = Modifier.padding(top = 4.dp)
                     ) {
                         Text(
                             text = roleLabel(user.role),
-                            color = RunGoAccent,
+                            color = accentText,
                             style = MaterialTheme.typography.labelMedium,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                         )
@@ -282,25 +312,25 @@ private fun UserCard(user: UserDto) {
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            ProfileFieldRow(stringResource(R.string.label_login), user.username)
+            ProfileFieldRow(stringResource(R.string.label_login), user.username, light)
             HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-            ProfileFieldRow(stringResource(R.string.label_name), user.fullName)
+            ProfileFieldRow(stringResource(R.string.label_name), user.fullName, light)
             HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-            ProfileFieldRow(stringResource(R.string.label_phone), user.phone?.ifBlank { "—" } ?: "—")
+            ProfileFieldRow(stringResource(R.string.label_phone), user.phone?.ifBlank { "—" } ?: "—", light)
             HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp))
-            ProfileFieldRow(stringResource(R.string.label_city), user.cityName)
+            ProfileFieldRow(stringResource(R.string.label_city), user.cityName, light)
         }
     }
 }
 
 @Composable
-private fun ProfileFieldRow(label: String, value: String) {
+private fun ProfileFieldRow(label: String, value: String, light: Boolean = false) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = label, color = RunGoTextSecondary)
-        Text(text = value, color = RunGoTextPrimary, fontWeight = FontWeight.SemiBold)
+        Text(text = label, color = if (light) RunGoLightTextSecondary else RunGoTextSecondary)
+        Text(text = value, color = if (light) RunGoLightTextPrimary else RunGoTextPrimary, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -310,7 +340,8 @@ private fun EditProfileCard(
     cities: List<CityDto>,
     isUpdating: Boolean,
     showCityField: Boolean = true,
-    onSave: (fullName: String, phone: String, email: String, cityId: Int?) -> Unit
+    onSave: (fullName: String, phone: String, email: String, cityId: Int?) -> Unit,
+    light: Boolean = false
 ) {
     var expanded by remember { mutableStateOf(false) }
     var fullName by remember(user.fullName) { mutableStateOf(user.fullName) }
@@ -320,7 +351,7 @@ private fun EditProfileCard(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = RunGoField,
+        color = if (light) RunGoLightField else RunGoField,
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -336,12 +367,12 @@ private fun EditProfileCard(
             ) {
                 Text(
                     text = stringResource(R.string.profile_edit_title),
-                    color = RunGoTextPrimary
+                    color = if (light) RunGoLightTextPrimary else RunGoTextPrimary
                 )
                 Icon(
                     imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                     contentDescription = null,
-                    tint = RunGoTextSecondary
+                    tint = if (light) RunGoLightTextSecondary else RunGoTextSecondary
                 )
             }
             if (expanded) {
@@ -349,32 +380,36 @@ private fun EditProfileCard(
                 LabeledField(
                     caption = stringResource(R.string.register_fullname_placeholder),
                     value = fullName,
-                    onValueChange = { fullName = it }
+                    onValueChange = { fullName = it },
+                    light = light
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 LabeledField(
                     caption = stringResource(R.string.label_phone),
                     value = phone,
-                    onValueChange = { phone = it }
+                    onValueChange = { phone = it },
+                    light = light
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 LabeledField(
                     caption = stringResource(R.string.profile_edit_email_placeholder),
                     value = email,
-                    onValueChange = { email = it }
+                    onValueChange = { email = it },
+                    light = light
                 )
                 if (showCityField) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = stringResource(R.string.label_city).uppercase(),
                         style = MaterialTheme.typography.labelSmall,
-                        color = RunGoTextSecondary,
+                        color = if (light) RunGoLightTextSecondary else RunGoTextSecondary,
                         modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
                     )
                     EditCityDropdown(
                         cities = cities,
                         selectedCityId = selectedCityId,
-                        onCitySelect = { selectedCityId = it }
+                        onCitySelect = { selectedCityId = it },
+                        light = light
                     )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
@@ -382,12 +417,13 @@ private fun EditProfileCard(
                     onClick = { onSave(fullName, phone, email, selectedCityId) },
                     enabled = !isUpdating,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    colors = ButtonDefaults.buttonColors(containerColor = if (light) RunGoBrandOrange else MaterialTheme.colorScheme.primary)
                 ) {
+                    val onColor = if (light) RunGoOnBrandOrange else Color.White
                     if (isUpdating) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = onColor, strokeWidth = 2.dp)
                     } else {
-                        Text(stringResource(R.string.profile_edit_save_button), color = Color.White)
+                        Text(stringResource(R.string.profile_edit_save_button), color = onColor)
                     }
                 }
             }
@@ -399,7 +435,8 @@ private fun EditProfileCard(
 private fun EditCityDropdown(
     cities: List<CityDto>,
     selectedCityId: Int?,
-    onCitySelect: (Int) -> Unit
+    onCitySelect: (Int) -> Unit,
+    light: Boolean = false
 ) {
     var expanded by remember { mutableStateOf(false) }
     var fieldWidthPx by remember { mutableStateOf(0) }
@@ -412,7 +449,7 @@ private fun EditCityDropdown(
                 .fillMaxWidth()
                 .onSizeChanged { fieldWidthPx = it.width }
                 .clickable { expanded = true },
-            color = RunGoBackground,
+            color = if (light) RunGoLightSurfaceMuted else RunGoBackground,
             shape = RoundedCornerShape(12.dp)
         ) {
             Row(
@@ -420,20 +457,20 @@ private fun EditCityDropdown(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = selectedName, color = RunGoTextPrimary, modifier = Modifier.weight(1f))
-                Icon(Icons.Filled.UnfoldMore, contentDescription = null, tint = RunGoTextSecondary)
+                Text(text = selectedName, color = if (light) RunGoLightTextPrimary else RunGoTextPrimary, modifier = Modifier.weight(1f))
+                Icon(Icons.Filled.UnfoldMore, contentDescription = null, tint = if (light) RunGoLightTextSecondary else RunGoTextSecondary)
             }
         }
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier.width(with(density) { fieldWidthPx.toDp() }),
-            containerColor = RunGoField,
+            containerColor = if (light) RunGoLightField else RunGoField,
             shape = RoundedCornerShape(14.dp)
         ) {
             cities.forEach { city ->
                 DropdownMenuItem(
-                    text = { Text(city.name, color = RunGoTextPrimary) },
+                    text = { Text(city.name, color = if (light) RunGoLightTextPrimary else RunGoTextPrimary) },
                     onClick = {
                         onCitySelect(city.id)
                         expanded = false
@@ -448,13 +485,14 @@ private fun EditCityDropdown(
 private fun LabeledField(
     caption: String,
     value: String,
-    onValueChange: (String) -> Unit
+    onValueChange: (String) -> Unit,
+    light: Boolean = false
 ) {
     Column {
         Text(
             text = caption.uppercase(),
             style = MaterialTheme.typography.labelSmall,
-            color = RunGoTextSecondary,
+            color = if (light) RunGoLightTextSecondary else RunGoTextSecondary,
             modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
         )
         OutlinedTextField(
@@ -463,13 +501,20 @@ private fun LabeledField(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
-            colors = editFieldColors()
+            colors = editFieldColors(light)
         )
     }
 }
 
 @Composable
-private fun editFieldColors() = OutlinedTextFieldDefaults.colors(
+private fun editFieldColors(light: Boolean = false) = if (light) OutlinedTextFieldDefaults.colors(
+    focusedContainerColor = RunGoLightSurfaceMuted,
+    unfocusedContainerColor = RunGoLightSurfaceMuted,
+    focusedTextColor = RunGoLightTextPrimary,
+    unfocusedTextColor = RunGoLightTextPrimary,
+    focusedBorderColor = RunGoBrandOrange,
+    unfocusedBorderColor = RunGoLightTextSecondary.copy(alpha = 0.4f)
+) else OutlinedTextFieldDefaults.colors(
     focusedContainerColor = RunGoBackground,
     unfocusedContainerColor = RunGoBackground,
     focusedTextColor = RunGoTextPrimary,
@@ -479,14 +524,14 @@ private fun editFieldColors() = OutlinedTextFieldDefaults.colors(
 )
 
 @Composable
-private fun BalanceCard(balance: String) {
+private fun BalanceCard(balance: String, light: Boolean = false) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = RunGoField,
+        color = if (light) RunGoLightField else RunGoField,
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = stringResource(R.string.profile_balance_label), color = RunGoTextSecondary)
+            Text(text = stringResource(R.string.profile_balance_label), color = if (light) RunGoLightTextSecondary else RunGoTextSecondary)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(top = 8.dp)
@@ -494,13 +539,13 @@ private fun BalanceCard(balance: String) {
                 Icon(
                     imageVector = Icons.Filled.CreditCard,
                     contentDescription = null,
-                    tint = RunGoAccent
+                    tint = if (light) RunGoLightAccentText else RunGoAccent
                 )
                 Text(
                     text = balance,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.headlineSmall,
-                    color = RunGoTextPrimary,
+                    color = if (light) RunGoLightTextPrimary else RunGoTextPrimary,
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
@@ -514,7 +559,8 @@ private fun LocationsCard(
     onDeleteLocation: (Int) -> Unit,
     onRequestLocation: () -> Unit,
     isAddingLocation: Boolean = false,
-    onPermissionDenied: () -> Unit = {}
+    onPermissionDenied: () -> Unit = {},
+    light: Boolean = false
 ) {
     val context = LocalContext.current
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -523,11 +569,11 @@ private fun LocationsCard(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = RunGoField,
+        color = if (light) RunGoLightField else RunGoField,
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = stringResource(R.string.profile_location_title), color = RunGoTextSecondary)
+            Text(text = stringResource(R.string.profile_location_title), color = if (light) RunGoLightTextSecondary else RunGoTextSecondary)
             Spacer(modifier = Modifier.height(12.dp))
             locations.forEachIndexed { index, location ->
                 LocationRow(
@@ -541,7 +587,8 @@ private fun LocationsCard(
                         } catch (e: ActivityNotFoundException) {
                             // No maps app installed — silently ignore.
                         }
-                    }
+                    },
+                    light = light
                 )
                 if (index != locations.lastIndex) {
                     Spacer(modifier = Modifier.height(8.dp))
@@ -562,12 +609,13 @@ private fun LocationsCard(
                 enabled = !isAddingLocation,
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.buttonColors(containerColor = if (light) RunGoBrandOrange else MaterialTheme.colorScheme.primary)
             ) {
+                val onColor = if (light) RunGoOnBrandOrange else Color.White
                 if (isAddingLocation) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = onColor, strokeWidth = 2.dp)
                 } else {
-                    Text(stringResource(R.string.profile_location_request_button), color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.profile_location_request_button), color = onColor, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -579,10 +627,12 @@ private fun LocationRow(
     location: LocationDto,
     index: Int,
     onDelete: () -> Unit,
-    onOpenMap: () -> Unit
+    onOpenMap: () -> Unit,
+    light: Boolean = false
 ) {
+    val accentText = if (light) RunGoLightAccentText else RunGoAccent
     Surface(
-        color = RunGoAccent.copy(alpha = 0.10f),
+        color = accentText.copy(alpha = 0.10f),
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -599,12 +649,12 @@ private fun LocationRow(
             ) {
                 Text(
                     text = location.label.ifBlank { stringResource(R.string.profile_location_default_label, index + 1) },
-                    color = RunGoAccent,
+                    color = accentText,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = "${location.latitude}, ${location.longitude}",
-                    color = RunGoTextSecondary,
+                    color = if (light) RunGoLightTextSecondary else RunGoTextSecondary,
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -612,7 +662,7 @@ private fun LocationRow(
                 Icon(
                     imageVector = Icons.Filled.Close,
                     contentDescription = stringResource(R.string.profile_location_delete_desc),
-                    tint = ErrorColor
+                    tint = if (light) ErrorColorLight else ErrorColor
                 )
             }
         }
@@ -622,24 +672,26 @@ private fun LocationRow(
 @Composable
 private fun LanguageCard(
     selectedLang: String,
-    onLanguageSelect: (String) -> Unit
+    onLanguageSelect: (String) -> Unit,
+    light: Boolean = false
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = RunGoField,
+        color = if (light) RunGoLightField else RunGoField,
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = stringResource(R.string.profile_language_label), color = RunGoTextSecondary)
+            Text(text = stringResource(R.string.profile_language_label), color = if (light) RunGoLightTextSecondary else RunGoTextSecondary)
             Spacer(modifier = Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 languageOptions.forEach { option ->
                     val selected = option.code == selectedLang
+                    val unselectedContainer = if (light) RunGoLightField else RunGoField
                     Surface(
                         modifier = Modifier
                             .weight(1f)
                             .clickable { onLanguageSelect(option.code) },
-                        color = if (selected) RunGoAccent else RunGoField,
+                        color = if (selected) RunGoBrandOrange else unselectedContainer,
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Column(
@@ -649,7 +701,11 @@ private fun LanguageCard(
                             Text(text = option.flag, style = MaterialTheme.typography.titleMedium)
                             Text(
                                 text = option.label,
-                                color = if (selected) Color.White else RunGoTextSecondary,
+                                color = if (selected) {
+                                    if (light) RunGoOnBrandOrange else Color.White
+                                } else {
+                                    if (light) RunGoLightTextSecondary else RunGoTextSecondary
+                                },
                                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                                 style = MaterialTheme.typography.bodySmall
                             )
@@ -662,13 +718,13 @@ private fun LanguageCard(
 }
 
 @Composable
-private fun SupportRow(onSendSupportMessage: (String) -> Unit) {
+private fun SupportRow(onSendSupportMessage: (String) -> Unit, light: Boolean = false) {
     var expanded by remember { mutableStateOf(false) }
     var text by remember { mutableStateOf("") }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = RunGoField,
+        color = if (light) RunGoLightField else RunGoField,
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -686,18 +742,18 @@ private fun SupportRow(onSendSupportMessage: (String) -> Unit) {
                     Icon(
                         imageVector = Icons.Filled.ChatBubbleOutline,
                         contentDescription = null,
-                        tint = RunGoTextSecondary
+                        tint = if (light) RunGoLightTextSecondary else RunGoTextSecondary
                     )
                     Text(
                         text = stringResource(R.string.profile_support_title),
-                        color = RunGoTextPrimary,
+                        color = if (light) RunGoLightTextPrimary else RunGoTextPrimary,
                         modifier = Modifier.padding(start = 12.dp)
                     )
                 }
                 Icon(
                     imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                     contentDescription = null,
-                    tint = RunGoTextSecondary
+                    tint = if (light) RunGoLightTextSecondary else RunGoTextSecondary
                 )
             }
             if (expanded) {
@@ -708,7 +764,12 @@ private fun SupportRow(onSendSupportMessage: (String) -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text(stringResource(R.string.profile_support_placeholder)) },
                     shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
+                    colors = if (light) OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = RunGoLightSurfaceMuted,
+                        unfocusedContainerColor = RunGoLightSurfaceMuted,
+                        focusedTextColor = RunGoLightTextPrimary,
+                        unfocusedTextColor = RunGoLightTextPrimary
+                    ) else OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = RunGoField,
                         unfocusedContainerColor = RunGoField
                     )
@@ -721,9 +782,9 @@ private fun SupportRow(onSendSupportMessage: (String) -> Unit) {
                         expanded = false
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    colors = ButtonDefaults.buttonColors(containerColor = if (light) RunGoBrandOrange else MaterialTheme.colorScheme.primary)
                 ) {
-                    Text(stringResource(R.string.profile_support_send), color = Color.White)
+                    Text(stringResource(R.string.profile_support_send), color = if (light) RunGoOnBrandOrange else Color.White)
                 }
             }
         }

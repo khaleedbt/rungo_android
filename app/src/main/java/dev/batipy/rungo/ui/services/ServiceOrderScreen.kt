@@ -47,13 +47,23 @@ import dev.batipy.rungo.data.network.dto.ServiceDto
 import dev.batipy.rungo.ui.common.localizedName
 import dev.batipy.rungo.ui.theme.RunGoAccent
 import dev.batipy.rungo.ui.theme.RunGoBackground
+import dev.batipy.rungo.ui.theme.RunGoBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoField
+import dev.batipy.rungo.ui.theme.RunGoLightAccentText
+import dev.batipy.rungo.ui.theme.RunGoLightBackground
+import dev.batipy.rungo.ui.theme.RunGoLightField
+import dev.batipy.rungo.ui.theme.RunGoLightSurfaceMuted
+import dev.batipy.rungo.ui.theme.RunGoLightTextPrimary
+import dev.batipy.rungo.ui.theme.RunGoLightTextSecondary
+import dev.batipy.rungo.ui.theme.RunGoOnBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoPlaceholder
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
 import java.util.Locale
 
 private val ErrorColor = Color(0xFFFF6B6B)
+private val ErrorColorLight = Color(0xFFB3261E)
+private val FeeCardBackgroundLight = Color(0xFFFCEACB)
 
 private data class CurrencyOption(val code: String, val label: String)
 
@@ -98,10 +108,17 @@ fun ServiceOrderScreen(
     onCommentChange: (String) -> Unit,
     onCurrencySelect: (String) -> Unit,
     onSubmit: () -> Unit,
+    light: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val isDelivery = service.kind == "delivery"
-    Column(modifier = modifier.fillMaxSize()) {
+    val accent = if (light) RunGoBrandOrange else RunGoAccent
+    val onAccent = if (light) RunGoOnBrandOrange else Color.White
+    val fieldColor = if (light) RunGoLightField else RunGoField
+    val textPrimary = if (light) RunGoLightTextPrimary else RunGoTextPrimary
+    val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
+    val errorColor = if (light) ErrorColorLight else ErrorColor
+    Column(modifier = modifier.fillMaxSize().background(if (light) RunGoLightBackground else Color.Unspecified)) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -110,12 +127,12 @@ fun ServiceOrderScreen(
                 onClick = onBack,
                 modifier = Modifier
                     .size(40.dp)
-                    .background(RunGoField, CircleShape)
+                    .background(fieldColor, CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                     contentDescription = stringResource(R.string.common_back),
-                    tint = RunGoTextPrimary
+                    tint = textPrimary
                 )
             }
             Column(modifier = Modifier.padding(start = 12.dp)) {
@@ -123,11 +140,11 @@ fun ServiceOrderScreen(
                     text = service.localizedName,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleLarge,
-                    color = RunGoTextPrimary
+                    color = textPrimary
                 )
                 Text(
                     text = kindLabel(service.kind),
-                    color = RunGoTextSecondary,
+                    color = textSecondary,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -142,7 +159,7 @@ fun ServiceOrderScreen(
 
             is CreateOrderUiState.LoadError -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = uiState.message, color = RunGoTextSecondary)
+                    Text(text = uiState.message, color = textSecondary)
                 }
             }
 
@@ -154,7 +171,7 @@ fun ServiceOrderScreen(
                 ) {
                     if (isDelivery) {
                         item {
-                            SectionCard(title = stringResource(R.string.section_pickup_address)) {
+                            SectionCard(title = stringResource(R.string.section_pickup_address), light = light) {
                                 AddressPicker(
                                     locations = uiState.locations,
                                     selectedLocationId = uiState.selectedPickupLocationId,
@@ -162,12 +179,13 @@ fun ServiceOrderScreen(
                                     placeholder = stringResource(R.string.pickup_placeholder),
                                     onLocationSelect = onPickupLocationSelect,
                                     onManualEntrySelect = onPickupManualEntrySelect,
-                                    onManualAddressChange = onPickupManualAddressChange
+                                    onManualAddressChange = onPickupManualAddressChange,
+                                    light = light
                                 )
                             }
                         }
                         item {
-                            SectionCard(title = stringResource(R.string.section_delivery_address)) {
+                            SectionCard(title = stringResource(R.string.section_delivery_address), light = light) {
                                 AddressPicker(
                                     locations = uiState.locations,
                                     selectedLocationId = uiState.selectedLocationId,
@@ -175,13 +193,14 @@ fun ServiceOrderScreen(
                                     placeholder = stringResource(R.string.delivery_placeholder),
                                     onLocationSelect = onLocationSelect,
                                     onManualEntrySelect = onManualEntrySelect,
-                                    onManualAddressChange = onManualAddressChange
+                                    onManualAddressChange = onManualAddressChange,
+                                    light = light
                                 )
                             }
                         }
                     } else {
                         item {
-                            SectionCard(title = stringResource(R.string.section_your_address)) {
+                            SectionCard(title = stringResource(R.string.section_your_address), light = light) {
                                 AddressPicker(
                                     locations = uiState.locations,
                                     selectedLocationId = uiState.selectedLocationId,
@@ -189,26 +208,27 @@ fun ServiceOrderScreen(
                                     placeholder = stringResource(R.string.your_address_placeholder),
                                     onLocationSelect = onLocationSelect,
                                     onManualEntrySelect = onManualEntrySelect,
-                                    onManualAddressChange = onManualAddressChange
+                                    onManualAddressChange = onManualAddressChange,
+                                    light = light
                                 )
                             }
                         }
                     }
                     item {
-                        SectionCard(title = stringResource(R.string.section_comment)) {
+                        SectionCard(title = stringResource(R.string.section_comment), light = light) {
                             OutlinedTextField(
                                 value = uiState.comment,
                                 onValueChange = onCommentChange,
                                 modifier = Modifier.fillMaxWidth(),
-                                placeholder = { Text(stringResource(R.string.comment_placeholder), color = RunGoPlaceholder) },
+                                placeholder = { Text(stringResource(R.string.comment_placeholder), color = if (light) textSecondary else RunGoPlaceholder) },
                                 minLines = 2,
                                 shape = RoundedCornerShape(14.dp),
-                                colors = fieldColors()
+                                colors = fieldColors(light)
                             )
                         }
                     }
                     item {
-                        SectionCard(title = stringResource(R.string.section_currency)) {
+                        SectionCard(title = stringResource(R.string.section_currency), light = light) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 currencyOptions.forEach { option ->
                                     val selected = option.code == uiState.currency
@@ -216,12 +236,12 @@ fun ServiceOrderScreen(
                                         modifier = Modifier
                                             .weight(1f)
                                             .clickable { onCurrencySelect(option.code) },
-                                        color = if (selected) RunGoAccent else RunGoField,
+                                        color = if (selected) accent else fieldColor,
                                         shape = RoundedCornerShape(12.dp)
                                     ) {
                                         Text(
                                             text = option.label,
-                                            color = if (selected) Color.White else RunGoTextSecondary,
+                                            color = if (selected) onAccent else textSecondary,
                                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                                             textAlign = TextAlign.Center,
                                             modifier = Modifier
@@ -235,13 +255,14 @@ fun ServiceOrderScreen(
                     }
                     if (uiState.error != null) {
                         item {
-                            Text(text = uiState.error, color = ErrorColor)
+                            Text(text = uiState.error, color = errorColor)
                         }
                     }
                     item {
+                        val accentText = if (light) RunGoLightAccentText else RunGoAccent
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
-                            color = Color(0xFFEAF1FB),
+                            color = if (light) FeeCardBackgroundLight else Color(0xFFEAF1FB),
                             shape = RoundedCornerShape(16.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
@@ -251,7 +272,7 @@ fun ServiceOrderScreen(
                                 ) {
                                     Text(
                                         text = stringResource(R.string.service_fee_label),
-                                        color = RunGoAccent,
+                                        color = accentText,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                     Text(
@@ -260,14 +281,14 @@ fun ServiceOrderScreen(
                                             currency = uiState.currency,
                                             rates = uiState.exchangeRates
                                         ),
-                                        color = RunGoAccent,
+                                        color = accentText,
                                         fontWeight = FontWeight.Bold,
                                         style = MaterialTheme.typography.titleMedium
                                     )
                                 }
                                 Text(
                                     text = stringResource(R.string.cod_note),
-                                    color = RunGoAccent.copy(alpha = 0.7f),
+                                    color = accentText.copy(alpha = 0.7f),
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }
@@ -281,16 +302,16 @@ fun ServiceOrderScreen(
                                 .fillMaxWidth()
                                 .height(52.dp),
                             shape = MaterialTheme.shapes.large,
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            colors = ButtonDefaults.buttonColors(containerColor = if (light) RunGoBrandOrange else MaterialTheme.colorScheme.primary)
                         ) {
                             if (uiState.submitting) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(20.dp),
-                                    color = Color.White,
+                                    color = onAccent,
                                     strokeWidth = 2.dp
                                 )
                             } else {
-                                Text(stringResource(R.string.create_order_button), color = Color.White, fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(R.string.create_order_button), color = onAccent, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
@@ -301,16 +322,16 @@ fun ServiceOrderScreen(
 }
 
 @Composable
-private fun SectionCard(title: String, content: @Composable () -> Unit) {
+private fun SectionCard(title: String, light: Boolean = false, content: @Composable () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = RunGoField,
+        color = if (light) RunGoLightField else RunGoField,
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = title,
-                color = RunGoTextSecondary,
+                color = if (light) RunGoLightTextSecondary else RunGoTextSecondary,
                 style = MaterialTheme.typography.labelMedium
             )
             Box(modifier = Modifier.padding(top = 10.dp)) {
@@ -328,7 +349,8 @@ private fun AddressPicker(
     placeholder: String,
     onLocationSelect: (Int) -> Unit,
     onManualEntrySelect: () -> Unit,
-    onManualAddressChange: (String) -> Unit
+    onManualAddressChange: (String) -> Unit,
+    light: Boolean = false
 ) {
     Column {
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -336,14 +358,16 @@ private fun AddressPicker(
                 AddressChip(
                     label = "📍 " + location.label.ifBlank { stringResource(R.string.location_label) },
                     selected = location.id == selectedLocationId,
-                    onClick = { onLocationSelect(location.id) }
+                    onClick = { onLocationSelect(location.id) },
+                    light = light
                 )
             }
             item {
                 AddressChip(
                     label = stringResource(R.string.manual_entry_chip),
                     selected = selectedLocationId == null,
-                    onClick = onManualEntrySelect
+                    onClick = onManualEntrySelect,
+                    light = light
                 )
             }
         }
@@ -354,24 +378,26 @@ private fun AddressPicker(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp),
-                placeholder = { Text(placeholder, color = RunGoPlaceholder) },
+                placeholder = { Text(placeholder, color = if (light) RunGoLightTextSecondary else RunGoPlaceholder) },
                 shape = RoundedCornerShape(14.dp),
-                colors = fieldColors()
+                colors = fieldColors(light)
             )
         }
     }
 }
 
 @Composable
-private fun AddressChip(label: String, selected: Boolean, onClick: () -> Unit) {
+private fun AddressChip(label: String, selected: Boolean, onClick: () -> Unit, light: Boolean = false) {
+    val accent = if (light) RunGoBrandOrange else RunGoAccent
+    val accentText = if (light) RunGoLightAccentText else RunGoAccent
     Surface(
         modifier = Modifier.clickable(onClick = onClick),
-        color = if (selected) RunGoAccent else RunGoBackground,
+        color = if (selected) accent else if (light) RunGoLightSurfaceMuted else RunGoBackground,
         shape = RoundedCornerShape(12.dp)
     ) {
         Text(
             text = label,
-            color = if (selected) Color.White else RunGoAccent,
+            color = if (selected) { if (light) RunGoOnBrandOrange else Color.White } else accentText,
             fontWeight = FontWeight.SemiBold,
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
@@ -380,7 +406,12 @@ private fun AddressChip(label: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun fieldColors() = OutlinedTextFieldDefaults.colors(
+private fun fieldColors(light: Boolean = false) = if (light) OutlinedTextFieldDefaults.colors(
+    focusedContainerColor = RunGoLightSurfaceMuted,
+    unfocusedContainerColor = RunGoLightSurfaceMuted,
+    focusedTextColor = RunGoLightTextPrimary,
+    unfocusedTextColor = RunGoLightTextPrimary
+) else OutlinedTextFieldDefaults.colors(
     focusedContainerColor = RunGoBackground,
     unfocusedContainerColor = RunGoBackground,
     focusedTextColor = RunGoTextPrimary,

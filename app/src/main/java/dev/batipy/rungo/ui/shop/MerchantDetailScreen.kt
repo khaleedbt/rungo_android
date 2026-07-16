@@ -48,7 +48,14 @@ import dev.batipy.rungo.ui.common.QuantityStepButton
 import dev.batipy.rungo.ui.common.localizedDescription
 import dev.batipy.rungo.ui.common.localizedName
 import dev.batipy.rungo.ui.theme.RunGoAccent
+import dev.batipy.rungo.ui.theme.RunGoBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoField
+import dev.batipy.rungo.ui.theme.RunGoLightAccentText
+import dev.batipy.rungo.ui.theme.RunGoLightBackground
+import dev.batipy.rungo.ui.theme.RunGoLightField
+import dev.batipy.rungo.ui.theme.RunGoLightTextPrimary
+import dev.batipy.rungo.ui.theme.RunGoLightTextSecondary
+import dev.batipy.rungo.ui.theme.RunGoOnBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
 import java.util.Locale
@@ -61,9 +68,15 @@ fun MerchantDetailScreen(
     onAddToCart: (ProductDto) -> Unit,
     onUpdateQuantity: (productId: Int, quantity: Int) -> Unit,
     onGoToCart: () -> Unit,
+    light: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier.fillMaxSize()) {
+    val accent = if (light) RunGoBrandOrange else RunGoAccent
+    val onAccent = if (light) RunGoOnBrandOrange else Color.White
+    val fieldColor = if (light) RunGoLightField else RunGoField
+    val textPrimary = if (light) RunGoLightTextPrimary else RunGoTextPrimary
+    val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
+    Box(modifier = modifier.fillMaxSize().background(if (light) RunGoLightBackground else Color.Unspecified)) {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier.padding(16.dp),
@@ -73,12 +86,12 @@ fun MerchantDetailScreen(
                     onClick = onBack,
                     modifier = Modifier
                         .size(40.dp)
-                        .background(RunGoField, CircleShape)
+                        .background(fieldColor, CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                         contentDescription = stringResource(R.string.common_back),
-                        tint = RunGoTextPrimary
+                        tint = textPrimary
                     )
                 }
                 if (uiState is MerchantDetailUiState.Success) {
@@ -87,12 +100,12 @@ fun MerchantDetailScreen(
                             text = uiState.merchant.name,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.titleLarge,
-                            color = RunGoTextPrimary
+                            color = textPrimary
                         )
                         if (uiState.merchant.description.isNotBlank()) {
                             Text(
                                 text = uiState.merchant.localizedDescription,
-                                color = RunGoTextSecondary,
+                                color = textSecondary,
                                 style = MaterialTheme.typography.bodyMedium,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -111,7 +124,7 @@ fun MerchantDetailScreen(
 
                 is MerchantDetailUiState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = uiState.message, color = RunGoTextSecondary)
+                        Text(text = uiState.message, color = textSecondary)
                     }
                 }
 
@@ -119,7 +132,7 @@ fun MerchantDetailScreen(
                     val merchant = uiState.merchant
                     if (merchant.categories.all { it.products.isEmpty() }) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(text = stringResource(R.string.shop_no_products), color = RunGoTextSecondary)
+                            Text(text = stringResource(R.string.shop_no_products), color = textSecondary)
                         }
                     } else {
                         LazyColumn(
@@ -147,7 +160,8 @@ fun MerchantDetailScreen(
                                             category = category,
                                             quantityOf = { productId -> cartItems.find { it.product.id == productId }?.quantity ?: 0 },
                                             onAddToCart = onAddToCart,
-                                            onUpdateQuantity = onUpdateQuantity
+                                            onUpdateQuantity = onUpdateQuantity,
+                                            light = light
                                         )
                                     }
                                 }
@@ -170,19 +184,19 @@ fun MerchantDetailScreen(
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = MaterialTheme.shapes.large,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.buttonColors(containerColor = if (light) RunGoBrandOrange else MaterialTheme.colorScheme.primary)
             ) {
                 Text(
                     text = "🛒 " + stringResource(R.string.shop_go_to_cart),
-                    color = Color.White,
+                    color = onAccent,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f, fill = false)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Surface(color = Color.White.copy(alpha = 0.2f), shape = RoundedCornerShape(50)) {
+                Surface(color = onAccent.copy(alpha = 0.2f), shape = RoundedCornerShape(50)) {
                     Text(
                         text = "$" + String.format(Locale.US, "%.2f", cartTotal),
-                        color = Color.White,
+                        color = onAccent,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                     )
@@ -197,14 +211,15 @@ private fun CategorySection(
     category: CategoryDto,
     quantityOf: (Int) -> Int,
     onAddToCart: (ProductDto) -> Unit,
-    onUpdateQuantity: (productId: Int, quantity: Int) -> Unit
+    onUpdateQuantity: (productId: Int, quantity: Int) -> Unit,
+    light: Boolean = false
 ) {
     Column {
         if (category.name.isNotBlank()) {
             Text(
                 text = category.localizedName.uppercase(),
                 style = MaterialTheme.typography.labelMedium,
-                color = RunGoTextSecondary,
+                color = if (light) RunGoLightTextSecondary else RunGoTextSecondary,
                 modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
             )
         }
@@ -214,7 +229,8 @@ private fun CategorySection(
                     product = product,
                     quantity = quantityOf(product.id),
                     onAdd = { onAddToCart(product) },
-                    onUpdateQuantity = { qty -> onUpdateQuantity(product.id, qty) }
+                    onUpdateQuantity = { qty -> onUpdateQuantity(product.id, qty) },
+                    light = light
                 )
             }
         }
@@ -226,11 +242,17 @@ private fun ProductRow(
     product: ProductDto,
     quantity: Int,
     onAdd: () -> Unit,
-    onUpdateQuantity: (Int) -> Unit
+    onUpdateQuantity: (Int) -> Unit,
+    light: Boolean = false
 ) {
+    val accent = if (light) RunGoBrandOrange else RunGoAccent
+    val onAccent = if (light) RunGoOnBrandOrange else Color.White
+    val accentText = if (light) RunGoLightAccentText else RunGoAccent
+    val textPrimary = if (light) RunGoLightTextPrimary else RunGoTextPrimary
+    val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = RunGoField,
+        color = if (light) RunGoLightField else RunGoField,
         shape = RoundedCornerShape(20.dp)
     ) {
         Row(
@@ -251,7 +273,7 @@ private fun ProductRow(
                     modifier = Modifier
                         .size(56.dp)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(RunGoAccent.copy(alpha = 0.12f)),
+                        .background(accent.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(text = "🛍", style = MaterialTheme.typography.titleLarge)
@@ -262,12 +284,12 @@ private fun ProductRow(
                     .weight(1f)
                     .padding(horizontal = 12.dp)
             ) {
-                Text(text = product.name, fontWeight = FontWeight.Bold, color = RunGoTextPrimary)
+                Text(text = product.name, fontWeight = FontWeight.Bold, color = textPrimary)
                 if (product.description.isNotBlank()) {
                     Text(
                         text = product.description,
                         style = MaterialTheme.typography.bodySmall,
-                        color = RunGoTextSecondary,
+                        color = textSecondary,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 2.dp)
@@ -275,7 +297,7 @@ private fun ProductRow(
                 }
                 Text(
                     text = "$" + (product.priceUsd.toDoubleOrNull()?.let { String.format(Locale.US, "%.2f", it) } ?: product.priceUsd),
-                    color = RunGoAccent,
+                    color = accentText,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = 4.dp)
@@ -284,8 +306,8 @@ private fun ProductRow(
             if (quantity == 0) {
                 QuantityStepButton(
                     symbol = "+",
-                    containerColor = RunGoAccent,
-                    contentColor = Color.White,
+                    containerColor = accent,
+                    contentColor = onAccent,
                     size = 28.dp,
                     onClick = onAdd
                 )
@@ -293,20 +315,20 @@ private fun ProductRow(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     QuantityStepButton(
                         symbol = "−",
-                        containerColor = RunGoTextSecondary.copy(alpha = 0.15f),
-                        contentColor = RunGoTextPrimary,
+                        containerColor = textSecondary.copy(alpha = 0.15f),
+                        contentColor = textPrimary,
                         onClick = { onUpdateQuantity(quantity - 1) }
                     )
                     Text(
                         text = "$quantity",
-                        color = RunGoTextPrimary,
+                        color = textPrimary,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 10.dp)
                     )
                     QuantityStepButton(
                         symbol = "+",
-                        containerColor = RunGoAccent,
-                        contentColor = Color.White,
+                        containerColor = accent,
+                        contentColor = onAccent,
                         onClick = { onUpdateQuantity(quantity + 1) }
                     )
                 }

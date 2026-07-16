@@ -67,7 +67,15 @@ import dev.batipy.rungo.ui.common.StatusBadge
 import dev.batipy.rungo.ui.common.formatOrderAmount
 import dev.batipy.rungo.ui.theme.RunGoAccent
 import dev.batipy.rungo.ui.theme.RunGoBackground
+import dev.batipy.rungo.ui.theme.RunGoBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoField
+import dev.batipy.rungo.ui.theme.RunGoLightAccentText
+import dev.batipy.rungo.ui.theme.RunGoLightBackground
+import dev.batipy.rungo.ui.theme.RunGoLightField
+import dev.batipy.rungo.ui.theme.RunGoLightSurfaceMuted
+import dev.batipy.rungo.ui.theme.RunGoLightTextPrimary
+import dev.batipy.rungo.ui.theme.RunGoLightTextSecondary
+import dev.batipy.rungo.ui.theme.RunGoOnBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoPlaceholder
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
@@ -77,7 +85,9 @@ import java.time.format.DateTimeParseException
 import java.util.Locale
 
 private val ErrorColor = Color(0xFFFF6B6B)
+private val ErrorColorLight = Color(0xFFB3261E)
 private val SuccessColor = Color(0xFF4CAF6D)
+private val SuccessColorLight = Color(0xFF1B7A3A)
 private val BalanceColor = Color(0xFF5B3E8C)
 private fun detailDateFormatter(): DateTimeFormatter {
     val locale = Locale.getDefault()
@@ -108,7 +118,15 @@ private fun stepLabel(status: String): String = when (status) {
 }
 
 @Composable
-private fun statusPillStyle(status: String): StatusPillStyle = when (status) {
+private fun statusPillStyle(status: String, light: Boolean = false): StatusPillStyle = if (light) when (status) {
+    "new" -> StatusPillStyle(stringResource(R.string.order_status_new), Color(0xFFEDEAE3), Color(0xFF4A4438))
+    "confirmed" -> StatusPillStyle(stringResource(R.string.order_status_confirmed), Color(0xFFE4ECFB), Color(0xFF2E4A73))
+    "in_progress" -> StatusPillStyle(stringResource(R.string.order_status_in_progress), Color(0xFFFFF0C7), Color(0xFF7A5416))
+    "in_delivery" -> StatusPillStyle(stringResource(R.string.order_status_in_delivery), Color(0xFFFFF0C7), Color(0xFF7A5416))
+    "delivered" -> StatusPillStyle(stringResource(R.string.order_status_delivered), Color(0xFFCFF7D9), Color(0xFF1B7A3A))
+    "cancelled" -> StatusPillStyle(stringResource(R.string.order_status_cancelled), Color(0xFFFBE1DE), Color(0xFFB3261E))
+    else -> StatusPillStyle(status, RunGoLightField, RunGoLightTextSecondary)
+} else when (status) {
     "new" -> StatusPillStyle(stringResource(R.string.order_status_new), Color(0xFF3A4657), Color(0xFFD7E3F5))
     "confirmed" -> StatusPillStyle(stringResource(R.string.order_status_confirmed), Color(0xFF2E4A73), Color(0xFFBFD9FF))
     "in_progress" -> StatusPillStyle(stringResource(R.string.order_status_in_progress), Color(0xFF6B5420), Color(0xFFFFE1A6))
@@ -173,9 +191,16 @@ fun OrderDetailScreen(
     onSubmitReview: () -> Unit,
     onOpenChat: () -> Unit,
     onOpenTracking: () -> Unit = {},
+    light: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    val accent = if (light) RunGoBrandOrange else RunGoAccent
+    val onAccent = if (light) RunGoOnBrandOrange else Color.White
+    val textPrimary = if (light) RunGoLightTextPrimary else RunGoTextPrimary
+    val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
+    val errorColor = if (light) ErrorColorLight else ErrorColor
+    val successColor = if (light) SuccessColorLight else SuccessColor
 
     LaunchedEffect(message) {
         if (message != null) {
@@ -184,15 +209,15 @@ fun OrderDetailScreen(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize().background(if (light) RunGoLightBackground else Color.Unspecified)) {
     Column(modifier = Modifier.fillMaxSize()) {
         when (uiState) {
             is OrderDetailUiState.Loading -> {
-                HeaderBar(title = stringResource(R.string.order_detail_title), subtitle = null, statusStyle = null, onBack = onBack)
+                HeaderBar(title = stringResource(R.string.order_detail_title), subtitle = null, statusStyle = null, onBack = onBack, light = light)
             }
 
             is OrderDetailUiState.Error -> {
-                HeaderBar(title = stringResource(R.string.order_detail_title), subtitle = null, statusStyle = null, onBack = onBack)
+                HeaderBar(title = stringResource(R.string.order_detail_title), subtitle = null, statusStyle = null, onBack = onBack, light = light)
             }
 
             is OrderDetailUiState.Success -> {
@@ -201,11 +226,12 @@ fun OrderDetailScreen(
                 HeaderBar(
                     title = stringResource(R.string.order_number, order.id),
                     subtitle = formatDetailDate(order.createdAt),
-                    statusStyle = statusPillStyle(order.status),
+                    statusStyle = statusPillStyle(order.status, light),
                     statusPulse = order.status == "in_progress" || order.status == "in_delivery",
                     elapsedStartIso = order.createdAt,
                     elapsedEndIso = if (isTerminal) order.updatedAt else null,
-                    onBack = onBack
+                    onBack = onBack,
+                    light = light
                 )
             }
         }
@@ -224,7 +250,7 @@ fun OrderDetailScreen(
 
             is OrderDetailUiState.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = uiState.message, color = RunGoTextSecondary)
+                    Text(text = uiState.message, color = textSecondary)
                 }
             }
 
@@ -247,17 +273,17 @@ fun OrderDetailScreen(
                                     .fillMaxWidth()
                                     .height(52.dp),
                                 shape = MaterialTheme.shapes.large,
-                                colors = ButtonDefaults.buttonColors(containerColor = RunGoAccent)
+                                colors = ButtonDefaults.buttonColors(containerColor = accent)
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.Chat,
                                     contentDescription = null,
-                                    tint = Color.White,
+                                    tint = onAccent,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Text(
                                     text = stringResource(R.string.chat_open_button),
-                                    color = Color.White,
+                                    color = onAccent,
                                     fontWeight = FontWeight.SemiBold,
                                     modifier = Modifier.padding(start = 8.dp)
                                 )
@@ -270,17 +296,17 @@ fun OrderDetailScreen(
                                     .fillMaxWidth()
                                     .height(52.dp),
                                 shape = MaterialTheme.shapes.large,
-                                colors = ButtonDefaults.buttonColors(containerColor = RunGoAccent)
+                                colors = ButtonDefaults.buttonColors(containerColor = accent)
                             ) {
                                 Icon(
                                     imageVector = Icons.Filled.Map,
                                     contentDescription = null,
-                                    tint = Color.White,
+                                    tint = onAccent,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Text(
                                     text = stringResource(R.string.order_detail_track_button),
-                                    color = Color.White,
+                                    color = onAccent,
                                     fontWeight = FontWeight.SemiBold,
                                     modifier = Modifier.padding(start = 8.dp)
                                 )
@@ -289,44 +315,44 @@ fun OrderDetailScreen(
                     }
                     if (order.status != "cancelled") {
                         item {
-                            SectionCard(title = stringResource(R.string.section_delivery_status)) {
-                                DeliveryStepper(currentStatus = order.status)
+                            SectionCard(title = stringResource(R.string.section_delivery_status), light = light) {
+                                DeliveryStepper(currentStatus = order.status, light = light)
                             }
                         }
                     }
                     item {
-                        SectionCard(title = null) {
+                        SectionCard(title = null, light = light) {
                             Column {
                                 if (order.serviceName != null) {
-                                    InfoRow(stringResource(R.string.label_service), order.serviceName)
+                                    InfoRow(stringResource(R.string.label_service), order.serviceName, light)
                                     Spacer(modifier = Modifier.height(12.dp))
                                 }
                                 if (order.cityName != null) {
-                                    InfoRow(stringResource(R.string.label_city), order.cityName)
+                                    InfoRow(stringResource(R.string.label_city), order.cityName, light)
                                     Spacer(modifier = Modifier.height(12.dp))
                                 }
                                 if (order.deliveryAddress != null) {
-                                    InfoRow(stringResource(R.string.label_address), order.deliveryAddress)
+                                    InfoRow(stringResource(R.string.label_address), order.deliveryAddress, light)
                                 }
                                 val courierName = order.courierDisplayName
                                 if (courierName != null) {
                                     Spacer(modifier = Modifier.height(12.dp))
-                                    InfoRow(stringResource(R.string.label_courier), courierName)
+                                    InfoRow(stringResource(R.string.label_courier), courierName, light)
                                 }
                             }
                         }
                     }
                     item {
-                        SectionCard(title = stringResource(R.string.section_payment)) {
+                        SectionCard(title = stringResource(R.string.section_payment), light = light) {
                             Column {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Text(text = stringResource(R.string.service_fee_label), color = RunGoTextSecondary)
+                                    Text(text = stringResource(R.string.service_fee_label), color = textSecondary)
                                     Text(
                                         text = formatOrderAmount(order.serviceFee ?: order.codTotal, order.currency),
-                                        color = RunGoTextPrimary,
+                                        color = textPrimary,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
@@ -336,17 +362,17 @@ fun OrderDetailScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(text = stringResource(R.string.payment_cod_total_label), color = RunGoTextSecondary, fontWeight = FontWeight.SemiBold)
+                                    Text(text = stringResource(R.string.payment_cod_total_label), color = textSecondary, fontWeight = FontWeight.SemiBold)
                                     Text(
                                         text = formatOrderAmount(order.codTotal, order.currency),
-                                        color = RunGoAccent,
+                                        color = if (light) RunGoLightAccentText else RunGoAccent,
                                         fontWeight = FontWeight.Bold,
                                         style = MaterialTheme.typography.titleMedium
                                     )
                                 }
                                 Text(
                                     text = paymentMethodLabel(order.paymentMethod),
-                                    color = RunGoTextSecondary,
+                                    color = textSecondary,
                                     style = MaterialTheme.typography.bodySmall,
                                     modifier = Modifier.padding(top = 4.dp)
                                 )
@@ -357,18 +383,19 @@ fun OrderDetailScreen(
                         item {
                             val review = order.review
                             if (review != null) {
-                                SectionCard(title = stringResource(R.string.section_review_given)) {
-                                    ReviewSummary(review)
+                                SectionCard(title = stringResource(R.string.section_review_given), light = light) {
+                                    ReviewSummary(review, light)
                                 }
                             } else {
-                                SectionCard(title = stringResource(R.string.section_review_form)) {
+                                SectionCard(title = stringResource(R.string.section_review_form), light = light) {
                                     ReviewForm(
                                         rating = uiState.reviewRating,
                                         text = uiState.reviewText,
                                         submitting = uiState.submittingReview,
                                         onSelectRating = onSelectRating,
                                         onTextChange = onReviewTextChange,
-                                        onSubmit = onSubmitReview
+                                        onSubmit = onSubmitReview,
+                                        light = light
                                     )
                                 }
                             }
@@ -377,7 +404,7 @@ fun OrderDetailScreen(
                     if (order.status == "in_delivery") {
                         if (uiState.showingPaymentPicker) {
                             item {
-                                SectionCard(title = null) {
+                                SectionCard(title = null, light = light) {
                                     PaymentMethodPicker(
                                         userBalance = uiState.userBalance,
                                         balanceSufficient = hasSufficientBalance(
@@ -387,7 +414,8 @@ fun OrderDetailScreen(
                                         ),
                                         confirming = uiState.confirming,
                                         onSelect = onConfirmDelivery,
-                                        onCancel = onCancelConfirmDelivery
+                                        onCancel = onCancelConfirmDelivery,
+                                        light = light
                                     )
                                 }
                             }
@@ -399,7 +427,7 @@ fun OrderDetailScreen(
                                         .fillMaxWidth()
                                         .height(52.dp),
                                     shape = MaterialTheme.shapes.large,
-                                    colors = ButtonDefaults.buttonColors(containerColor = SuccessColor)
+                                    colors = ButtonDefaults.buttonColors(containerColor = successColor)
                                 ) {
                                     Text(stringResource(R.string.order_received_button), fontWeight = FontWeight.SemiBold, color = Color.White)
                                 }
@@ -414,11 +442,11 @@ fun OrderDetailScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(52.dp),
-                                border = BorderStroke(1.dp, ErrorColor),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorColor)
+                                border = BorderStroke(1.dp, errorColor),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = errorColor)
                             ) {
                                 if (uiState.cancelling) {
-                                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = ErrorColor, strokeWidth = 2.dp)
+                                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = errorColor, strokeWidth = 2.dp)
                                 } else {
                                     Text(stringResource(R.string.order_cancel_button), fontWeight = FontWeight.SemiBold)
                                 }
@@ -446,8 +474,11 @@ private fun HeaderBar(
     statusPulse: Boolean = false,
     elapsedStartIso: String? = null,
     elapsedEndIso: String? = null,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    light: Boolean = false
 ) {
+    val textPrimary = if (light) RunGoLightTextPrimary else RunGoTextPrimary
+    val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -458,12 +489,12 @@ private fun HeaderBar(
             onClick = onBack,
             modifier = Modifier
                 .size(40.dp)
-                .background(RunGoField, CircleShape)
+                .background(if (light) RunGoLightField else RunGoField, CircleShape)
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                 contentDescription = stringResource(R.string.common_back),
-                tint = RunGoTextPrimary
+                tint = textPrimary
             )
         }
         Column(
@@ -475,12 +506,12 @@ private fun HeaderBar(
                 text = title,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleLarge,
-                color = RunGoTextPrimary
+                color = textPrimary
             )
             if (subtitle != null) {
                 Text(
                     text = subtitle,
-                    color = RunGoTextSecondary,
+                    color = textSecondary,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -488,7 +519,7 @@ private fun HeaderBar(
                 ElapsedTimeText(
                     startIso = elapsedStartIso,
                     endIso = elapsedEndIso,
-                    color = RunGoTextSecondary,
+                    color = textSecondary,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -505,17 +536,17 @@ private fun HeaderBar(
 }
 
 @Composable
-private fun SectionCard(title: String?, content: @Composable () -> Unit) {
+private fun SectionCard(title: String?, light: Boolean = false, content: @Composable () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = RunGoField,
+        color = if (light) RunGoLightField else RunGoField,
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             if (title != null) {
                 Text(
                     text = title,
-                    color = RunGoTextSecondary,
+                    color = if (light) RunGoLightTextSecondary else RunGoTextSecondary,
                     style = MaterialTheme.typography.labelMedium,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
@@ -526,18 +557,22 @@ private fun SectionCard(title: String?, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun InfoRow(label: String, value: String) {
+private fun InfoRow(label: String, value: String, light: Boolean = false) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = label, color = RunGoTextSecondary)
-        Text(text = value, color = RunGoTextPrimary, fontWeight = FontWeight.Bold)
+        Text(text = label, color = if (light) RunGoLightTextSecondary else RunGoTextSecondary)
+        Text(text = value, color = if (light) RunGoLightTextPrimary else RunGoTextPrimary, fontWeight = FontWeight.Bold)
     }
 }
 
 @Composable
-private fun DeliveryStepper(currentStatus: String) {
+private fun DeliveryStepper(currentStatus: String, light: Boolean = false) {
+    val accent = if (light) RunGoBrandOrange else RunGoAccent
+    val onAccent = if (light) RunGoOnBrandOrange else Color.White
+    val fieldColor = if (light) RunGoLightField else RunGoField
+    val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
     val currentIndex = deliverySteps.indexOfFirst { it == currentStatus }.coerceAtLeast(0)
 
     val activeStepPulse = rememberInfiniteTransition(label = "activeStepPulse")
@@ -571,11 +606,11 @@ private fun DeliveryStepper(currentStatus: String) {
             val completed = index < currentIndex || (index == currentIndex && index == deliverySteps.lastIndex)
             val active = index == currentIndex && index != deliverySteps.lastIndex
             val circleColor by animateColorAsState(
-                targetValue = if (completed || active) RunGoAccent else RunGoField,
+                targetValue = if (completed || active) accent else fieldColor,
                 label = "stepCircleColor"
             )
             val labelColor by animateColorAsState(
-                targetValue = if (completed || active) RunGoAccent else RunGoTextSecondary,
+                targetValue = if (completed || active) accent else textSecondary,
                 label = "stepLabelColor"
             )
             Column(
@@ -589,7 +624,7 @@ private fun DeliveryStepper(currentStatus: String) {
                             if (active) {
                                 Modifier
                                     .scale(pulseScale)
-                                    .border(2.dp, RunGoAccent.copy(alpha = pulseAlpha), CircleShape)
+                                    .border(2.dp, accent.copy(alpha = pulseAlpha), CircleShape)
                             } else {
                                 Modifier
                             }
@@ -606,13 +641,13 @@ private fun DeliveryStepper(currentStatus: String) {
                             Icon(
                                 imageVector = Icons.Filled.Check,
                                 contentDescription = null,
-                                tint = Color.White,
+                                tint = onAccent,
                                 modifier = Modifier.size(16.dp)
                             )
                         } else {
                             Text(
                                 text = "${index + 1}",
-                                color = if (active) Color.White else RunGoTextSecondary,
+                                color = if (active) onAccent else textSecondary,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -629,7 +664,7 @@ private fun DeliveryStepper(currentStatus: String) {
             }
             if (index != deliverySteps.lastIndex) {
                 val lineColor by animateColorAsState(
-                    targetValue = if (index < currentIndex) RunGoAccent else RunGoTextSecondary.copy(alpha = 0.3f),
+                    targetValue = if (index < currentIndex) accent else textSecondary.copy(alpha = 0.3f),
                     label = "stepLineColor"
                 )
                 Box(
@@ -651,15 +686,19 @@ private fun ReviewForm(
     submitting: Boolean,
     onSelectRating: (Int) -> Unit,
     onTextChange: (String) -> Unit,
-    onSubmit: () -> Unit
+    onSubmit: () -> Unit,
+    light: Boolean = false
 ) {
+    val accent = if (light) RunGoBrandOrange else RunGoAccent
+    val onAccent = if (light) RunGoOnBrandOrange else Color.White
+    val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
     Column {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             for (star in 1..5) {
                 Icon(
                     imageVector = Icons.Filled.Star,
                     contentDescription = stringResource(R.string.rating_star_desc, star),
-                    tint = if (star <= rating) Color(0xFFFFC107) else RunGoTextSecondary.copy(alpha = 0.4f),
+                    tint = if (star <= rating) Color(0xFFFFC107) else textSecondary.copy(alpha = 0.4f),
                     modifier = Modifier
                         .size(32.dp)
                         .clickable { onSelectRating(star) }
@@ -671,9 +710,14 @@ private fun ReviewForm(
             value = text,
             onValueChange = onTextChange,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(stringResource(R.string.review_comment_placeholder), color = RunGoPlaceholder) },
+            placeholder = { Text(stringResource(R.string.review_comment_placeholder), color = if (light) textSecondary else RunGoPlaceholder) },
             minLines = 2,
-            colors = OutlinedTextFieldDefaults.colors(
+            colors = if (light) OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = RunGoLightSurfaceMuted,
+                unfocusedContainerColor = RunGoLightSurfaceMuted,
+                focusedTextColor = RunGoLightTextPrimary,
+                unfocusedTextColor = RunGoLightTextPrimary
+            ) else OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = RunGoBackground,
                 unfocusedContainerColor = RunGoBackground,
                 focusedTextColor = RunGoTextPrimary,
@@ -688,12 +732,12 @@ private fun ReviewForm(
                 .fillMaxWidth()
                 .height(48.dp),
             shape = MaterialTheme.shapes.large,
-            colors = ButtonDefaults.buttonColors(containerColor = RunGoAccent)
+            colors = ButtonDefaults.buttonColors(containerColor = accent)
         ) {
             if (submitting) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = onAccent, strokeWidth = 2.dp)
             } else {
-                Text(stringResource(R.string.review_submit_button), color = Color.White, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.review_submit_button), color = onAccent, fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -705,12 +749,17 @@ private fun PaymentMethodPicker(
     balanceSufficient: Boolean,
     confirming: Boolean,
     onSelect: (String) -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    light: Boolean = false
 ) {
+    val accent = if (light) RunGoBrandOrange else RunGoAccent
+    val onAccent = if (light) RunGoOnBrandOrange else Color.White
+    val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
+    val successColor = if (light) SuccessColorLight else SuccessColor
     Column {
         Text(
             text = stringResource(R.string.choose_payment_method_title),
-            color = RunGoTextSecondary,
+            color = textSecondary,
             style = MaterialTheme.typography.labelLarge,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
@@ -718,14 +767,16 @@ private fun PaymentMethodPicker(
         Spacer(modifier = Modifier.height(16.dp))
         PaymentMethodButton(
             label = stringResource(R.string.payment_cash_button),
-            color = SuccessColor,
+            color = successColor,
+            contentColor = Color.White,
             enabled = !confirming,
             onClick = { onSelect("cash") }
         )
         Spacer(modifier = Modifier.height(10.dp))
         PaymentMethodButton(
             label = stringResource(R.string.payment_shamcash_button),
-            color = RunGoAccent,
+            color = accent,
+            contentColor = onAccent,
             enabled = !confirming,
             onClick = { onSelect("shamcash") }
         )
@@ -737,13 +788,14 @@ private fun PaymentMethodPicker(
                 stringResource(R.string.payment_balance_button)
             },
             color = BalanceColor,
+            contentColor = Color.White,
             enabled = !confirming && balanceSufficient,
             onClick = { onSelect("balance") }
         )
         if (!balanceSufficient) {
             Text(
                 text = stringResource(R.string.payment_insufficient_balance),
-                color = RunGoTextSecondary,
+                color = textSecondary,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 4.dp)
             )
@@ -756,7 +808,7 @@ private fun PaymentMethodPicker(
                 .fillMaxWidth()
                 .height(48.dp),
             shape = MaterialTheme.shapes.large,
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = RunGoTextSecondary)
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = textSecondary)
         ) {
             Text(stringResource(R.string.common_cancel))
         }
@@ -773,6 +825,7 @@ private fun PaymentMethodPicker(
 private fun PaymentMethodButton(
     label: String,
     color: Color,
+    contentColor: Color = Color.White,
     enabled: Boolean,
     onClick: () -> Unit
 ) {
@@ -785,19 +838,20 @@ private fun PaymentMethodButton(
         shape = MaterialTheme.shapes.large,
         colors = ButtonDefaults.buttonColors(containerColor = color)
     ) {
-        Text(label, fontWeight = FontWeight.SemiBold, color = Color.White)
+        Text(label, fontWeight = FontWeight.SemiBold, color = contentColor)
     }
 }
 
 @Composable
-private fun ReviewSummary(review: ReviewDto) {
+private fun ReviewSummary(review: ReviewDto, light: Boolean = false) {
+    val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
     Column {
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             for (star in 1..5) {
                 Icon(
                     imageVector = Icons.Filled.Star,
                     contentDescription = null,
-                    tint = if (star <= review.rating) Color(0xFFFFC107) else RunGoTextSecondary.copy(alpha = 0.4f),
+                    tint = if (star <= review.rating) Color(0xFFFFC107) else textSecondary.copy(alpha = 0.4f),
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -805,7 +859,7 @@ private fun ReviewSummary(review: ReviewDto) {
         if (review.text.isNotBlank()) {
             Text(
                 text = review.text,
-                color = RunGoTextSecondary,
+                color = textSecondary,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 8.dp)
             )

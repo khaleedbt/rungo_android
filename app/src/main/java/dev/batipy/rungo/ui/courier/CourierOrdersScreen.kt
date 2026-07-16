@@ -1,5 +1,6 @@
 package dev.batipy.rungo.ui.courier
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -48,25 +49,33 @@ import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.OrderDto
 import dev.batipy.rungo.ui.common.StatusBadge
 import dev.batipy.rungo.ui.common.formatOrderAmount
-import dev.batipy.rungo.ui.theme.RunGoAccent
-import dev.batipy.rungo.ui.theme.RunGoField
-import dev.batipy.rungo.ui.theme.RunGoTextPrimary
-import dev.batipy.rungo.ui.theme.RunGoTextSecondary
+import dev.batipy.rungo.ui.theme.RunGoBrandOrange
+import dev.batipy.rungo.ui.theme.RunGoLightAccentText
+import dev.batipy.rungo.ui.theme.RunGoLightBackground
+import dev.batipy.rungo.ui.theme.RunGoLightField
+import dev.batipy.rungo.ui.theme.RunGoLightSurfaceMuted
+import dev.batipy.rungo.ui.theme.RunGoLightTextPrimary
+import dev.batipy.rungo.ui.theme.RunGoLightTextSecondary
+import dev.batipy.rungo.ui.theme.RunGoOnBrandOrange
 
+// Light-theme trial (see the note in Color.kt) — status-pill colors need
+// their own light-vs-dark pairing, not just a global text/bg swap, since a
+// container tuned to sit on a dark screen (dark fill + light text) has to
+// flip to a light fill + dark text here, not just get lighter.
 private val OnlineColor = Color(0xFF1B7A3A)
 private val OnlineContainer = Color(0xFFCFF7D9)
-private val OfflineContainer = Color(0xFF3A4657)
+private val OfflineContainer = RunGoLightSurfaceMuted
 
 data class CourierStatusStyle(val label: String, val container: Color, val content: Color)
 
 @Composable
 fun courierStatusStyle(status: String): CourierStatusStyle = when (status) {
-    "confirmed" -> CourierStatusStyle(stringResource(R.string.orders_list_status_confirmed), Color(0xFF2E4A73), Color(0xFFBFD9FF))
-    "in_progress" -> CourierStatusStyle(stringResource(R.string.orders_list_status_in_progress), Color(0xFF6B5420), Color(0xFFFFE1A6))
-    "in_delivery" -> CourierStatusStyle(stringResource(R.string.orders_list_status_in_delivery), Color(0xFF6B5420), Color(0xFFFFE1A6))
+    "confirmed" -> CourierStatusStyle(stringResource(R.string.orders_list_status_confirmed), Color(0xFFE4ECFB), Color(0xFF2E4A73))
+    "in_progress" -> CourierStatusStyle(stringResource(R.string.orders_list_status_in_progress), Color(0xFFFFF0C7), Color(0xFF7A5416))
+    "in_delivery" -> CourierStatusStyle(stringResource(R.string.orders_list_status_in_delivery), Color(0xFFFFF0C7), Color(0xFF7A5416))
     "delivered" -> CourierStatusStyle(stringResource(R.string.orders_list_status_delivered), Color(0xFFCFF7D9), Color(0xFF1B7A3A))
-    "cancelled" -> CourierStatusStyle(stringResource(R.string.orders_list_status_cancelled), Color(0xFF6B2A2A), Color(0xFFFFC2C2))
-    else -> CourierStatusStyle(status, RunGoField, RunGoTextSecondary)
+    "cancelled" -> CourierStatusStyle(stringResource(R.string.orders_list_status_cancelled), Color(0xFFFBE1DE), Color(0xFFB3261E))
+    else -> CourierStatusStyle(status, RunGoLightField, RunGoLightTextSecondary)
 }
 
 @Composable
@@ -79,10 +88,11 @@ fun CourierOrdersScreen(
     onOrderClick: (OrderDto) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    Box(modifier = modifier.fillMaxSize().background(RunGoLightBackground)) {
     PullToRefreshBox(
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
-        modifier = modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize()
     ) {
         when (uiState) {
             is CourierOrdersUiState.Loading -> {
@@ -93,7 +103,7 @@ fun CourierOrdersScreen(
 
             is CourierOrdersUiState.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = uiState.message, color = RunGoTextSecondary)
+                    Text(text = uiState.message, color = RunGoLightTextSecondary)
                 }
             }
 
@@ -109,7 +119,8 @@ fun CourierOrdersScreen(
                         Text(
                             text = stringResource(R.string.nav_orders),
                             style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = RunGoLightTextPrimary
                         )
                     }
                     item {
@@ -128,7 +139,7 @@ fun CourierOrdersScreen(
                             item {
                                 Text(
                                     text = stringResource(R.string.orders_empty),
-                                    color = RunGoTextSecondary,
+                                    color = RunGoLightTextSecondary,
                                     modifier = Modifier.padding(top = 24.dp)
                                 )
                             }
@@ -138,7 +149,7 @@ fun CourierOrdersScreen(
                                 Text(
                                     text = stringResource(R.string.courier_section_available),
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = RunGoTextSecondary,
+                                    color = RunGoLightTextSecondary,
                                     modifier = Modifier.padding(top = 4.dp)
                                 )
                             }
@@ -156,7 +167,7 @@ fun CourierOrdersScreen(
                                 Text(
                                     text = stringResource(R.string.courier_section_active),
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = RunGoTextSecondary,
+                                    color = RunGoLightTextSecondary,
                                     modifier = Modifier.padding(top = 4.dp)
                                 )
                             }
@@ -169,7 +180,7 @@ fun CourierOrdersScreen(
                             item {
                                 Text(
                                     text = stringResource(R.string.courier_no_history_orders),
-                                    color = RunGoTextSecondary,
+                                    color = RunGoLightTextSecondary,
                                     modifier = Modifier.padding(top = 24.dp)
                                 )
                             }
@@ -181,6 +192,7 @@ fun CourierOrdersScreen(
                 }
             }
         }
+    }
     }
 }
 
@@ -201,11 +213,11 @@ private fun AvailabilityToggle(isAvailable: Boolean, updating: Boolean, onClick:
                 modifier = Modifier
                     .size(10.dp)
                     .clip(CircleShape)
-                    .background(if (isAvailable) OnlineColor else RunGoTextSecondary)
+                    .background(if (isAvailable) OnlineColor else RunGoLightTextSecondary)
             )
             Text(
                 text = stringResource(if (isAvailable) R.string.courier_online else R.string.courier_offline),
-                color = if (isAvailable) OnlineColor else RunGoTextPrimary,
+                color = if (isAvailable) OnlineColor else RunGoLightTextPrimary,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier
                     .weight(1f)
@@ -215,7 +227,7 @@ private fun AvailabilityToggle(isAvailable: Boolean, updating: Boolean, onClick:
                 CircularProgressIndicator(
                     modifier = Modifier.size(18.dp),
                     strokeWidth = 2.dp,
-                    color = if (isAvailable) OnlineColor else RunGoTextPrimary
+                    color = if (isAvailable) OnlineColor else RunGoLightTextPrimary
                 )
             }
         }
@@ -232,12 +244,12 @@ private fun CourierTabSelector(selectedTab: Int, onSelect: (Int) -> Unit) {
                 modifier = Modifier
                     .weight(1f)
                     .clickable { onSelect(index) },
-                color = if (selected) RunGoAccent else RunGoField,
+                color = if (selected) RunGoBrandOrange else RunGoLightField,
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
                     text = stringResource(labelRes),
-                    color = if (selected) Color.White else RunGoTextSecondary,
+                    color = if (selected) RunGoOnBrandOrange else RunGoLightTextSecondary,
                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -258,22 +270,22 @@ private fun AvailableOrderCard(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = RunGoField,
+        color = RunGoLightField,
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(
                 text = stringResource(R.string.order_number, order.id),
-                color = RunGoTextPrimary,
+                color = RunGoLightTextPrimary,
                 fontWeight = FontWeight.Bold
             )
             if (!order.serviceName.isNullOrBlank()) {
-                Text(text = order.serviceName, color = RunGoAccent, style = MaterialTheme.typography.bodyMedium)
+                Text(text = order.serviceName, color = RunGoLightAccentText, style = MaterialTheme.typography.bodyMedium)
             }
             if (!order.deliveryAddress.isNullOrBlank()) {
                 Text(
                     text = order.deliveryAddress,
-                    color = RunGoTextSecondary,
+                    color = RunGoLightTextSecondary,
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -288,24 +300,29 @@ private fun AvailableOrderCard(
             ) {
                 Text(
                     text = formatOrderAmount(order.codTotal, order.currency),
-                    color = RunGoAccent,
+                    color = RunGoLightAccentText,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .weight(1f)
                         .align(Alignment.CenterVertically)
                 )
-                OutlinedButton(onClick = onDetailsClick, enabled = !taking) {
+                OutlinedButton(
+                    onClick = onDetailsClick,
+                    enabled = !taking,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = RunGoLightTextPrimary),
+                    border = BorderStroke(1.dp, RunGoLightTextSecondary)
+                ) {
                     Text(stringResource(R.string.common_details))
                 }
                 Button(
                     onClick = onTakeClick,
                     enabled = !taking,
-                    colors = ButtonDefaults.buttonColors(containerColor = RunGoAccent)
+                    colors = ButtonDefaults.buttonColors(containerColor = RunGoBrandOrange)
                 ) {
                     if (taking) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = RunGoOnBrandOrange, strokeWidth = 2.dp)
                     } else {
-                        Text(stringResource(R.string.courier_take_button), color = Color.White)
+                        Text(stringResource(R.string.courier_take_button), color = RunGoOnBrandOrange)
                     }
                 }
             }
@@ -320,7 +337,7 @@ private fun CourierOrderRow(order: OrderDto, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        color = RunGoField,
+        color = RunGoLightField,
         shape = RoundedCornerShape(16.dp)
     ) {
         Row(
@@ -332,7 +349,7 @@ private fun CourierOrderRow(order: OrderDto, onClick: () -> Unit) {
                     .width(4.dp)
                     .height(36.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(RunGoAccent)
+                    .background(RunGoBrandOrange)
             )
             Column(
                 modifier = Modifier
@@ -342,14 +359,14 @@ private fun CourierOrderRow(order: OrderDto, onClick: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = stringResource(R.string.order_number, order.id),
-                        color = RunGoTextPrimary,
+                        color = RunGoLightTextPrimary,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodyMedium
                     )
                     if (!order.serviceName.isNullOrBlank()) {
                         Text(
                             text = " · " + order.serviceName,
-                            color = RunGoAccent,
+                            color = RunGoLightAccentText,
                             style = MaterialTheme.typography.bodyMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -359,7 +376,7 @@ private fun CourierOrderRow(order: OrderDto, onClick: () -> Unit) {
                 if (!order.deliveryAddress.isNullOrBlank()) {
                     Text(
                         text = order.deliveryAddress,
-                        color = RunGoTextSecondary,
+                        color = RunGoLightTextSecondary,
                         style = MaterialTheme.typography.bodySmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -378,7 +395,7 @@ private fun CourierOrderRow(order: OrderDto, onClick: () -> Unit) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = RunGoTextSecondary,
+                tint = RunGoLightTextSecondary,
                 modifier = Modifier.padding(start = 4.dp)
             )
         }

@@ -13,19 +13,25 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -37,8 +43,17 @@ import dev.batipy.rungo.ui.login.LoginViewModel
 import dev.batipy.rungo.ui.register.RegisterScreen
 import dev.batipy.rungo.ui.register.RegisterViewModel
 import dev.batipy.rungo.ui.services.ServicesViewModel
+import dev.batipy.rungo.ui.theme.RunGoLightBackground
 import dev.batipy.rungo.ui.theme.RunGoTheme
 import kotlinx.coroutines.launch
+
+// Lets a screen deep in the tree (e.g. the courier light-theme trial) ask for
+// light system bars (dark icons, light scrim behind the status/navigation bar
+// strip) without the whole app switching color scheme — RunGoTheme itself
+// stays a single fixed dark MaterialTheme. Defaults to true because Login is
+// the first screen shown and is light; HomeScreen overrides this per-role
+// right after login via its own DisposableEffect(isLight).
+val LocalSetLightSystemBars = staticCompositionLocalOf<(Boolean) -> Unit> { {} }
 
 class MainActivity : AppCompatActivity() {
 
@@ -55,8 +70,28 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             RunGoTheme {
+                var lightSystemBars by remember { mutableStateOf(true) }
+                val view = LocalView.current
+                // Reading lightSystemBars right here (composition phase, not
+                // inside the effect below) is what makes this scope — and so
+                // SideEffect, which reruns whenever its containing scope does
+                // — actually re-fire when it changes. A read that only
+                // happens inside SideEffect's own lambda body doesn't count:
+                // that runs in the effect phase, which Compose doesn't track
+                // for recomposition, so the callback would silently go stale.
+                val currentLightSystemBars = lightSystemBars
+                SideEffect {
+                    val controller = WindowCompat.getInsetsController(window, view)
+                    controller.isAppearanceLightStatusBars = currentLightSystemBars
+                    controller.isAppearanceLightNavigationBars = currentLightSystemBars
+                }
+
+                CompositionLocalProvider(LocalSetLightSystemBars provides { lightSystemBars = it }) {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Surface(modifier = Modifier.fillMaxSize()) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = if (lightSystemBars) RunGoLightBackground else MaterialTheme.colorScheme.surface
+                    ) {
                         val context = LocalContext.current.applicationContext
                         var checkingSession by rememberSaveable { mutableStateOf(true) }
                         var showRegister by remember { mutableStateOf(false) }
@@ -193,6 +228,7 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                     }
+                }
                 }
             }
         }

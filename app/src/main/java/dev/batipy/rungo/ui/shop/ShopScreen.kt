@@ -42,9 +42,14 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.MerchantDto
+import androidx.compose.ui.graphics.Color
 import dev.batipy.rungo.ui.common.localizedDescription
 import dev.batipy.rungo.ui.theme.RunGoAccentLight
 import dev.batipy.rungo.ui.theme.RunGoField
+import dev.batipy.rungo.ui.theme.RunGoLightBackground
+import dev.batipy.rungo.ui.theme.RunGoLightField
+import dev.batipy.rungo.ui.theme.RunGoLightTextPrimary
+import dev.batipy.rungo.ui.theme.RunGoLightTextSecondary
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
 
@@ -57,12 +62,13 @@ fun ShopScreen(
     onToggleGridView: () -> Unit = {},
     onRefresh: () -> Unit = {},
     onMerchantClick: (MerchantDto) -> Unit = {},
+    light: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     PullToRefreshBox(
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize().background(if (light) RunGoLightBackground else Color.Unspecified)
     ) {
         when (uiState) {
             is ShopUiState.Loading -> {
@@ -73,7 +79,7 @@ fun ShopScreen(
 
             is ShopUiState.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = uiState.message, color = RunGoTextSecondary)
+                    Text(text = uiState.message, color = if (light) RunGoLightTextSecondary else RunGoTextSecondary)
                 }
             }
 
@@ -89,7 +95,8 @@ fun ShopScreen(
                         Text(
                             text = stringResource(R.string.shop_title),
                             style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = if (light) RunGoLightTextPrimary else Color.Unspecified
                         )
                         IconButton(onClick = onToggleGridView) {
                             Icon(
@@ -97,7 +104,7 @@ fun ShopScreen(
                                 contentDescription = stringResource(
                                     if (isGridView) R.string.shop_view_list else R.string.shop_view_grid
                                 ),
-                                tint = RunGoTextSecondary
+                                tint = if (light) RunGoLightTextSecondary else RunGoTextSecondary
                             )
                         }
                     }
@@ -111,7 +118,7 @@ fun ShopScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(uiState.merchants) { merchant ->
-                                ShopMerchantGridCard(merchant, onClick = { onMerchantClick(merchant) })
+                                ShopMerchantGridCard(merchant, onClick = { onMerchantClick(merchant) }, light = light)
                             }
                         }
                     } else {
@@ -121,7 +128,7 @@ fun ShopScreen(
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             items(uiState.merchants) { merchant ->
-                                ShopMerchantCard(merchant, onClick = { onMerchantClick(merchant) })
+                                ShopMerchantCard(merchant, onClick = { onMerchantClick(merchant) }, light = light)
                             }
                         }
                     }
@@ -132,12 +139,14 @@ fun ShopScreen(
 }
 
 @Composable
-private fun ShopMerchantCard(merchant: MerchantDto, onClick: () -> Unit) {
+private fun ShopMerchantCard(merchant: MerchantDto, onClick: () -> Unit, light: Boolean = false) {
+    val textPrimary = if (light) RunGoLightTextPrimary else RunGoTextPrimary
+    val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        color = RunGoField,
+        color = if (light) RunGoLightField else RunGoField,
         border = BorderStroke(1.5.dp, RunGoAccentLight.copy(alpha = 0.55f)),
         shape = RoundedCornerShape(20.dp)
     ) {
@@ -157,14 +166,14 @@ private fun ShopMerchantCard(merchant: MerchantDto, onClick: () -> Unit) {
                 Text(
                     text = merchant.name,
                     fontWeight = FontWeight.Bold,
-                    color = RunGoTextPrimary,
+                    color = textPrimary,
                     style = MaterialTheme.typography.titleMedium
                 )
                 if (merchant.description.isNotBlank()) {
                     Text(
                         text = merchant.localizedDescription,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = RunGoTextSecondary,
+                        color = textSecondary,
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
@@ -178,7 +187,7 @@ private fun ShopMerchantCard(merchant: MerchantDto, onClick: () -> Unit) {
                         Text(
                             text = merchant.cityName,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = RunGoTextSecondary
+                            color = textSecondary
                         )
                     }
                 }
@@ -188,12 +197,14 @@ private fun ShopMerchantCard(merchant: MerchantDto, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ShopMerchantGridCard(merchant: MerchantDto, onClick: () -> Unit) {
+private fun ShopMerchantGridCard(merchant: MerchantDto, onClick: () -> Unit, light: Boolean = false) {
+    val textPrimary = if (light) RunGoLightTextPrimary else RunGoTextPrimary
+    val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        color = RunGoField,
+        color = if (light) RunGoLightField else RunGoField,
         border = BorderStroke(1.5.dp, RunGoAccentLight.copy(alpha = 0.55f)),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -218,7 +229,7 @@ private fun ShopMerchantGridCard(merchant: MerchantDto, onClick: () -> Unit) {
                 ) {
                     Text(
                         text = merchant.name.take(1).uppercase(),
-                        color = RunGoTextPrimary,
+                        color = textPrimary,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleLarge
                     )
@@ -228,7 +239,7 @@ private fun ShopMerchantGridCard(merchant: MerchantDto, onClick: () -> Unit) {
                 Text(
                     text = merchant.name,
                     fontWeight = FontWeight.Bold,
-                    color = RunGoTextPrimary,
+                    color = textPrimary,
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -237,7 +248,7 @@ private fun ShopMerchantGridCard(merchant: MerchantDto, onClick: () -> Unit) {
                     Text(
                         text = "📍 " + merchant.cityName,
                         style = MaterialTheme.typography.bodySmall,
-                        color = RunGoTextSecondary,
+                        color = textSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 2.dp)

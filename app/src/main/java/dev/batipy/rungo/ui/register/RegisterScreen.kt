@@ -1,5 +1,6 @@
 package dev.batipy.rungo.ui.register
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,17 +45,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.CityDto
-import dev.batipy.rungo.ui.theme.RunGoAccent
-import dev.batipy.rungo.ui.theme.RunGoBackground
-import dev.batipy.rungo.ui.theme.RunGoField
-import dev.batipy.rungo.ui.theme.RunGoPlaceholder
-import dev.batipy.rungo.ui.theme.RunGoTextPrimary
-import dev.batipy.rungo.ui.theme.RunGoTextSecondary
+import dev.batipy.rungo.ui.login.AnimatedLogoMark
+import dev.batipy.rungo.ui.theme.RunGoBrandOrange
+import dev.batipy.rungo.ui.theme.RunGoLightBackground
+import dev.batipy.rungo.ui.theme.RunGoLightSurfaceMuted
+import dev.batipy.rungo.ui.theme.RunGoLightTextPrimary
+import dev.batipy.rungo.ui.theme.RunGoLightTextSecondary
+import dev.batipy.rungo.ui.theme.RunGoOnBrandOrange
 
-private val ErrorColor = Color(0xFFFF6B6B)
+private val ErrorColor = Color(0xFFB3261E)
 
 @Composable
 fun RegisterScreen(
@@ -75,17 +76,19 @@ fun RegisterScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(RunGoLightBackground)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(text = "🏃", fontSize = 48.sp)
+        AnimatedLogoMark(size = 72.dp)
         Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = stringResource(R.string.register_title),
             style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = RunGoLightTextPrimary
         )
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -93,7 +96,7 @@ fun RegisterScreen(
             value = username,
             onValueChange = { username = it },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(stringResource(R.string.login_username_placeholder), color = RunGoPlaceholder) },
+            placeholder = { Text(stringResource(R.string.login_username_placeholder), color = RunGoLightTextSecondary) },
             singleLine = true,
             enabled = !isLoading,
             shape = MaterialTheme.shapes.large,
@@ -104,7 +107,7 @@ fun RegisterScreen(
             value = fullName,
             onValueChange = { fullName = it },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(stringResource(R.string.register_fullname_placeholder), color = RunGoPlaceholder) },
+            placeholder = { Text(stringResource(R.string.register_fullname_placeholder), color = RunGoLightTextSecondary) },
             singleLine = true,
             enabled = !isLoading,
             shape = MaterialTheme.shapes.large,
@@ -115,7 +118,7 @@ fun RegisterScreen(
             value = phone,
             onValueChange = { phone = it },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(stringResource(R.string.register_phone_placeholder), color = RunGoPlaceholder) },
+            placeholder = { Text(stringResource(R.string.register_phone_placeholder), color = RunGoLightTextSecondary) },
             singleLine = true,
             enabled = !isLoading,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
@@ -134,7 +137,7 @@ fun RegisterScreen(
             value = password,
             onValueChange = { password = it },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(stringResource(R.string.login_password_placeholder), color = RunGoPlaceholder) },
+            placeholder = { Text(stringResource(R.string.login_password_placeholder), color = RunGoLightTextSecondary) },
             singleLine = true,
             enabled = !isLoading,
             visualTransformation = PasswordVisualTransformation(),
@@ -147,7 +150,7 @@ fun RegisterScreen(
             value = password2,
             onValueChange = { password2 = it },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(stringResource(R.string.register_password2_placeholder), color = RunGoPlaceholder) },
+            placeholder = { Text(stringResource(R.string.register_password2_placeholder), color = RunGoLightTextSecondary) },
             singleLine = true,
             enabled = !isLoading,
             visualTransformation = PasswordVisualTransformation(),
@@ -173,25 +176,23 @@ fun RegisterScreen(
                 .fillMaxWidth()
                 .height(52.dp),
             shape = MaterialTheme.shapes.large,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary
-            )
+            colors = ButtonDefaults.buttonColors(containerColor = RunGoBrandOrange)
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    color = RunGoOnBrandOrange,
                     strokeWidth = 2.dp
                 )
             } else {
-                Text(text = stringResource(R.string.register_submit_button), fontWeight = FontWeight.SemiBold)
+                Text(text = stringResource(R.string.register_submit_button), fontWeight = FontWeight.SemiBold, color = RunGoOnBrandOrange)
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = stringResource(R.string.register_login_link),
-            color = RunGoAccent,
+            color = RunGoBrandOrange,
             fontWeight = FontWeight.SemiBold,
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.clickable(onClick = onLoginClick)
@@ -218,7 +219,7 @@ private fun RegisterCityDropdown(
                 .fillMaxWidth()
                 .onSizeChanged { fieldWidthPx = it.width }
                 .clickable(enabled = enabled) { expanded = true },
-            color = RunGoBackground,
+            color = RunGoLightSurfaceMuted,
             shape = RoundedCornerShape(12.dp)
         ) {
             Row(
@@ -228,22 +229,22 @@ private fun RegisterCityDropdown(
             ) {
                 Text(
                     text = selectedName,
-                    color = if (selectedCityId == null) RunGoPlaceholder else RunGoTextPrimary,
+                    color = if (selectedCityId == null) RunGoLightTextSecondary else RunGoLightTextPrimary,
                     modifier = Modifier.weight(1f)
                 )
-                Icon(Icons.Filled.UnfoldMore, contentDescription = null, tint = RunGoTextSecondary)
+                Icon(Icons.Filled.UnfoldMore, contentDescription = null, tint = RunGoLightTextSecondary)
             }
         }
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier.width(with(density) { fieldWidthPx.toDp() }),
-            containerColor = RunGoField,
+            containerColor = Color.White,
             shape = RoundedCornerShape(14.dp)
         ) {
             cities.forEach { city ->
                 DropdownMenuItem(
-                    text = { Text(city.name, color = RunGoTextPrimary) },
+                    text = { Text(city.name, color = RunGoLightTextPrimary) },
                     onClick = {
                         onCitySelect(city.id)
                         expanded = false
@@ -256,11 +257,11 @@ private fun RegisterCityDropdown(
 
 @Composable
 private fun registerFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedContainerColor = RunGoBackground,
-    unfocusedContainerColor = RunGoBackground,
-    disabledContainerColor = RunGoBackground,
-    focusedBorderColor = RunGoAccent,
-    unfocusedBorderColor = RunGoTextSecondary.copy(alpha = 0.4f),
-    focusedTextColor = RunGoTextPrimary,
-    unfocusedTextColor = RunGoTextPrimary
+    focusedContainerColor = RunGoLightSurfaceMuted,
+    unfocusedContainerColor = RunGoLightSurfaceMuted,
+    disabledContainerColor = RunGoLightSurfaceMuted,
+    focusedBorderColor = RunGoBrandOrange,
+    unfocusedBorderColor = RunGoLightTextSecondary.copy(alpha = 0.4f),
+    focusedTextColor = RunGoLightTextPrimary,
+    unfocusedTextColor = RunGoLightTextPrimary
 )

@@ -1,5 +1,11 @@
 package dev.batipy.rungo.ui.login
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,13 +16,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,7 +34,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -33,16 +44,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import dev.batipy.rungo.R
-import dev.batipy.rungo.ui.theme.RunGoAccent
-import dev.batipy.rungo.ui.theme.RunGoBackground
-import dev.batipy.rungo.ui.theme.RunGoPlaceholder
-import dev.batipy.rungo.ui.theme.RunGoTextPrimary
-import dev.batipy.rungo.ui.theme.RunGoTextSecondary
+import dev.batipy.rungo.ui.theme.RunGoBrandOrange
+import dev.batipy.rungo.ui.theme.RunGoLightBackground
+import dev.batipy.rungo.ui.theme.RunGoLightSurfaceMuted
+import dev.batipy.rungo.ui.theme.RunGoLightTextPrimary
+import dev.batipy.rungo.ui.theme.RunGoLightTextSecondary
+import dev.batipy.rungo.ui.theme.RunGoOnBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoTheme
 
-private val ErrorColor = Color(0xFFFF6B6B)
+private val ErrorColor = Color(0xFFB3261E)
 
 @Composable
 fun LoginScreen(
@@ -55,7 +66,7 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     val isLoading = uiState is LoginUiState.Loading
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize().background(RunGoLightBackground)) {
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -64,25 +75,26 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(text = "🏃", fontSize = 56.sp)
+            AnimatedLogoMark()
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "RunGo",
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = RunGoLightTextPrimary
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = stringResource(R.string.login_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
-                color = RunGoTextSecondary
+                color = RunGoLightTextSecondary
             )
             Spacer(modifier = Modifier.height(32.dp))
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(stringResource(R.string.login_username_placeholder), color = RunGoPlaceholder) },
+                placeholder = { Text(stringResource(R.string.login_username_placeholder), color = RunGoLightTextSecondary) },
                 singleLine = true,
                 enabled = !isLoading,
                 shape = MaterialTheme.shapes.large,
@@ -93,7 +105,7 @@ fun LoginScreen(
                 value = password,
                 onValueChange = { password = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(stringResource(R.string.login_password_placeholder), color = RunGoPlaceholder) },
+                placeholder = { Text(stringResource(R.string.login_password_placeholder), color = RunGoLightTextSecondary) },
                 singleLine = true,
                 enabled = !isLoading,
                 visualTransformation = PasswordVisualTransformation(),
@@ -117,24 +129,22 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .height(52.dp),
                 shape = MaterialTheme.shapes.large,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
+                colors = ButtonDefaults.buttonColors(containerColor = RunGoBrandOrange)
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
+                        color = RunGoOnBrandOrange,
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text(text = stringResource(R.string.login_button), fontWeight = FontWeight.SemiBold)
+                    Text(text = stringResource(R.string.login_button), fontWeight = FontWeight.SemiBold, color = RunGoOnBrandOrange)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = stringResource(R.string.login_register_link),
-                color = RunGoAccent,
+                color = RunGoBrandOrange,
                 fontWeight = FontWeight.SemiBold,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.clickable(onClick = onRegisterClick)
@@ -143,7 +153,7 @@ fun LoginScreen(
         Text(
             text = "@aquagobot",
             style = MaterialTheme.typography.bodySmall,
-            color = RunGoTextSecondary,
+            color = RunGoLightTextSecondary,
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -152,15 +162,46 @@ fun LoginScreen(
     }
 }
 
+// A slow, gentle breathing pulse — enough to catch the eye on a screen
+// that otherwise has nothing moving, without being distracting while
+// someone's trying to type their password.
+@Composable
+fun AnimatedLogoMark(size: androidx.compose.ui.unit.Dp = 96.dp) {
+    val transition = rememberInfiniteTransition(label = "logoPulse")
+    val scale by transition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1400, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "logoScale"
+    )
+    Surface(
+        modifier = Modifier
+            .size(size)
+            .scale(scale),
+        color = RunGoBrandOrange,
+        shape = RoundedCornerShape(size / 4)
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_rungo_mark),
+            contentDescription = null,
+            tint = RunGoOnBrandOrange,
+            modifier = Modifier.padding(size / 8)
+        )
+    }
+}
+
 @Composable
 private fun loginFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedContainerColor = RunGoBackground,
-    unfocusedContainerColor = RunGoBackground,
-    disabledContainerColor = RunGoBackground,
-    focusedBorderColor = RunGoAccent,
-    unfocusedBorderColor = RunGoTextSecondary.copy(alpha = 0.4f),
-    focusedTextColor = RunGoTextPrimary,
-    unfocusedTextColor = RunGoTextPrimary
+    focusedContainerColor = RunGoLightSurfaceMuted,
+    unfocusedContainerColor = RunGoLightSurfaceMuted,
+    disabledContainerColor = RunGoLightSurfaceMuted,
+    focusedBorderColor = RunGoBrandOrange,
+    unfocusedBorderColor = RunGoLightTextSecondary.copy(alpha = 0.4f),
+    focusedTextColor = RunGoLightTextPrimary,
+    unfocusedTextColor = RunGoLightTextPrimary
 )
 
 @Preview(showBackground = true)

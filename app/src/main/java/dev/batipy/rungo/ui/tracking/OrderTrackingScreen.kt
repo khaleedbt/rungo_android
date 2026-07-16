@@ -39,7 +39,13 @@ import com.google.maps.android.compose.rememberMarkerState
 import dev.batipy.rungo.R
 import dev.batipy.rungo.ui.common.ElapsedTimeText
 import dev.batipy.rungo.ui.theme.RunGoAccent
+import dev.batipy.rungo.ui.theme.RunGoBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoField
+import dev.batipy.rungo.ui.theme.RunGoLightBackground
+import dev.batipy.rungo.ui.theme.RunGoLightField
+import dev.batipy.rungo.ui.theme.RunGoLightTextPrimary
+import dev.batipy.rungo.ui.theme.RunGoLightTextSecondary
+import dev.batipy.rungo.ui.theme.RunGoOnBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
 
@@ -56,9 +62,15 @@ fun OrderTrackingScreen(
     orderId: Int,
     uiState: OrderTrackingUiState,
     onBack: () -> Unit,
+    light: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxSize()) {
+    val accent = if (light) RunGoBrandOrange else RunGoAccent
+    val onAccent = if (light) RunGoOnBrandOrange else Color.White
+    val fieldColor = if (light) RunGoLightField else RunGoField
+    val textPrimary = if (light) RunGoLightTextPrimary else RunGoTextPrimary
+    val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
+    Column(modifier = modifier.fillMaxSize().background(if (light) RunGoLightBackground else Color.Unspecified)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -69,19 +81,19 @@ fun OrderTrackingScreen(
                 onClick = onBack,
                 modifier = Modifier
                     .size(40.dp)
-                    .background(RunGoField, CircleShape)
+                    .background(fieldColor, CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                     contentDescription = stringResource(R.string.common_back),
-                    tint = RunGoTextPrimary
+                    tint = textPrimary
                 )
             }
             Text(
                 text = stringResource(R.string.tracking_screen_title, orderId),
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleLarge,
-                color = RunGoTextPrimary,
+                color = textPrimary,
                 modifier = Modifier.padding(start = 12.dp)
             )
         }
@@ -95,7 +107,7 @@ fun OrderTrackingScreen(
 
             is OrderTrackingUiState.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = uiState.message, color = RunGoTextSecondary)
+                    Text(text = uiState.message, color = textSecondary)
                 }
             }
 
@@ -145,14 +157,14 @@ fun OrderTrackingScreen(
                             ) {
                                 Surface(
                                     shape = CircleShape,
-                                    color = RunGoAccent,
+                                    color = accent,
                                     border = BorderStroke(2.dp, Color.White),
                                     shadowElevation = 4.dp
                                 ) {
                                     Icon(
                                         imageVector = Icons.Filled.TwoWheeler,
                                         contentDescription = null,
-                                        tint = Color.White,
+                                        tint = onAccent,
                                         modifier = Modifier
                                             .padding(8.dp)
                                             .size(22.dp)
@@ -166,7 +178,7 @@ fun OrderTrackingScreen(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .fillMaxWidth(),
-                        color = RunGoField,
+                        color = fieldColor,
                         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
                         shadowElevation = 12.dp
                     ) {
@@ -176,12 +188,12 @@ fun OrderTrackingScreen(
                                     .align(Alignment.CenterHorizontally)
                                     .padding(top = 10.dp, bottom = 4.dp)
                                     .size(width = 36.dp, height = 4.dp)
-                                    .background(RunGoTextSecondary.copy(alpha = 0.4f), RoundedCornerShape(2.dp))
+                                    .background(textSecondary.copy(alpha = 0.4f), RoundedCornerShape(2.dp))
                             )
                             if (courierPosition == null) {
                                 Text(
                                     text = stringResource(R.string.tracking_waiting_for_courier),
-                                    color = RunGoTextSecondary,
+                                    color = textSecondary,
                                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
                                 )
                             } else {
@@ -189,11 +201,11 @@ fun OrderTrackingScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
                                 ) {
-                                    Surface(shape = CircleShape, color = RunGoAccent) {
+                                    Surface(shape = CircleShape, color = accent) {
                                         Icon(
                                             imageVector = Icons.Filled.TwoWheeler,
                                             contentDescription = null,
-                                            tint = Color.White,
+                                            tint = onAccent,
                                             modifier = Modifier
                                                 .padding(8.dp)
                                                 .size(22.dp)
@@ -203,17 +215,17 @@ fun OrderTrackingScreen(
                                         Text(
                                             text = uiState.courierName ?: stringResource(R.string.tracking_courier_label),
                                             fontWeight = FontWeight.Bold,
-                                            color = RunGoTextPrimary
+                                            color = textPrimary
                                         )
                                         Text(
                                             text = stringResource(R.string.tracking_courier_status),
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = RunGoTextSecondary
+                                            color = textSecondary
                                         )
                                         ElapsedTimeText(
                                             startIso = uiState.orderCreatedAt,
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = RunGoTextSecondary
+                                            color = textSecondary
                                         )
                                     }
                                 }

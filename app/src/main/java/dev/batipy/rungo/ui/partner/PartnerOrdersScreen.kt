@@ -42,10 +42,13 @@ import androidx.compose.ui.unit.dp
 import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.OrderDto
 import dev.batipy.rungo.ui.common.StatusBadge
-import dev.batipy.rungo.ui.theme.RunGoAccent
-import dev.batipy.rungo.ui.theme.RunGoField
-import dev.batipy.rungo.ui.theme.RunGoTextPrimary
-import dev.batipy.rungo.ui.theme.RunGoTextSecondary
+import dev.batipy.rungo.ui.theme.RunGoBrandOrange
+import dev.batipy.rungo.ui.theme.RunGoLightAccentText
+import dev.batipy.rungo.ui.theme.RunGoLightBackground
+import dev.batipy.rungo.ui.theme.RunGoLightField
+import dev.batipy.rungo.ui.theme.RunGoLightTextPrimary
+import dev.batipy.rungo.ui.theme.RunGoLightTextSecondary
+import dev.batipy.rungo.ui.theme.RunGoOnBrandOrange
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
@@ -61,13 +64,13 @@ private data class PartnerStatusStyle(val label: String, val container: Color, v
 
 @Composable
 private fun partnerStatusStyle(status: String): PartnerStatusStyle = when (status) {
-    "new" -> PartnerStatusStyle(stringResource(R.string.orders_list_status_new), Color(0xFF3A4657), Color(0xFFD7E3F5))
-    "confirmed" -> PartnerStatusStyle(stringResource(R.string.orders_list_status_confirmed), Color(0xFF2E4A73), Color(0xFFBFD9FF))
-    "in_progress" -> PartnerStatusStyle(stringResource(R.string.orders_list_status_in_progress), Color(0xFF6B5420), Color(0xFFFFE1A6))
-    "in_delivery" -> PartnerStatusStyle(stringResource(R.string.orders_list_status_in_delivery), Color(0xFF6B5420), Color(0xFFFFE1A6))
+    "new" -> PartnerStatusStyle(stringResource(R.string.orders_list_status_new), Color(0xFFEDEAE3), Color(0xFF4A4438))
+    "confirmed" -> PartnerStatusStyle(stringResource(R.string.orders_list_status_confirmed), Color(0xFFE4ECFB), Color(0xFF2E4A73))
+    "in_progress" -> PartnerStatusStyle(stringResource(R.string.orders_list_status_in_progress), Color(0xFFFFF0C7), Color(0xFF7A5416))
+    "in_delivery" -> PartnerStatusStyle(stringResource(R.string.orders_list_status_in_delivery), Color(0xFFFFF0C7), Color(0xFF7A5416))
     "delivered" -> PartnerStatusStyle(stringResource(R.string.orders_list_status_delivered), Color(0xFFCFF7D9), Color(0xFF1B7A3A))
-    "cancelled" -> PartnerStatusStyle(stringResource(R.string.orders_list_status_cancelled), Color(0xFF6B2A2A), Color(0xFFFFC2C2))
-    else -> PartnerStatusStyle(status, RunGoField, RunGoTextSecondary)
+    "cancelled" -> PartnerStatusStyle(stringResource(R.string.orders_list_status_cancelled), Color(0xFFFBE1DE), Color(0xFFB3261E))
+    else -> PartnerStatusStyle(status, RunGoLightField, RunGoLightTextSecondary)
 }
 
 private fun vehicleIcon(vehicleType: String?): String = when (vehicleType) {
@@ -88,10 +91,11 @@ fun PartnerOrdersScreen(
     onRefresh: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    Box(modifier = modifier.fillMaxSize().background(RunGoLightBackground)) {
     PullToRefreshBox(
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
-        modifier = modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize()
     ) {
         when (uiState) {
             is PartnerOrdersUiState.Loading -> {
@@ -102,7 +106,7 @@ fun PartnerOrdersScreen(
 
             is PartnerOrdersUiState.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = uiState.message, color = RunGoTextSecondary)
+                    Text(text = uiState.message, color = RunGoLightTextSecondary)
                 }
             }
 
@@ -118,7 +122,8 @@ fun PartnerOrdersScreen(
                         Text(
                             text = uiState.merchantName?.ifBlank { null } ?: stringResource(R.string.partner_orders_title),
                             style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = RunGoLightTextPrimary
                         )
                     }
                     item {
@@ -158,7 +163,7 @@ fun PartnerOrdersScreen(
                                 text = stringResource(
                                     if (selectedTab == 0) R.string.partner_no_active_orders else R.string.courier_no_history_orders
                                 ),
-                                color = RunGoTextSecondary,
+                                color = RunGoLightTextSecondary,
                                 modifier = Modifier.padding(top = 24.dp)
                             )
                         }
@@ -173,16 +178,17 @@ fun PartnerOrdersScreen(
             }
         }
     }
+    }
 }
 
 @Composable
 private fun PartnerStatTile(label: String, stats: PartnerStats, modifier: Modifier = Modifier) {
-    Surface(modifier = modifier, color = RunGoField, shape = RoundedCornerShape(16.dp)) {
+    Surface(modifier = modifier, color = RunGoLightField, shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Text(text = label, style = MaterialTheme.typography.labelSmall, color = RunGoTextSecondary)
+            Text(text = label, style = MaterialTheme.typography.labelSmall, color = RunGoLightTextSecondary)
             Text(
                 text = formatMoney(stats.revenue),
-                color = RunGoTextPrimary,
+                color = RunGoLightTextPrimary,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(top = 4.dp)
@@ -190,7 +196,7 @@ private fun PartnerStatTile(label: String, stats: PartnerStats, modifier: Modifi
             Text(
                 text = stringResource(R.string.partner_stats_orders_count, stats.deliveredCount),
                 style = MaterialTheme.typography.labelSmall,
-                color = RunGoAccent
+                color = RunGoLightAccentText
             )
         }
     }
@@ -209,12 +215,12 @@ private fun PartnerTabSelector(selectedTab: Int, activeCount: Int, onSelect: (In
                 modifier = Modifier
                     .weight(1f)
                     .clickable { onSelect(index) },
-                color = if (selected) RunGoAccent else RunGoField,
+                color = if (selected) RunGoBrandOrange else RunGoLightField,
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
                     text = label,
-                    color = if (selected) Color.White else RunGoTextSecondary,
+                    color = if (selected) RunGoOnBrandOrange else RunGoLightTextSecondary,
                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -231,7 +237,7 @@ private fun PartnerOrderCard(order: OrderDto, showCourierBlock: Boolean) {
     val style = partnerStatusStyle(order.status)
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = RunGoField,
+        color = RunGoLightField,
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -242,7 +248,7 @@ private fun PartnerOrderCard(order: OrderDto, showCourierBlock: Boolean) {
             ) {
                 Text(
                     text = stringResource(R.string.order_number, order.id),
-                    color = RunGoTextPrimary,
+                    color = RunGoLightTextPrimary,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
@@ -257,14 +263,14 @@ private fun PartnerOrderCard(order: OrderDto, showCourierBlock: Boolean) {
             }
             Text(
                 text = formatPartnerOrderDate(order.createdAt),
-                color = RunGoTextSecondary,
+                color = RunGoLightTextSecondary,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 2.dp)
             )
             if (!order.deliveryAddress.isNullOrBlank()) {
                 Text(
                     text = order.deliveryAddress,
-                    color = RunGoTextSecondary,
+                    color = RunGoLightTextSecondary,
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -276,7 +282,7 @@ private fun PartnerOrderCard(order: OrderDto, showCourierBlock: Boolean) {
                     order.items.forEach { item ->
                         Text(
                             text = "${item.productName} ×${item.quantity}",
-                            color = RunGoTextPrimary,
+                            color = RunGoLightTextPrimary,
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -286,7 +292,7 @@ private fun PartnerOrderCard(order: OrderDto, showCourierBlock: Boolean) {
             if (goods != null && goods > 0) {
                 Text(
                     text = formatMoney(goods),
-                    color = RunGoAccent,
+                    color = RunGoLightAccentText,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 8.dp)
                 )
@@ -302,7 +308,7 @@ private fun PartnerOrderCard(order: OrderDto, showCourierBlock: Boolean) {
 private fun CourierInfoBlock(order: OrderDto, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val courierName = order.courierDisplayName
-    Surface(modifier = modifier.fillMaxWidth(), color = RunGoAccent.copy(alpha = 0.12f), shape = RoundedCornerShape(12.dp)) {
+    Surface(modifier = modifier.fillMaxWidth(), color = RunGoBrandOrange.copy(alpha = 0.14f), shape = RoundedCornerShape(12.dp)) {
         Row(
             modifier = Modifier.padding(10.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -310,11 +316,11 @@ private fun CourierInfoBlock(order: OrderDto, modifier: Modifier = Modifier) {
             if (courierName != null) {
                 Text(text = vehicleIcon(order.courierVehicleType), modifier = Modifier.padding(end = 8.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = courierName, color = RunGoTextPrimary, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodySmall)
+                    Text(text = courierName, color = RunGoLightTextPrimary, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodySmall)
                     if (order.status == "in_delivery") {
                         Text(
                             text = stringResource(R.string.partner_courier_en_route),
-                            color = RunGoTextSecondary,
+                            color = RunGoLightTextSecondary,
                             style = MaterialTheme.typography.labelSmall
                         )
                     }
@@ -328,13 +334,13 @@ private fun CourierInfoBlock(order: OrderDto, modifier: Modifier = Modifier) {
                             // No dialer app — nothing to do.
                         }
                     }) {
-                        Icon(imageVector = Icons.Filled.Call, contentDescription = stringResource(R.string.courier_call_button), tint = RunGoAccent)
+                        Icon(imageVector = Icons.Filled.Call, contentDescription = stringResource(R.string.courier_call_button), tint = RunGoLightAccentText)
                     }
                 }
             } else {
                 Text(
                     text = stringResource(R.string.partner_no_courier_assigned),
-                    color = RunGoTextSecondary,
+                    color = RunGoLightTextSecondary,
                     style = MaterialTheme.typography.bodySmall
                 )
             }

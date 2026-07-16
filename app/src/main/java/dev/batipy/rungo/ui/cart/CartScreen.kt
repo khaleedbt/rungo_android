@@ -53,11 +53,22 @@ import dev.batipy.rungo.ui.common.QuantityStepButton
 import dev.batipy.rungo.ui.common.currencySymbol
 import dev.batipy.rungo.ui.theme.RunGoAccent
 import dev.batipy.rungo.ui.theme.RunGoBackground
+import dev.batipy.rungo.ui.theme.RunGoBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoField
+import dev.batipy.rungo.ui.theme.RunGoLightAccentText
+import dev.batipy.rungo.ui.theme.RunGoLightBackground
+import dev.batipy.rungo.ui.theme.RunGoLightField
+import dev.batipy.rungo.ui.theme.RunGoLightSurfaceMuted
+import dev.batipy.rungo.ui.theme.RunGoLightTextPrimary
+import dev.batipy.rungo.ui.theme.RunGoLightTextSecondary
+import dev.batipy.rungo.ui.theme.RunGoOnBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoPlaceholder
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
 import java.util.Locale
+
+private val ErrorColorLight = Color(0xFFB3261E)
+private val FeeCardBackgroundLight = Color(0xFFFCEACB)
 
 private data class MerchantGroup(
     val merchantId: Int,
@@ -92,23 +103,24 @@ fun CartScreen(
     onCommentChange: (String) -> Unit,
     onCurrencySelect: (String) -> Unit,
     onSubmit: () -> Unit,
+    light: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     if (cartItems.isEmpty()) {
-        EmptyCart(onGoToShopClick, modifier)
+        EmptyCart(onGoToShopClick, light, modifier)
         return
     }
 
     when (uiState) {
         is CartUiState.Loading -> {
-            Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(modifier = modifier.fillMaxSize().background(if (light) RunGoLightBackground else Color.Unspecified), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
 
         is CartUiState.Error -> {
-            Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = uiState.message, color = RunGoTextSecondary)
+            Box(modifier = modifier.fillMaxSize().background(if (light) RunGoLightBackground else Color.Unspecified), contentAlignment = Alignment.Center) {
+                Text(text = uiState.message, color = if (light) RunGoLightTextSecondary else RunGoTextSecondary)
             }
         }
 
@@ -125,6 +137,7 @@ fun CartScreen(
                 onCommentChange = onCommentChange,
                 onCurrencySelect = onCurrencySelect,
                 onSubmit = onSubmit,
+                light = light,
                 modifier = modifier
             )
         }
@@ -144,8 +157,15 @@ private fun CartForm(
     onCommentChange: (String) -> Unit,
     onCurrencySelect: (String) -> Unit,
     onSubmit: () -> Unit,
+    light: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val accent = if (light) RunGoBrandOrange else RunGoAccent
+    val onAccent = if (light) RunGoOnBrandOrange else Color.White
+    val accentText = if (light) RunGoLightAccentText else RunGoAccent
+    val fieldColor = if (light) RunGoLightField else RunGoField
+    val textPrimary = if (light) RunGoLightTextPrimary else RunGoTextPrimary
+    val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
     val merchantGroups = groupByMerchant(cartItems)
     val goodsUsd = cartItems.sumOf { (it.product.priceUsd.toDoubleOrNull() ?: 0.0) * it.quantity }
     val deliveryUsd = merchantGroups.sumOf { it.feeUsd }
@@ -158,7 +178,7 @@ private fun CartForm(
     val totalConverted = (goodsUsd + deliveryUsd) * rate
 
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().background(if (light) RunGoLightBackground else Color.Unspecified),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -171,7 +191,8 @@ private fun CartForm(
                 Text(
                     text = stringResource(R.string.cart_title),
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = if (light) RunGoLightTextPrimary else Color.Unspecified
                 )
                 Row(
                     modifier = Modifier.clickable(onClick = onClearCart),
@@ -180,12 +201,12 @@ private fun CartForm(
                     Icon(
                         imageVector = Icons.Filled.Delete,
                         contentDescription = stringResource(R.string.cart_clear_button),
-                        tint = RunGoTextSecondary,
+                        tint = textSecondary,
                         modifier = Modifier.size(18.dp)
                     )
                     Text(
                         text = stringResource(R.string.cart_clear_button),
-                        color = RunGoTextSecondary,
+                        color = textSecondary,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(start = 4.dp)
                     )
@@ -196,7 +217,7 @@ private fun CartForm(
         items(merchantGroups, key = { it.merchantId }) { group ->
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = RunGoField,
+                color = fieldColor,
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(modifier = Modifier.padding(vertical = 8.dp)) {
@@ -204,7 +225,7 @@ private fun CartForm(
                         Text(
                             text = group.merchantName.uppercase(),
                             style = MaterialTheme.typography.labelMedium,
-                            color = RunGoTextSecondary,
+                            color = textSecondary,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                         )
                     }
@@ -212,7 +233,8 @@ private fun CartForm(
                         CartItemRow(
                             item = item,
                             onRemove = { onRemoveItem(item.product.id) },
-                            onUpdateQuantity = { qty -> onUpdateQuantity(item.product.id, qty) }
+                            onUpdateQuantity = { qty -> onUpdateQuantity(item.product.id, qty) },
+                            light = light
                         )
                         if (index != group.items.lastIndex) {
                             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
@@ -223,21 +245,23 @@ private fun CartForm(
         }
 
         item {
-            SectionCard(title = stringResource(R.string.section_delivery_address)) {
+            SectionCard(title = stringResource(R.string.section_delivery_address), light = light) {
                 Column {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(uiState.locations) { location ->
                             AddressChip(
                                 label = "📍 " + location.label.ifBlank { stringResource(R.string.location_label) },
                                 selected = location.id == uiState.selectedLocationId,
-                                onClick = { onLocationSelect(location.id) }
+                                onClick = { onLocationSelect(location.id) },
+                                light = light
                             )
                         }
                         item {
                             AddressChip(
                                 label = stringResource(R.string.manual_entry_chip),
                                 selected = uiState.selectedLocationId == null,
-                                onClick = onManualEntrySelect
+                                onClick = onManualEntrySelect,
+                                light = light
                             )
                         }
                     }
@@ -248,9 +272,9 @@ private fun CartForm(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 12.dp),
-                            placeholder = { Text(stringResource(R.string.delivery_placeholder), color = RunGoPlaceholder) },
+                            placeholder = { Text(stringResource(R.string.delivery_placeholder), color = if (light) textSecondary else RunGoPlaceholder) },
                             shape = RoundedCornerShape(14.dp),
-                            colors = fieldColors()
+                            colors = fieldColors(light)
                         )
                     }
                     OutlinedTextField(
@@ -259,17 +283,17 @@ private fun CartForm(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 12.dp),
-                        placeholder = { Text(stringResource(R.string.comment_placeholder), color = RunGoPlaceholder) },
+                        placeholder = { Text(stringResource(R.string.comment_placeholder), color = if (light) textSecondary else RunGoPlaceholder) },
                         minLines = 2,
                         shape = RoundedCornerShape(14.dp),
-                        colors = fieldColors()
+                        colors = fieldColors(light)
                     )
                 }
             }
         }
 
         item {
-            SectionCard(title = stringResource(R.string.section_currency)) {
+            SectionCard(title = stringResource(R.string.section_currency), light = light) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     currencyOptions.forEach { (code, label) ->
                         val selected = code == uiState.currency
@@ -277,12 +301,12 @@ private fun CartForm(
                             modifier = Modifier
                                 .weight(1f)
                                 .clickable { onCurrencySelect(code) },
-                            color = if (selected) RunGoAccent else RunGoField,
+                            color = if (selected) accent else fieldColor,
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text(
                                 text = label,
-                                color = if (selected) Color.White else RunGoTextSecondary,
+                                color = if (selected) onAccent else textSecondary,
                                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier
@@ -298,11 +322,11 @@ private fun CartForm(
         item {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = Color(0xFFEAF1FB),
+                color = if (light) FeeCardBackgroundLight else Color(0xFFEAF1FB),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    PriceRow(stringResource(R.string.shop_goods_total), sym + String.format(Locale.US, "%.2f", goodsUsd * rate))
+                    PriceRow(stringResource(R.string.shop_goods_total), sym + String.format(Locale.US, "%.2f", goodsUsd * rate), accentText)
                     merchantGroups.forEach { group ->
                         PriceRow(
                             label = "🏃 RunGo · ${group.merchantName}",
@@ -310,7 +334,8 @@ private fun CartForm(
                                 sym + String.format(Locale.US, "%.2f", group.feeUsd * rate)
                             } else {
                                 stringResource(R.string.shop_delivery_free)
-                            }
+                            },
+                            color = accentText
                         )
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -318,17 +343,17 @@ private fun CartForm(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(text = stringResource(R.string.cart_total_label), color = RunGoAccent, fontWeight = FontWeight.Bold)
+                        Text(text = stringResource(R.string.cart_total_label), color = accentText, fontWeight = FontWeight.Bold)
                         Text(
                             text = sym + String.format(Locale.US, "%.2f", totalConverted),
-                            color = RunGoAccent,
+                            color = accentText,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
                     Text(
                         text = stringResource(R.string.cod_note),
-                        color = RunGoAccent.copy(alpha = 0.7f),
+                        color = accentText.copy(alpha = 0.7f),
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(top = 4.dp)
                     )
@@ -338,7 +363,7 @@ private fun CartForm(
 
         if (uiState.error != null) {
             item {
-                Text(text = uiState.error, color = Color(0xFFFF6B6B))
+                Text(text = uiState.error, color = if (light) ErrorColorLight else Color(0xFFFF6B6B))
             }
         }
 
@@ -350,12 +375,12 @@ private fun CartForm(
                     .fillMaxWidth()
                     .height(52.dp),
                 shape = MaterialTheme.shapes.large,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.buttonColors(containerColor = if (light) RunGoBrandOrange else MaterialTheme.colorScheme.primary)
             ) {
                 if (uiState.submitting) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = onAccent, strokeWidth = 2.dp)
                 } else {
-                    Text(stringResource(R.string.cart_submit_button), color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.cart_submit_button), color = onAccent, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -363,15 +388,15 @@ private fun CartForm(
 }
 
 @Composable
-private fun PriceRow(label: String, value: String) {
+private fun PriceRow(label: String, value: String, color: Color) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = label, color = RunGoAccent, style = MaterialTheme.typography.bodyMedium)
-        Text(text = value, color = RunGoAccent, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
+        Text(text = label, color = color, style = MaterialTheme.typography.bodyMedium)
+        Text(text = value, color = color, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
     }
 }
 
@@ -379,8 +404,14 @@ private fun PriceRow(label: String, value: String) {
 private fun CartItemRow(
     item: CartItem,
     onRemove: () -> Unit,
-    onUpdateQuantity: (Int) -> Unit
+    onUpdateQuantity: (Int) -> Unit,
+    light: Boolean = false
 ) {
+    val accent = if (light) RunGoBrandOrange else RunGoAccent
+    val onAccent = if (light) RunGoOnBrandOrange else Color.White
+    val accentText = if (light) RunGoLightAccentText else RunGoAccent
+    val textPrimary = if (light) RunGoLightTextPrimary else RunGoTextPrimary
+    val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -390,14 +421,14 @@ private fun CartItemRow(
             Text(
                 text = item.product.name,
                 fontWeight = FontWeight.SemiBold,
-                color = RunGoTextPrimary,
+                color = textPrimary,
                 modifier = Modifier.weight(1f)
             )
             IconButton(onClick = onRemove, modifier = Modifier.size(24.dp)) {
                 Icon(
                     imageVector = Icons.Filled.Close,
                     contentDescription = stringResource(R.string.profile_location_delete_desc),
-                    tint = RunGoTextSecondary,
+                    tint = textSecondary,
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -410,27 +441,27 @@ private fun CartItemRow(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 QuantityStepButton(
                     symbol = "−",
-                    containerColor = RunGoTextSecondary.copy(alpha = 0.15f),
-                    contentColor = RunGoTextPrimary,
+                    containerColor = textSecondary.copy(alpha = 0.15f),
+                    contentColor = textPrimary,
                     onClick = { onUpdateQuantity(item.quantity - 1) }
                 )
                 Text(
                     text = "${item.quantity}",
-                    color = RunGoTextPrimary,
+                    color = textPrimary,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 10.dp)
                 )
                 QuantityStepButton(
                     symbol = "+",
-                    containerColor = RunGoAccent,
-                    contentColor = Color.White,
+                    containerColor = accent,
+                    contentColor = onAccent,
                     onClick = { onUpdateQuantity(item.quantity + 1) }
                 )
             }
             val itemTotal = (item.product.priceUsd.toDoubleOrNull() ?: 0.0) * item.quantity
             Text(
                 text = "$" + String.format(Locale.US, "%.2f", itemTotal),
-                color = RunGoAccent,
+                color = accentText,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -438,16 +469,16 @@ private fun CartItemRow(
 }
 
 @Composable
-private fun SectionCard(title: String, content: @Composable () -> Unit) {
+private fun SectionCard(title: String, light: Boolean = false, content: @Composable () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = RunGoField,
+        color = if (light) RunGoLightField else RunGoField,
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = title,
-                color = RunGoTextSecondary,
+                color = if (light) RunGoLightTextSecondary else RunGoTextSecondary,
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.padding(bottom = 10.dp)
             )
@@ -457,15 +488,17 @@ private fun SectionCard(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun AddressChip(label: String, selected: Boolean, onClick: () -> Unit) {
+private fun AddressChip(label: String, selected: Boolean, onClick: () -> Unit, light: Boolean = false) {
+    val accent = if (light) RunGoBrandOrange else RunGoAccent
+    val accentText = if (light) RunGoLightAccentText else RunGoAccent
     Surface(
         modifier = Modifier.clickable(onClick = onClick),
-        color = if (selected) RunGoAccent else RunGoBackground,
+        color = if (selected) accent else if (light) RunGoLightSurfaceMuted else RunGoBackground,
         shape = RoundedCornerShape(12.dp)
     ) {
         Text(
             text = label,
-            color = if (selected) Color.White else RunGoAccent,
+            color = if (selected) { if (light) RunGoOnBrandOrange else Color.White } else accentText,
             fontWeight = FontWeight.SemiBold,
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
@@ -474,7 +507,12 @@ private fun AddressChip(label: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun fieldColors() = OutlinedTextFieldDefaults.colors(
+private fun fieldColors(light: Boolean = false) = if (light) OutlinedTextFieldDefaults.colors(
+    focusedContainerColor = RunGoLightSurfaceMuted,
+    unfocusedContainerColor = RunGoLightSurfaceMuted,
+    focusedTextColor = RunGoLightTextPrimary,
+    unfocusedTextColor = RunGoLightTextPrimary
+) else OutlinedTextFieldDefaults.colors(
     focusedContainerColor = RunGoBackground,
     unfocusedContainerColor = RunGoBackground,
     focusedTextColor = RunGoTextPrimary,
@@ -482,10 +520,11 @@ private fun fieldColors() = OutlinedTextFieldDefaults.colors(
 )
 
 @Composable
-private fun EmptyCart(onGoToShopClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun EmptyCart(onGoToShopClick: () -> Unit, light: Boolean = false, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
+            .background(if (light) RunGoLightBackground else Color.Unspecified)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -494,20 +533,20 @@ private fun EmptyCart(onGoToShopClick: () -> Unit, modifier: Modifier = Modifier
             modifier = Modifier
                 .size(96.dp)
                 .clip(RoundedCornerShape(20.dp))
-                .background(RunGoField),
+                .background(if (light) RunGoLightField else RunGoField),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Filled.ShoppingCart,
                 contentDescription = null,
-                tint = RunGoTextSecondary,
+                tint = if (light) RunGoLightTextSecondary else RunGoTextSecondary,
                 modifier = Modifier.size(40.dp)
             )
         }
         Text(
             text = stringResource(R.string.cart_empty_message),
             style = MaterialTheme.typography.bodyLarge,
-            color = RunGoTextSecondary,
+            color = if (light) RunGoLightTextSecondary else RunGoTextSecondary,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 20.dp, bottom = 20.dp)
         )
@@ -518,10 +557,10 @@ private fun EmptyCart(onGoToShopClick: () -> Unit, modifier: Modifier = Modifier
                 .height(52.dp),
             shape = MaterialTheme.shapes.large,
             colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary
+                containerColor = if (light) RunGoBrandOrange else MaterialTheme.colorScheme.primary
             )
         ) {
-            Text(text = stringResource(R.string.cart_go_to_shop), color = Color.White, fontWeight = FontWeight.SemiBold)
+            Text(text = stringResource(R.string.cart_go_to_shop), color = if (light) RunGoOnBrandOrange else Color.White, fontWeight = FontWeight.SemiBold)
         }
     }
 }

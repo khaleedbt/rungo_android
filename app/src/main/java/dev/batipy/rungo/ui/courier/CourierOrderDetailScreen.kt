@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,13 +56,18 @@ import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.OrderDetailDto
 import dev.batipy.rungo.ui.common.StatusBadge
 import dev.batipy.rungo.ui.common.formatOrderAmount
-import dev.batipy.rungo.ui.theme.RunGoAccent
-import dev.batipy.rungo.ui.theme.RunGoField
-import dev.batipy.rungo.ui.theme.RunGoTextPrimary
-import dev.batipy.rungo.ui.theme.RunGoTextSecondary
+import dev.batipy.rungo.ui.theme.RunGoBrandOrange
+import dev.batipy.rungo.ui.theme.RunGoLightAccentText
+import dev.batipy.rungo.ui.theme.RunGoLightBackground
+import dev.batipy.rungo.ui.theme.RunGoLightField
+import dev.batipy.rungo.ui.theme.RunGoLightTextPrimary
+import dev.batipy.rungo.ui.theme.RunGoLightTextSecondary
+import dev.batipy.rungo.ui.theme.RunGoOnBrandOrange
 
-private val ErrorColor = Color(0xFFFF6B6B)
-private val SuccessColor = Color(0xFF4CAF6D)
+// Darker than the dark-theme originals — same reasoning as ErrorColor there,
+// but tuned to stay readable on the light background instead of the dark one.
+private val ErrorColor = Color(0xFFB3261E)
+private val SuccessColor = Color(0xFF1B7A3A)
 
 @Composable
 private fun openMaps(latitude: String?, longitude: String?, onNoMapsApp: () -> Unit): () -> Unit {
@@ -123,7 +129,7 @@ fun CourierOrderDetailScreen(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize().background(RunGoLightBackground)) {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier
@@ -135,12 +141,12 @@ fun CourierOrderDetailScreen(
                     onClick = onBack,
                     modifier = Modifier
                         .size(40.dp)
-                        .background(RunGoField, CircleShape)
+                        .background(RunGoLightField, CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                         contentDescription = stringResource(R.string.common_back),
-                        tint = RunGoTextPrimary
+                        tint = RunGoLightTextPrimary
                     )
                 }
                 val successState = uiState as? CourierOrderDetailUiState.Success
@@ -148,7 +154,7 @@ fun CourierOrderDetailScreen(
                     text = if (successState != null) stringResource(R.string.order_number, successState.order.id) else "",
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleLarge,
-                    color = RunGoTextPrimary,
+                    color = RunGoLightTextPrimary,
                     modifier = Modifier
                         .weight(1f)
                         .padding(start = 12.dp)
@@ -173,7 +179,7 @@ fun CourierOrderDetailScreen(
 
                 is CourierOrderDetailUiState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = uiState.message, color = RunGoTextSecondary)
+                        Text(text = uiState.message, color = RunGoLightTextSecondary)
                     }
                 }
 
@@ -247,17 +253,17 @@ private fun CourierOrderDetailContent(
                             .fillMaxWidth()
                             .height(52.dp),
                         shape = MaterialTheme.shapes.large,
-                        colors = ButtonDefaults.buttonColors(containerColor = RunGoAccent)
+                        colors = ButtonDefaults.buttonColors(containerColor = RunGoBrandOrange)
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Chat,
                             contentDescription = null,
-                            tint = Color.White,
+                            tint = RunGoOnBrandOrange,
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
                             text = stringResource(R.string.chat_open_button),
-                            color = Color.White,
+                            color = RunGoOnBrandOrange,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(start = 8.dp)
                         )
@@ -295,7 +301,7 @@ private fun CourierOrderDetailContent(
                 item {
                     Text(
                         text = stringResource(R.string.courier_distance_label, order.distanceKm),
-                        color = RunGoTextSecondary,
+                        color = RunGoLightTextSecondary,
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -303,7 +309,7 @@ private fun CourierOrderDetailContent(
             if (!order.comment.isNullOrBlank()) {
                 item {
                     SectionCard(title = stringResource(R.string.courier_comment_label)) {
-                        Text(text = order.comment, color = RunGoTextPrimary)
+                        Text(text = order.comment, color = RunGoLightTextPrimary)
                     }
                 }
             }
@@ -333,9 +339,11 @@ private fun openInBrowserFallback(context: android.content.Context, message: Str
 private fun AddressCard(label: String, address: String, onNavigate: () -> Unit) {
     SectionCard(title = label) {
         Column {
-            Text(text = address, color = RunGoTextPrimary)
+            Text(text = address, color = RunGoLightTextPrimary)
             OutlinedButton(
                 onClick = onNavigate,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = RunGoLightTextPrimary),
+                border = BorderStroke(1.dp, RunGoLightTextSecondary),
                 modifier = Modifier.padding(top = 8.dp)
             ) {
                 Text(stringResource(R.string.courier_navigate_button))
@@ -350,10 +358,10 @@ private fun ClientCard(name: String?, phone: String?) {
     SectionCard(title = stringResource(R.string.client_info_title)) {
         Column {
             if (!name.isNullOrBlank()) {
-                Text(text = name, color = RunGoTextPrimary, fontWeight = FontWeight.SemiBold)
+                Text(text = name, color = RunGoLightTextPrimary, fontWeight = FontWeight.SemiBold)
             }
             if (!phone.isNullOrBlank()) {
-                Text(text = phone, color = RunGoTextSecondary, modifier = Modifier.padding(top = 2.dp))
+                Text(text = phone, color = RunGoLightTextSecondary, modifier = Modifier.padding(top = 2.dp))
                 OutlinedButton(
                     onClick = {
                         val uri = Uri.parse("tel:$phone")
@@ -363,6 +371,8 @@ private fun ClientCard(name: String?, phone: String?) {
                             // No dialer app — nothing to do.
                         }
                     },
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = RunGoLightTextPrimary),
+                    border = BorderStroke(1.dp, RunGoLightTextSecondary),
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
                     Text(stringResource(R.string.courier_call_button))
@@ -378,7 +388,7 @@ private fun PaymentCard(order: OrderDetailDto) {
         Column {
             Text(
                 text = formatOrderAmount(order.codTotal, order.currency),
-                color = RunGoAccent,
+                color = RunGoLightAccentText,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleMedium
             )
@@ -388,7 +398,7 @@ private fun PaymentCard(order: OrderDetailDto) {
                     text = stringResource(
                         if (order.paymentCollected) R.string.courier_payment_collected else R.string.courier_payment_pending
                     ),
-                    color = if (order.paymentCollected) SuccessColor else RunGoTextSecondary,
+                    color = if (order.paymentCollected) SuccessColor else RunGoLightTextSecondary,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
@@ -427,6 +437,8 @@ private fun CourierActionButtons(
                 OutlinedButton(
                     onClick = onReleaseOrder,
                     enabled = !performingAction,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = RunGoLightTextPrimary),
+                    border = BorderStroke(1.dp, RunGoLightTextSecondary),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp)
@@ -447,7 +459,7 @@ private fun CourierActionButtons(
                     HorizontalDivider(modifier = Modifier.padding(bottom = 12.dp))
                     Text(
                         text = stringResource(R.string.courier_waiting_client_confirmation),
-                        color = RunGoTextSecondary,
+                        color = RunGoLightTextSecondary,
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -483,12 +495,12 @@ private fun PrimaryActionButton(text: String, enabled: Boolean, loading: Boolean
             .fillMaxWidth()
             .height(52.dp),
         shape = MaterialTheme.shapes.large,
-        colors = ButtonDefaults.buttonColors(containerColor = RunGoAccent)
+        colors = ButtonDefaults.buttonColors(containerColor = RunGoBrandOrange)
     ) {
         if (loading) {
-            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = RunGoOnBrandOrange, strokeWidth = 2.dp)
         } else {
-            Text(text, color = Color.White, fontWeight = FontWeight.SemiBold)
+            Text(text, color = RunGoOnBrandOrange, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -497,13 +509,13 @@ private fun PrimaryActionButton(text: String, enabled: Boolean, loading: Boolean
 private fun SectionCard(title: String, content: @Composable () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = RunGoField,
+        color = RunGoLightField,
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = title,
-                color = RunGoTextSecondary,
+                color = RunGoLightTextSecondary,
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )

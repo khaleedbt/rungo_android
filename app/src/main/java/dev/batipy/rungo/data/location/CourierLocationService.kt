@@ -59,24 +59,15 @@ class CourierLocationService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val id = intent?.getIntExtra(EXTRA_ORDER_ID, -1) ?: -1
+        // The permission check now happens in start() below, before this
+        // service is even started — a service launched via
+        // startForegroundService() MUST call startForeground() before it can
+        // stop itself (stopSelf() alone isn't enough), or the OS kills the
+        // whole app process with a ForegroundServiceDidNotStartInTimeException.
+        // id == -1 can't happen anymore either (start() always passes one),
+        // but the guard stays cheap insurance against a malformed intent.
         if (id == -1) {
-            stopSelf()
-            return START_NOT_STICKY
-        }
-
-        // Must check this BEFORE calling startForeground() — this service
-        // declares foregroundServiceType="location" in the manifest, and on
-        // Android 14+ calling startForeground() for a location-typed service
-        // without the permission already granted throws a SecurityException
-        // that crashes the whole app, not just this service.
-        val hasPermission = ContextCompat.checkSelfPermission(
-            this, Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-        if (!hasPermission) {
-            // Best-effort — the courier just hasn't granted location yet.
-            // Nothing to crash over, the client simply won't see a live
-            // position until it's granted and this service restarts.
-            Log.w(TAG, "ACCESS_FINE_LOCATION not granted, stopping")
+            startForeground(NOTIFICATION_ID, buildNotification(-1))
             stopSelf()
             return START_NOT_STICKY
         }
@@ -145,6 +136,19 @@ class CourierLocationService : Service() {
         /** Idempotent — safe to call repeatedly for the same order (e.g. on
          * every screen refresh while it's in_progress/in_delivery). */
         fun start(context: Context, orderId: Int) {
+            // Checked here rather than inside onStartCommand() — a service
+            // started via startForegroundService() is contractually required
+            // to call startForeground() before it can stop itself; stopSelf()
+            // alone isn't enough and gets the whole app process killed with a
+            // ForegroundServiceDidNotStartInTimeException. Skipping the start
+            // entirely when permission is missing sidesteps that trap.
+            val hasPermission = ContextCompat.checkSelfPermission(
+                context, Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!hasPermission) {
+                Log.w(TAG, "ACCESS_FINE_LOCATION not granted, not starting")
+                return
+            }
             val intent = Intent(context, CourierLocationService::class.java)
                 .putExtra(EXTRA_ORDER_ID, orderId)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

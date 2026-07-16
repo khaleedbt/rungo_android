@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,7 +50,14 @@ import dev.batipy.rungo.R
 import dev.batipy.rungo.data.network.dto.ChatMessageDto
 import dev.batipy.rungo.ui.theme.RunGoAccent
 import dev.batipy.rungo.ui.theme.RunGoBackground
+import dev.batipy.rungo.ui.theme.RunGoBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoField
+import dev.batipy.rungo.ui.theme.RunGoLightBackground
+import dev.batipy.rungo.ui.theme.RunGoLightField
+import dev.batipy.rungo.ui.theme.RunGoLightSurfaceMuted
+import dev.batipy.rungo.ui.theme.RunGoLightTextPrimary
+import dev.batipy.rungo.ui.theme.RunGoLightTextSecondary
+import dev.batipy.rungo.ui.theme.RunGoOnBrandOrange
 import dev.batipy.rungo.ui.theme.RunGoPlaceholder
 import dev.batipy.rungo.ui.theme.RunGoTextPrimary
 import dev.batipy.rungo.ui.theme.RunGoTextSecondary
@@ -84,6 +92,7 @@ fun ChatScreen(
     onBack: () -> Unit,
     onSend: (String) -> Boolean,
     onRetry: () -> Unit,
+    light: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -96,7 +105,13 @@ fun ChatScreen(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize().imePadding()) {
+    val fieldColor = if (light) RunGoLightField else RunGoField
+    val textPrimary = if (light) RunGoLightTextPrimary else RunGoTextPrimary
+    val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
+    val accent = if (light) RunGoBrandOrange else RunGoAccent
+    val onAccent = if (light) RunGoOnBrandOrange else Color.White
+
+    Box(modifier = modifier.fillMaxSize().imePadding().background(if (light) RunGoLightBackground else Color.Unspecified)) {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier
@@ -108,19 +123,19 @@ fun ChatScreen(
                     onClick = onBack,
                     modifier = Modifier
                         .size(40.dp)
-                        .background(RunGoField, CircleShape)
+                        .background(fieldColor, CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                         contentDescription = stringResource(R.string.common_back),
-                        tint = RunGoTextPrimary
+                        tint = textPrimary
                     )
                 }
                 Text(
                     text = stringResource(R.string.chat_title, orderId),
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleLarge,
-                    color = RunGoTextPrimary,
+                    color = textPrimary,
                     modifier = Modifier.padding(start = 12.dp)
                 )
             }
@@ -135,12 +150,13 @@ fun ChatScreen(
                 is ChatUiState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = uiState.message, color = RunGoTextSecondary)
+                            Text(text = uiState.message, color = textSecondary)
                             Button(
                                 onClick = onRetry,
+                                colors = ButtonDefaults.buttonColors(containerColor = accent),
                                 modifier = Modifier.padding(top = 12.dp)
                             ) {
-                                Text(stringResource(R.string.common_retry), color = Color.White)
+                                Text(stringResource(R.string.common_retry), color = onAccent)
                             }
                         }
                     }
@@ -168,7 +184,7 @@ fun ChatScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(uiState.messages.asReversed(), key = { it.id }) { msg ->
-                            ChatBubble(msg, isMine = msg.sender == currentUserId)
+                            ChatBubble(msg, isMine = msg.sender == currentUserId, light = light)
                         }
                     }
                     Row(
@@ -181,14 +197,14 @@ fun ChatScreen(
                             value = draftText,
                             onValueChange = { draftText = it },
                             modifier = Modifier.weight(1f),
-                            placeholder = { Text(stringResource(R.string.chat_input_placeholder), color = RunGoPlaceholder) },
+                            placeholder = { Text(stringResource(R.string.chat_input_placeholder), color = if (light) RunGoLightTextSecondary else RunGoPlaceholder) },
                             shape = RoundedCornerShape(20.dp),
                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = RunGoBackground,
-                                unfocusedContainerColor = RunGoBackground,
-                                focusedTextColor = RunGoTextPrimary,
-                                unfocusedTextColor = RunGoTextPrimary
+                                focusedContainerColor = if (light) RunGoLightSurfaceMuted else RunGoBackground,
+                                unfocusedContainerColor = if (light) RunGoLightSurfaceMuted else RunGoBackground,
+                                focusedTextColor = textPrimary,
+                                unfocusedTextColor = textPrimary
                             )
                         )
                         IconButton(
@@ -202,12 +218,12 @@ fun ChatScreen(
                             modifier = Modifier
                                 .padding(start = 8.dp)
                                 .size(44.dp)
-                                .background(RunGoAccent, CircleShape)
+                                .background(accent, CircleShape)
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Send,
                                 contentDescription = stringResource(R.string.chat_send_button),
-                                tint = Color.White
+                                tint = onAccent
                             )
                         }
                     }
@@ -223,7 +239,12 @@ fun ChatScreen(
 }
 
 @Composable
-private fun ChatBubble(msg: ChatMessageDto, isMine: Boolean) {
+private fun ChatBubble(msg: ChatMessageDto, isMine: Boolean, light: Boolean = false) {
+    val accent = if (light) RunGoBrandOrange else RunGoAccent
+    val onAccent = if (light) RunGoOnBrandOrange else Color.White
+    val fieldColor = if (light) RunGoLightField else RunGoField
+    val textPrimary = if (light) RunGoLightTextPrimary else RunGoTextPrimary
+    val textSecondary = if (light) RunGoLightTextSecondary else RunGoTextSecondary
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start
@@ -236,12 +257,12 @@ private fun ChatBubble(msg: ChatMessageDto, isMine: Boolean) {
                 Text(
                     text = "${msg.senderName} · ${roleLabel(msg.senderRole)}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = RunGoTextSecondary,
+                    color = textSecondary,
                     modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
                 )
             }
             Surface(
-                color = if (isMine) RunGoAccent else RunGoField,
+                color = if (isMine) accent else fieldColor,
                 shape = RoundedCornerShape(
                     topStart = 16.dp,
                     topEnd = 16.dp,
@@ -252,12 +273,12 @@ private fun ChatBubble(msg: ChatMessageDto, isMine: Boolean) {
                 Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
                     Text(
                         text = msg.text,
-                        color = if (isMine) Color.White else RunGoTextPrimary
+                        color = if (isMine) onAccent else textPrimary
                     )
                     Text(
                         text = formatChatTime(msg.createdAt),
                         style = MaterialTheme.typography.labelSmall,
-                        color = if (isMine) Color.White.copy(alpha = 0.7f) else RunGoTextSecondary,
+                        color = if (isMine) onAccent.copy(alpha = 0.7f) else textSecondary,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }
