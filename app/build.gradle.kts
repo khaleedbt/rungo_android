@@ -15,6 +15,20 @@ val localProperties = Properties().apply {
     if (file.exists()) file.inputStream().use { load(it) }
 }
 
+// Committed (unlike local.properties) — a shared, ever-increasing build
+// counter so every APK that comes out of `assemble*` has a version distinct
+// from the last one, visible on the Profile screen (BuildConfig.VERSION_NAME)
+// without anyone having to remember to bump a number by hand. Only read here
+// at config time; the actual increment+write happens in bumpBuildNumber
+// below, `finalizedBy` a real assemble — not on every IDE sync, which
+// re-evaluates this file constantly and would otherwise burn through numbers
+// for builds that never happened.
+val versionPropsFile = file("version.properties")
+val versionProps = Properties().apply {
+    if (versionPropsFile.exists()) versionPropsFile.inputStream().use { load(it) }
+}
+val buildNumber = versionProps.getProperty("BUILD_NUMBER", "1").toInt()
+
 android {
     namespace = "dev.batipy.rungo"
     compileSdk = 37
@@ -23,8 +37,8 @@ android {
         applicationId = "dev.batipy.rungo"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "2.8.0"
+        versionCode = buildNumber
+        versionName = "2.8.$buildNumber"
 
         manifestPlaceholders["MAPS_API_KEY"] = localProperties.getProperty("MAPS_API_KEY", "")
 
@@ -48,6 +62,17 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+}
+
+// Bumps and persists version.properties right after a successful assemble —
+// checked here (rather than incrementing eagerly above) so a failed build,
+// or an IDE sync that never actually assembles anything, doesn't still burn
+// a version number.
+gradle.taskGraph.afterTask {
+    if (name in setOf("assembleDebug", "assembleRelease") && state.failure == null) {
+        versionProps.setProperty("BUILD_NUMBER", (buildNumber + 1).toString())
+        versionPropsFile.outputStream().use { versionProps.store(it, null) }
     }
 }
 

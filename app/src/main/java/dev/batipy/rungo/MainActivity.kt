@@ -67,6 +67,19 @@ class MainActivity : AppCompatActivity() {
     private var pendingOrderId by mutableStateOf<Int?>(null)
     private var pendingChatOrderId by mutableStateOf<Int?>(null)
 
+    // AppCompatDelegate.setApplicationLocales() (ProfileViewModel.setLanguage,
+    // and now the auto-sync in HomeScreen) recreates every tracked Activity to
+    // reload string resources under the new locale — by default that's a hard
+    // cut (the old window just vanishes and the new one pops in), which reads
+    // as a jarring flash rather than a language switch. Overriding recreate()
+    // is the standard fix: AppCompat's internal locale-change machinery calls
+    // this same recreate(), so a cross-fade here covers that path without
+    // needing to touch ProfileViewModel or know why recreate() was triggered.
+    override fun recreate() {
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        super.recreate()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Store
 import android.content.Context
 import androidx.activity.compose.BackHandler
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -51,6 +52,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.batipy.rungo.LocalSetLightSystemBars
 import dev.batipy.rungo.R
@@ -201,6 +203,20 @@ fun HomeScreen(
         if (me != null) {
             role = me.role
             currentUserId = me.id
+            // The language chips on the Profile screen just display
+            // me.lang as a label — the only place that actually applies a
+            // locale is ProfileViewModel.setLanguage(), which only runs when
+            // the user taps a chip. On a fresh login on a device that's
+            // never had a chip tapped, AppCompatDelegate is still on
+            // whatever it defaulted to (the system locale), so the chip
+            // shows the account's saved language while the entire UI keeps
+            // rendering in a different one until manually corrected. Syncing
+            // it here, right after we learn the account's language, is what
+            // was missing.
+            val currentLocale = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+            if (!currentLocale.startsWith(me.lang)) {
+                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(me.lang))
+            }
         } else {
             roleLoadFailed = true
         }

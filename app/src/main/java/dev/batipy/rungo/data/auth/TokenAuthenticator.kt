@@ -40,10 +40,15 @@ class TokenAuthenticator(
     // the lock for that same expired token skip straight to failing this
     // round too, instead of immediately retrying the exact call that just
     // failed and piling more requests onto whatever the server is already
-    // struggling with — without this, a sustained server-side issue would
-    // still produce a back-to-back (just no longer simultaneous) burst of
-    // refresh calls from every queued request, one per waiter.
+    // struggling with. Paired with a short cooldown (below) rather than
+    // blocking that token forever — an earlier version of this cleared only
+    // on success, which meant one transient failure permanently wedged every
+    // later request carrying that same token (it never changes without a
+    // successful refresh) into failing instantly with no further attempts,
+    // for the rest of that access token's 15-minute life.
     private var lastFailedAccessToken: String? = null
+    private var lastFailureAtMs: Long = 0L
+    private val retryCooldownMs = 2000L
 
     override fun authenticate(route: Route?, response: Response): Request? {
         if (responseCount(response) >= MAX_RETRIES) return null
@@ -62,7 +67,9 @@ class TokenAuthenticator(
                     .build()
             }
 
-            if (failedAccessToken != null && failedAccessToken == lastFailedAccessToken) {
+            if (failedAccessToken != null && failedAccessToken == lastFailedAccessToken &&
+                System.currentTimeMillis() - lastFailureAtMs < retryCooldownMs
+            ) {
                 return null
             }
 
@@ -87,6 +94,7 @@ class TokenAuthenticator(
                         // token being invalid — don't log the user out over it.
                         Log.w(TAG, "Token refresh failed with HTTP ${e.code()}, not logging out", e)
                         lastFailedAccessToken = failedAccessToken
+                        lastFailureAtMs = System.currentTimeMillis()
                     }
                     null
                 } catch (e: IOException) {
@@ -97,6 +105,7 @@ class TokenAuthenticator(
                     // network call retry the refresh normally.
                     Log.w(TAG, "Token refresh failed due to a network error, not logging out", e)
                     lastFailedAccessToken = failedAccessToken
+                    lastFailureAtMs = System.currentTimeMillis()
                     null
                 } catch (e: Exception) {
                     // Anything else unexpected — same conservative treatment,
@@ -104,6 +113,7 @@ class TokenAuthenticator(
                     // rejected rather than something transient going wrong.
                     Log.e(TAG, "Token refresh failed unexpectedly, not logging out", e)
                     lastFailedAccessToken = failedAccessToken
+                    lastFailureAtMs = System.currentTimeMillis()
                     null
                 }
             }
