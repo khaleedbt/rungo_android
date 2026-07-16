@@ -24,7 +24,7 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = 1
-        versionName = "2.7.7"
+        versionName = "2.7.9"
 
         manifestPlaceholders["MAPS_API_KEY"] = localProperties.getProperty("MAPS_API_KEY", "")
 

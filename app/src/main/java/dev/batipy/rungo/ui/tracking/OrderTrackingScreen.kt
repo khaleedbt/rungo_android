@@ -166,6 +166,18 @@ fun OrderTrackingScreen(
                 // animation below always takes the shortest path to it.
                 var previousCourierPosition by remember { mutableStateOf<LatLng?>(null) }
                 var courierHeadingTarget by remember { mutableFloatStateOf(0f) }
+                // rememberMarkerState(position = ...) only seeds MarkerState's
+                // position on the marker's first composition — it's a plain
+                // remember{}, so it never picks up later changes to the
+                // `position` argument on its own. Left as that, the camera
+                // would keep re-centering correctly on every new ping (that
+                // part is driven by the separate LaunchedEffect below) while
+                // the pin itself stayed frozen at wherever it first appeared,
+                // only catching up once the whole screen was torn down and
+                // rebuilt. Hoisting one stable MarkerState and pushing new
+                // positions into it imperatively (below) is what actually
+                // moves it.
+                val courierMarkerState = rememberMarkerState()
                 LaunchedEffect(courierPosition) {
                     val previous = previousCourierPosition
                     val current = courierPosition
@@ -176,6 +188,9 @@ fun OrderTrackingScreen(
                         courierHeadingTarget += shortestDelta(courierHeadingTarget, bearing)
                     }
                     previousCourierPosition = current
+                    if (current != null) {
+                        courierMarkerState.position = current
+                    }
                 }
                 val animatedCourierHeading by animateFloatAsState(
                     targetValue = courierHeadingTarget,
@@ -213,7 +228,7 @@ fun OrderTrackingScreen(
                         }
                         courierPosition?.let {
                             MarkerComposable(
-                                state = rememberMarkerState(position = it),
+                                state = courierMarkerState,
                                 title = uiState.courierName ?: stringResource(R.string.tracking_courier_label)
                             ) {
                                 Surface(

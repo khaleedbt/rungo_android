@@ -121,6 +121,27 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
 
+                        // Covers every path to "no longer logged in" the same
+                        // way — an explicit "Выйти" tap, but just as much an
+                        // automatic one (TokenAuthenticator rejecting a truly
+                        // expired/invalid refresh token). Without this keyed
+                        // on the tokens themselves, only the explicit button
+                        // ever cleared the ViewModelStore, so an automatic
+                        // logout left every screen's ViewModel (Services/
+                        // Orders/Profile/...) alive with whatever stale state
+                        // it had right before — silently served back on the
+                        // next login until each screen happened to be
+                        // pulled-to-refresh.
+                        var wasLoggedIn by remember { mutableStateOf(false) }
+                        LaunchedEffect(loggedIn) {
+                            if (wasLoggedIn && !loggedIn) {
+                                viewModelStore.clear()
+                                app.cartRepository.clear()
+                                app.orderFeedRepository.disconnect()
+                            }
+                            wasLoggedIn = loggedIn
+                        }
+
                         // Android kills background sockets fairly aggressively, so a
                         // status change that happens while the app is backgrounded can
                         // be missed entirely — force a reconnect + refresh whenever the
@@ -193,15 +214,10 @@ class MainActivity : AppCompatActivity() {
                                     onInitialChatOrderConsumed = { pendingChatOrderId = null },
                                     onLogoutClick = {
                                         showRegister = false
-                                        // All screen ViewModels (Services/Orders/Profile/Shop/Cart/...)
-                                        // are scoped to this Activity's ViewModelStore, which otherwise
-                                        // outlives login/logout — without clearing it here, logging in
-                                        // as a different account would keep showing the previous
-                                        // account's already-loaded data until each screen happened to
-                                        // refetch on its own.
-                                        viewModelStore.clear()
-                                        app.cartRepository.clear()
-                                        app.orderFeedRepository.disconnect()
+                                        // ViewModelStore/cart/order-feed cleanup happens
+                                        // reactively above once `loggedIn` actually flips to
+                                        // false — same code path an automatic logout goes
+                                        // through, so both behave identically.
                                         app.applicationScope.launch {
                                             app.notificationRepository.deleteCurrentDeviceToken()
                                             app.authRepository.logout()
