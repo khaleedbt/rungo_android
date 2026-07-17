@@ -95,9 +95,13 @@ androidComponents {
 // Bumps and persists version.properties right after a successful assemble —
 // checked here (rather than incrementing eagerly above) so a failed build,
 // or an IDE sync that never actually assembles anything, doesn't still burn
-// a version number.
+// a version number. Covers both APK (assemble*) and Android App Bundle
+// (bundle*) tasks — Android Studio's "Generate Signed App Bundle or APK"
+// wizard runs one or the other depending on which format is picked there,
+// and either way should count as "a build happened."
 gradle.taskGraph.afterTask {
-    if (name in setOf("assembleDebug", "assembleRelease") && state.failure == null) {
+    val versionedTasks = setOf("assembleDebug", "assembleRelease", "bundleDebug", "bundleRelease")
+    if (name in versionedTasks && state.failure == null) {
         versionProps.setProperty("BUILD_NUMBER", (buildNumber + 1).toString())
         versionPropsFile.outputStream().use { versionProps.store(it, null) }
     }
