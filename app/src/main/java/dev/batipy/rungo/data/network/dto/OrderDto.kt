@@ -92,7 +92,8 @@ data class OrderDetailDto(
     @SerialName("client_phone") val clientPhone: String? = null,
     @SerialName("courier_full_name") val courierFullName: String? = null,
     @SerialName("courier_username") val courierUsername: String? = null,
-    val review: ReviewDto? = null
+    val review: ReviewDto? = null,
+    val items: List<OrderItemDto> = emptyList()
 ) {
     val courierDisplayName: String?
         get() = courierFullName?.ifBlank { null } ?: courierUsername?.ifBlank { null }

@@ -163,6 +163,7 @@
     <string name="courier_navigate_button">Navigate</string>
     <string name="courier_call_button">Call</string>
     <string name="courier_distance_label">Distance: %1$s km</string>
+    <string name="courier_items_label">Items</string>
     <string name="courier_comment_label">Comment</string>
     <string name="courier_payment_label">Payment</string>
     <string name="courier_payment_collected">Payment collected</string>
@@ -213,6 +214,7 @@
     <string name="payment_method_balance">Paid from balance</string>
     <string name="section_delivery_status">DELIVERY STATUS</string>
     <string name="section_payment">PAYMENT</string>
+    <string name="section_items">ITEMS</string>
     <string name="payment_cod_total_label">Total to pay courier</string>
     <string name="section_review_given">YOUR REVIEW</string>
     <string name="section_review_form">LEAVE A REVIEW</string>

@@ -343,6 +343,32 @@ fun OrderDetailScreen(
                             }
                         }
                     }
+                    if (order.items.isNotEmpty()) {
+                        item {
+                            SectionCard(title = stringResource(R.string.section_items), light = light) {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    order.items.forEachIndexed { index, orderItem ->
+                                        if (index > 0) {
+                                            HorizontalDivider()
+                                        }
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                text = "${orderItem.productName} ×${orderItem.quantity}",
+                                                color = textPrimary
+                                            )
+                                            Text(
+                                                text = formatOrderAmount(orderItem.price, order.currency),
+                                                color = textSecondary
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                     item {
                         SectionCard(title = stringResource(R.string.section_payment), light = light) {
                             Column {

@@ -161,6 +161,7 @@
     <string name="courier_navigate_button">Навигация</string>
     <string name="courier_call_button">Позвонить</string>
     <string name="courier_distance_label">Расстояние: %1$s км</string>
+    <string name="courier_items_label">Товары</string>
     <string name="courier_comment_label">Комментарий</string>
     <string name="courier_payment_label">Оплата</string>
     <string name="courier_payment_collected">Оплата получена</string>
@@ -213,6 +214,7 @@
     <string name="payment_method_balance">Оплата с баланса</string>
     <string name="section_delivery_status">СТАТУС ДОСТАВКИ</string>
     <string name="section_payment">ОПЛАТА</string>
+    <string name="section_items">ТОВАРЫ</string>
     <string name="payment_cod_total_label">К оплате курьеру</string>
     <string name="section_review_given">ВАШ ОТЗЫВ</string>
     <string name="section_review_form">ОСТАВИТЬ ОТЗЫВ</string>

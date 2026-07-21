@@ -163,6 +163,7 @@
     <string name="courier_navigate_button">الملاحة</string>
     <string name="courier_call_button">اتصال</string>
     <string name="courier_distance_label">المسافة: %1$s كم</string>
+    <string name="courier_items_label">المنتجات</string>
     <string name="courier_comment_label">تعليق</string>
     <string name="courier_payment_label">الدفع</string>
     <string name="courier_payment_collected">تم استلام الدفع</string>
@@ -213,6 +214,7 @@
     <string name="payment_method_balance">الدفع من الرصيد</string>
     <string name="section_delivery_status">حالة التوصيل</string>
     <string name="section_payment">الدفع</string>
+    <string name="section_items">المنتجات</string>
     <string name="payment_cod_total_label">المبلغ المستحق للمندوب</string>
     <string name="section_review_given">تقييمك</string>
     <string name="section_review_form">أضف تقييماً</string>

@@ -306,6 +306,29 @@ private fun CourierOrderDetailContent(
                     )
                 }
             }
+            if (order.items.isNotEmpty()) {
+                item {
+                    SectionCard(title = stringResource(R.string.courier_items_label)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            order.items.forEach { orderItem ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "${orderItem.productName} ×${orderItem.quantity}",
+                                        color = RunGoLightTextPrimary
+                                    )
+                                    Text(
+                                        text = formatOrderAmount(orderItem.price, order.currency),
+                                        color = RunGoLightTextSecondary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             if (!order.comment.isNullOrBlank()) {
                 item {
                     SectionCard(title = stringResource(R.string.courier_comment_label)) {
